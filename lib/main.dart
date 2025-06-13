@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'screens/role_assignment_screen.dart';
+import 'screens/home_screen.dart';
 import 'services/game_setup_provider.dart';
 
 void main() {
@@ -58,11 +58,7 @@ class _MyAppState extends ConsumerState<MyApp> {
         ),
         useMaterial3: true,
       ),
-      home: const RoleAssignmentScreen(
-        teamIndex: 0,
-        roundNumber: 1,
-        turnNumber: 1,
-      ),
+      home: const HomeScreen(),
     );
   }
 }
