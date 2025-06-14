@@ -3,13 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'dart:async';
 import 'round_screen.dart';
-
-enum WordCategory {
-  person,
-  action,
-  world,
-  random,
-}
+import 'word_lists_manager_screen.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
