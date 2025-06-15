@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'services/game_setup_provider.dart';
 
 void main() {
+  debugPrint('=== App Starting ===');
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -22,14 +23,6 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void initState() {
     super.initState();
-    // Initialize test teams after the widget is built
-    Future.microtask(() {
-      final gameSetup = ref.read(gameSetupProvider.notifier);
-      gameSetup.createTeams([
-        ['Alice', 'Bob'],
-        ['Charlie', 'David'],
-      ]);
-    });
   }
 
   @override

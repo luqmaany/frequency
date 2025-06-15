@@ -10,7 +10,7 @@ Home Screen
 - Stats & History
 
 Game Setup Screen
-"Let’s get the squad ready."
+"Let's get the squad ready."
 
 - Enter all player names
   - Suggestions/autocomplete based on past games
@@ -28,12 +28,12 @@ Role Assignment Screen (Before Each Round)
 "Time to pick who does the talking."
 
 - Show current team
-- Choose who will be the Guesser and Conveyer for this round
+- Choose who will be the Guesser and Conveyor for this round
 - Option: Let app decide for us
 - Begin Round
 
 Round Screen
-"Phone held by conveyer only"
+"Phone held by conveyor only"
 
 - Two large word cards from random category (Person, Action, World, Random)
   - Swipe Right = Correct
@@ -46,7 +46,7 @@ Round Screen
 - End-of-round summary with Next Round button
 
 Scoreboard Screen (After Each Round)
-"How’s your team doing?"
+"How's your team doing?"
 
 - List of teams with current scores
 - Highlight top-performing team or player of the round
