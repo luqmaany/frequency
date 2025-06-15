@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
+import '../services/game_state_provider.dart';
+import 'turn_screen.dart';
 import 'category_selection_screen.dart';
+import 'word_lists_manager_screen.dart';
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
+  final WordCategory category;
 
   const RoleAssignmentScreen({
     super.key,
     required this.teamIndex,
     required this.roundNumber,
     required this.turnNumber,
+    required this.category,
   });
 
   @override
@@ -21,7 +26,7 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
 
 class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> with SingleTickerProviderStateMixin {
   String? _selectedGuesser;
-  String? _selectedConveyer;
+  String? _selectedConveyor;
   bool _isTransitioning = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -65,7 +70,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
     final random = team.toList()..shuffle();
     setState(() {
       _selectedGuesser = random[0];
-      _selectedConveyer = random[1];
+      _selectedConveyor = random[1];
     });
   }
 
@@ -78,15 +83,15 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
   void _switchRoles() {
     setState(() {
       final temp = _selectedGuesser;
-      _selectedGuesser = _selectedConveyer;
-      _selectedConveyer = temp;
+      _selectedGuesser = _selectedConveyor;
+      _selectedConveyor = temp;
     });
     _animationController.forward(from: 0);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_selectedGuesser == null || _selectedConveyer == null) {
+    if (_selectedGuesser == null || _selectedConveyor == null) {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
@@ -106,12 +111,12 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
               ),
               const SizedBox(height: 24),
               Text(
-                _selectedConveyer!,
+                _selectedConveyor!,
                 style: Theme.of(context).textTheme.displayLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                'Conveyer',
+                'Conveyor',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: Theme.of(context).colorScheme.secondary,
                     ),
@@ -119,12 +124,13 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
               const SizedBox(height: 48),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).push(
+                  Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (context) => CategorySelectionScreen(
+                      builder: (context) => TurnScreen(
                         teamIndex: widget.teamIndex,
                         roundNumber: widget.roundNumber,
                         turnNumber: widget.turnNumber,
+                        category: widget.category,
                       ),
                     ),
                   );
@@ -145,7 +151,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Round ${widget.roundNumber} - Turn ${widget.turnNumber}'),
+        automaticallyImplyLeading: false,
+        title: Text("${_selectedConveyor!} & ${_selectedGuesser!}'s Turn"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -156,18 +163,11 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
               'Choose Roles',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Tap the switch button to change roles if needed',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.secondary,
-                  ),
-            ),
             const SizedBox(height: 32),
             Expanded(
               child: Column(
                 children: [
-                  // Conveyer Box
+                  // Conveyor Box
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
@@ -182,15 +182,15 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                         children: [
                           Center(
                             child: Text(
-                              _selectedConveyer!,
+                              _selectedConveyor!,
                               style: Theme.of(context).textTheme.headlineMedium,
                             ),
                           ),
                           Positioned(
                             top: 16,
-                            right: 16,
+                            left: 16,
                             child: Text(
-                              'Conveyer',
+                              'Conveyor',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                                   ),
@@ -232,7 +232,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                           ),
                           Positioned(
                             top: 16,
-                            right: 16,
+                            left: 16,
                             child: Text(
                               'Guesser',
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(

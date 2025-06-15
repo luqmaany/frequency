@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'dart:async';
-import 'round_screen.dart';
+import 'turn_screen.dart';
 import 'word_lists_manager_screen.dart';
+import 'role_assignment_screen.dart';
+import '../services/game_state_provider.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -110,6 +112,8 @@ class _CategorySelectionScreenState extends ConsumerState<CategorySelectionScree
 
   @override
   Widget build(BuildContext context) {
+    final currentTeamPlayers = ref.watch(currentTeamPlayersProvider);
+    
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -117,8 +121,11 @@ class _CategorySelectionScreenState extends ConsumerState<CategorySelectionScree
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Round ${widget.roundNumber} - Turn ${widget.turnNumber}',
-                style: Theme.of(context).textTheme.headlineSmall,
+                "${currentTeamPlayers[0]} & ${currentTeamPlayers[1]}'s Turn",
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
               Text(
@@ -166,7 +173,7 @@ class _CategorySelectionScreenState extends ConsumerState<CategorySelectionScree
                     onPressed: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => RoundScreen(
+                          builder: (context) => RoleAssignmentScreen(
                             teamIndex: widget.teamIndex,
                             roundNumber: widget.roundNumber,
                             turnNumber: widget.turnNumber,

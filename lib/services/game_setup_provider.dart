@@ -6,7 +6,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
       : super(GameConfig(
           playerNames: [],
           teams: [],
-          roundTimeSeconds: 60,
+          roundTimeSeconds: 10,
           targetScore: 30,
           allowedSkips: 3,
         ));
@@ -56,4 +56,55 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
 
 final gameSetupProvider = StateNotifierProvider<GameSetupNotifier, GameConfig>((ref) {
   return GameSetupNotifier();
+});
+
+class SettingsValidationState {
+  final bool isRoundTimeValid;
+  final bool isTargetScoreValid;
+  final bool isAllowedSkipsValid;
+
+  SettingsValidationState({
+    required this.isRoundTimeValid,
+    required this.isTargetScoreValid,
+    required this.isAllowedSkipsValid,
+  });
+
+  bool get areAllSettingsValid => 
+    isRoundTimeValid && isTargetScoreValid && isAllowedSkipsValid;
+}
+
+class SettingsValidationNotifier extends StateNotifier<SettingsValidationState> {
+  SettingsValidationNotifier() : super(SettingsValidationState(
+    isRoundTimeValid: true,
+    isTargetScoreValid: true,
+    isAllowedSkipsValid: true,
+  ));
+
+  void setRoundTimeValid(bool isValid) {
+    state = SettingsValidationState(
+      isRoundTimeValid: isValid,
+      isTargetScoreValid: state.isTargetScoreValid,
+      isAllowedSkipsValid: state.isAllowedSkipsValid,
+    );
+  }
+
+  void setTargetScoreValid(bool isValid) {
+    state = SettingsValidationState(
+      isRoundTimeValid: state.isRoundTimeValid,
+      isTargetScoreValid: isValid,
+      isAllowedSkipsValid: state.isAllowedSkipsValid,
+    );
+  }
+
+  void setAllowedSkipsValid(bool isValid) {
+    state = SettingsValidationState(
+      isRoundTimeValid: state.isRoundTimeValid,
+      isTargetScoreValid: state.isTargetScoreValid,
+      isAllowedSkipsValid: isValid,
+    );
+  }
+}
+
+final settingsValidationProvider = StateNotifierProvider<SettingsValidationNotifier, SettingsValidationState>((ref) {
+  return SettingsValidationNotifier();
 }); 

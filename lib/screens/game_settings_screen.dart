@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
+import '../services/game_state_provider.dart';
 import '../widgets/game_settings.dart';
 import 'role_assignment_screen.dart';
+import 'category_selection_screen.dart';
 
 class GameSettingsScreen extends ConsumerWidget {
   const GameSettingsScreen({super.key});
@@ -10,6 +12,7 @@ class GameSettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final gameConfig = ref.watch(gameSetupProvider);
+    final validationState = ref.watch(settingsValidationProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,18 +76,23 @@ class GameSettingsScreen extends ConsumerWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Navigate to role assignment for first team and round
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => const RoleAssignmentScreen(
-                            teamIndex: 0,
-                            roundNumber: 1,
-                            turnNumber: 1,
-                          ),
-                        ),
-                      );
-                    },
+                    onPressed: validationState.areAllSettingsValid
+                        ? () {
+                            // Initialize game state with current config
+                            ref.read(gameStateProvider.notifier).initializeGame(gameConfig);
+                            
+                            // Navigate to role assignment for first team and round
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => const CategorySelectionScreen(
+                                  teamIndex: 0,
+                                  roundNumber: 1,
+                                  turnNumber: 1,
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.all(16),
                       minimumSize: const Size(double.infinity, 56),
