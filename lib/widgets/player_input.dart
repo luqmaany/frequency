@@ -78,11 +78,12 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          alignment: WrapAlignment.start,
-          children: _suggestedNames
-              .where((suggestion) => !gameConfig.playerNames.any(
-                  (name) => name.toLowerCase() == suggestion.toLowerCase()))
-              .map((suggestion) {
+          children: _suggestedNames.map((suggestion) {
+            // Only show suggestions that aren't already added
+            if (gameConfig.playerNames.any(
+                (name) => name.toLowerCase() == suggestion.toLowerCase())) {
+              return const SizedBox.shrink();
+            }
             return ActionChip(
               label: Text(suggestion),
               onPressed: () {
@@ -96,7 +97,6 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          alignment: WrapAlignment.start,
           children: gameConfig.playerNames.map((name) {
             return Chip(
               label: Text(name),
@@ -109,4 +109,4 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       ],
     );
   }
-}
+} 
