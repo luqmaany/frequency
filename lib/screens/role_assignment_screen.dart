@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
-import '../services/game_state_provider.dart';
 import 'turn_screen.dart';
-import 'category_selection_screen.dart';
 import 'word_lists_manager_screen.dart';
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
@@ -35,12 +33,14 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _animation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
     );
     // Automatically assign roles at start
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -86,7 +86,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
       _selectedGuesser = _selectedConveyor;
       _selectedConveyor = temp;
     });
-    _animationController.forward(from: 0);
+    _animationController.forward(from: 0).then((_) {
+      _animationController.reverse();
+    });
   }
 
   @override
@@ -169,35 +171,43 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                 children: [
                   // Conveyor Box
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Text(
-                              _selectedConveyor!,
-                              style: Theme.of(context).textTheme.headlineMedium,
+                    child: AnimatedBuilder(
+                      animation: _animation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: 1.0 + (_animation.value * 0.03),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 2,
+                              ),
                             ),
-                          ),
-                          Positioned(
-                            top: 16,
-                            left: 16,
-                            child: Text(
-                              'Conveyor',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Text(
+                                    _selectedConveyor!,
+                                    style: Theme.of(context).textTheme.headlineMedium,
                                   ),
+                                ),
+                                Positioned(
+                                  top: 16,
+                                  left: 16,
+                                  child: Text(
+                                    'Conveyor',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -213,35 +223,43 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                   const SizedBox(height: 16),
                   // Guesser Box
                   Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                      ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Text(
-                              _selectedGuesser!,
-                              style: Theme.of(context).textTheme.headlineMedium,
+                    child: AnimatedBuilder(
+                      animation: _animation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: 1.0 + (_animation.value * 0.03),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Theme.of(context).colorScheme.primary,
+                                width: 2,
+                              ),
                             ),
-                          ),
-                          Positioned(
-                            top: 16,
-                            left: 16,
-                            child: Text(
-                              'Guesser',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            child: Stack(
+                              children: [
+                                Center(
+                                  child: Text(
+                                    _selectedGuesser!,
+                                    style: Theme.of(context).textTheme.headlineMedium,
                                   ),
+                                ),
+                                Positioned(
+                                  top: 16,
+                                  left: 16,
+                                  child: Text(
+                                    'Guesser',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ),
                 ],

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'dart:async';
-import 'turn_screen.dart';
 import 'word_lists_manager_screen.dart';
 import 'role_assignment_screen.dart';
 import '../services/game_state_provider.dart';
