@@ -116,6 +116,7 @@ class GameState {
 
   GameState advanceTurn(TurnRecord turnRecord) {
     final newTeamScores = List<int>.from(teamScores);
+    // Update the team's score with the disputed score
     newTeamScores[turnRecord.teamIndex] += turnRecord.score;
 
     final newTurnHistory = List<TurnRecord>.from(turnHistory)..add(turnRecord);
@@ -124,8 +125,10 @@ class GameState {
     final nextRound = getNextRound();
     final nextTurn = getNextTurn();
 
-    // Check if any team has reached the target score
-    final isGameOver = newTeamScores.any((score) => score >= config.targetScore);
+    // Check if any team has reached the target score AND we're at the end of a round
+    final hasReachedTargetScore = newTeamScores.any((score) => score >= config.targetScore);
+    final isEndOfRound = isLastTeam();
+    final isGameOver = hasReachedTargetScore && isEndOfRound;
 
     return copyWith(
       teamScores: newTeamScores,
