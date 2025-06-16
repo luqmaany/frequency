@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'game_config.dart';
 
 enum PlayerRole {

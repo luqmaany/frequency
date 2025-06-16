@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class GameConfig {
   final List<String> playerNames;
   final List<List<String>> teams;

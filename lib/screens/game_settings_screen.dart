@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../widgets/game_settings.dart';
-import 'role_assignment_screen.dart';
 import 'category_selection_screen.dart';
 
 class GameSettingsScreen extends ConsumerWidget {
