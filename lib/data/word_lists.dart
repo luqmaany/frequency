@@ -1,6 +1,3 @@
-import 'package:flutter/material.dart';
-import '../screens/word_lists_manager_screen.dart';
-
 class WordLists {
   static List<String> get people => [
         // Historical Figures

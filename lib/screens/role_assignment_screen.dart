@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
-import 'turn_screen.dart';
+import 'game_screen.dart';
 import 'word_lists_manager_screen.dart';
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
@@ -19,10 +19,12 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<RoleAssignmentScreen> createState() => _RoleAssignmentScreenState();
+  ConsumerState<RoleAssignmentScreen> createState() =>
+      _RoleAssignmentScreenState();
 }
 
-class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> with SingleTickerProviderStateMixin {
+class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
+    with SingleTickerProviderStateMixin {
   String? _selectedGuesser;
   String? _selectedConveyor;
   bool _isTransitioning = false;
@@ -57,7 +59,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
   void _assignRandomRoles() {
     final gameConfig = ref.read(gameSetupProvider);
     final teams = gameConfig.teams;
-    
+
     if (teams.isEmpty || widget.teamIndex >= teams.length) {
       return;
     }
@@ -128,7 +130,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (context) => TurnScreen(
+                      builder: (context) => GameScreen(
                         teamIndex: widget.teamIndex,
                         roundNumber: widget.roundNumber,
                         turnNumber: widget.turnNumber,
@@ -178,7 +180,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                           scale: 1.0 + (_animation.value * 0.03),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: Theme.of(context).colorScheme.primary,
@@ -190,7 +194,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                                 Center(
                                   child: Text(
                                     _selectedConveyor!,
-                                    style: Theme.of(context).textTheme.headlineMedium,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium,
                                   ),
                                 ),
                                 Positioned(
@@ -198,8 +204,13 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                                   left: 16,
                                   child: Text(
                                     'Conveyor',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                   ),
                                 ),
@@ -230,7 +241,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                           scale: 1.0 + (_animation.value * 0.03),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primaryContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primaryContainer,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: Theme.of(context).colorScheme.primary,
@@ -242,7 +255,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                                 Center(
                                   child: Text(
                                     _selectedGuesser!,
-                                    style: Theme.of(context).textTheme.headlineMedium,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium,
                                   ),
                                 ),
                                 Positioned(
@@ -250,8 +265,13 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
                                   left: 16,
                                   child: Text(
                                     'Guesser',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurfaceVariant,
                                         ),
                                   ),
                                 ),
@@ -292,4 +312,4 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen> wit
       ),
     );
   }
-} 
+}
