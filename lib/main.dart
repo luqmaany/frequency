@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/home_screen.dart';
-import 'services/game_setup_provider.dart';
 
 void main() {
   debugPrint('=== App Starting ===');

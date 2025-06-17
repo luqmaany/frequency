@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_state.dart';
 import '../models/game_config.dart';
-import 'game_setup_provider.dart';
 
 class GameStateNotifier extends StateNotifier<GameState?> {
   GameStateNotifier() : super(null);
@@ -26,7 +25,7 @@ class GameStateNotifier extends StateNotifier<GameState?> {
   int get currentTeamIndex => state?.currentTeamIndex ?? 0;
   List<int> get teamScores => state?.teamScores ?? [];
   List<TurnRecord> get turnHistory => state?.turnHistory ?? [];
-  
+
   // Get current team's players
   List<String> getCurrentTeamPlayers() {
     if (state == null) return [];
@@ -44,7 +43,8 @@ class GameStateNotifier extends StateNotifier<GameState?> {
 }
 
 // Provider for the game state
-final gameStateProvider = StateNotifierProvider<GameStateNotifier, GameState?>((ref) {
+final gameStateProvider =
+    StateNotifierProvider<GameStateNotifier, GameState?>((ref) {
   return GameStateNotifier();
 });
 
@@ -72,4 +72,4 @@ final teamScoresProvider = Provider<List<int>>((ref) {
 final isGameOverProvider = Provider<bool>((ref) {
   final gameState = ref.watch(gameStateProvider);
   return gameState?.isGameOver ?? false;
-}); 
+});

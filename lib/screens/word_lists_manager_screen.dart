@@ -67,6 +67,10 @@ class WordsNotifier extends StateNotifier<List<Word>> {
   void purgeLowFrequencyWords(int threshold) {
     state = state.where((word) => word.usageCount >= threshold).toList();
   }
+
+  void updateWords(List<Word> updatedWords) {
+    state = updatedWords;
+  }
 }
 
 class WordListsManagerScreen extends ConsumerStatefulWidget {
