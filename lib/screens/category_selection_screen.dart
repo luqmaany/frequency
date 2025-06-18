@@ -146,7 +146,9 @@ class _CategorySelectionScreenState
                     ),
                     const SizedBox(height: 40),
                     GestureDetector(
-                      onTap: _spinCategories,
+                      onTap: (!_isSpinning && _selectedCategory == null)
+                          ? _spinCategories
+                          : null,
                       child: Container(
                         width: 300,
                         height: 300,
@@ -176,13 +178,6 @@ class _CategorySelectionScreenState
                       ),
                     ),
                     const SizedBox(height: 40),
-                    if (_selectedCategory != null)
-                      Text(
-                        'Selected Category: ${_getCategoryName(_selectedCategory!)}',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: _getCategoryColor(_selectedCategory!),
-                            ),
-                      ),
                   ],
                 ),
               ),

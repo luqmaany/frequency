@@ -11,16 +11,28 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
           allowedSkips: 3,
         ));
 
-  void addPlayer(String name) {
-    state = state.copyWith(
-      playerNames: [...state.playerNames, name],
-    );
+  void addPlayerToTeams(String name) {
+    final updatedPlayers = [...state.playerNames, name];
+    final List<List<String>> newTeams = [];
+    for (int i = 0; i < updatedPlayers.length; i++) {
+      if (i ~/ 2 >= newTeams.length) {
+        newTeams.add([]);
+      }
+      newTeams[i ~/ 2].add(updatedPlayers[i]);
+    }
+    state = state.copyWith(playerNames: updatedPlayers, teams: newTeams);
   }
 
-  void removePlayer(String name) {
-    state = state.copyWith(
-      playerNames: state.playerNames.where((n) => n != name).toList(),
-    );
+  void removePlayerAndReassignTeams(String name) {
+    final updatedPlayers = state.playerNames.where((n) => n != name).toList();
+    final List<List<String>> newTeams = [];
+    for (int i = 0; i < updatedPlayers.length; i++) {
+      if (i ~/ 2 >= newTeams.length) {
+        newTeams.add([]);
+      }
+      newTeams[i ~/ 2].add(updatedPlayers[i]);
+    }
+    state = state.copyWith(playerNames: updatedPlayers, teams: newTeams);
   }
 
   void setRoundTime(int seconds) {
@@ -43,18 +55,43 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     final players = List<String>.from(state.playerNames);
     players.shuffle();
     final teams = <List<String>>[];
-    
+
     for (var i = 0; i < players.length; i += 2) {
       if (i + 1 < players.length) {
         teams.add([players[i], players[i + 1]]);
       }
     }
-    
+
     state = state.copyWith(teams: teams);
+  }
+
+  void shuffleTeams() {
+    // Only shuffle players currently assigned to teams
+    final players = List<String>.from(state.playerNames);
+    players.shuffle();
+    final List<List<String>> newTeams = [];
+    for (int i = 0; i < players.length; i++) {
+      if (i ~/ 2 >= newTeams.length) {
+        newTeams.add([]);
+      }
+      newTeams[i ~/ 2].add(players[i]);
+    }
+    state = state.copyWith(teams: newTeams);
+  }
+
+  @override
+  void addPlayer(String name) {
+    addPlayerToTeams(name);
+  }
+
+  @override
+  void removePlayer(String name) {
+    removePlayerAndReassignTeams(name);
   }
 }
 
-final gameSetupProvider = StateNotifierProvider<GameSetupNotifier, GameConfig>((ref) {
+final gameSetupProvider =
+    StateNotifierProvider<GameSetupNotifier, GameConfig>((ref) {
   return GameSetupNotifier();
 });
 
@@ -69,16 +106,18 @@ class SettingsValidationState {
     required this.isAllowedSkipsValid,
   });
 
-  bool get areAllSettingsValid => 
-    isRoundTimeValid && isTargetScoreValid && isAllowedSkipsValid;
+  bool get areAllSettingsValid =>
+      isRoundTimeValid && isTargetScoreValid && isAllowedSkipsValid;
 }
 
-class SettingsValidationNotifier extends StateNotifier<SettingsValidationState> {
-  SettingsValidationNotifier() : super(SettingsValidationState(
-    isRoundTimeValid: true,
-    isTargetScoreValid: true,
-    isAllowedSkipsValid: true,
-  ));
+class SettingsValidationNotifier
+    extends StateNotifier<SettingsValidationState> {
+  SettingsValidationNotifier()
+      : super(SettingsValidationState(
+          isRoundTimeValid: true,
+          isTargetScoreValid: true,
+          isAllowedSkipsValid: true,
+        ));
 
   void setRoundTimeValid(bool isValid) {
     state = SettingsValidationState(
@@ -105,6 +144,8 @@ class SettingsValidationNotifier extends StateNotifier<SettingsValidationState> 
   }
 }
 
-final settingsValidationProvider = StateNotifierProvider<SettingsValidationNotifier, SettingsValidationState>((ref) {
+final settingsValidationProvider =
+    StateNotifierProvider<SettingsValidationNotifier, SettingsValidationState>(
+        (ref) {
   return SettingsValidationNotifier();
-}); 
+});
