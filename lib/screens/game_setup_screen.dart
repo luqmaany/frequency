@@ -153,7 +153,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: gameConfig.teams.isNotEmpty &&
+                    onPressed: gameConfig.teams.length >= 2 &&
                             gameConfig.teams.every((team) => team.length == 2)
                         ? () {
                             Navigator.of(context).push(
