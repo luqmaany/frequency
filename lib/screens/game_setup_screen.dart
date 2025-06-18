@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../widgets/player_input.dart';
-import '../widgets/team_creation_dialog.dart';
 import 'game_settings_screen.dart';
 
 class GameSetupScreen extends ConsumerStatefulWidget {
@@ -45,7 +44,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
     final playerCount = gameConfig.playerNames.length;
-    final canCreateTeams = playerCount >= 4 && playerCount % 2 == 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -58,7 +56,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 const Text(
-                  'Players',
+                  'Add Players to Teams',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -66,9 +64,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Add players to create teams',
+                  'Tap a suggested name to add to a team. Players will be assigned to teams in order. When two teams are full, a third team will appear.',
                   style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary,
+                    color: Colors.grey,
                     fontSize: 12,
                   ),
                 ),
@@ -82,55 +80,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: canCreateTeams && !_isRandomizing
-                            ? _randomizeTeams
-                            : null,
-                        icon: _isRandomizing
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.shuffle),
-                        label: Text(_isRandomizing ? 'Randomizing...' : 'Randomize Teams'),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: canCreateTeams
-                            ? () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => const TeamCreationDialog(),
-                                );
-                              }
-                            : null,
-                        icon: const Icon(Icons.group_add),
-                        label: const Text('Create Teams'),
-                      ),
-                    ),
-                  ],
-                ),
-                if (!canCreateTeams) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    playerCount < 4
-                        ? 'Add more players to create teams'
-                        : 'Add one more player to create teams',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
                 const SizedBox(height: 16),
                 if (gameConfig.teams.isNotEmpty)
                   ...gameConfig.teams.asMap().entries.map((entry) {
@@ -153,7 +102,14 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                             Wrap(
                               spacing: 8,
                               children: team.map((player) {
-                                return Chip(label: Text(player));
+                                return Chip(
+                                  label: Text(player),
+                                  onDeleted: () {
+                                    ref
+                                        .read(gameSetupProvider.notifier)
+                                        .removePlayer(player);
+                                  },
+                                );
                               }).toList(),
                             ),
                           ],
@@ -161,6 +117,23 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                       ),
                     );
                   }),
+                if (gameConfig.teams.expand((t) => t).isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    child: Center(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          ref.read(gameSetupProvider.notifier).shuffleTeams();
+                        },
+                        icon: const Icon(Icons.shuffle),
+                        label: const Text('Shuffle Teams'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 16),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -176,28 +149,33 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                 ),
               ],
             ),
-            child: ElevatedButton(
-              onPressed: canCreateTeams && gameConfig.teams.isNotEmpty
-                  ? () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const GameSettingsScreen(),
-                        ),
-                      );
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-                minimumSize: const Size(double.infinity, 56),
-              ),
-              child: const Text(
-                'Next: Game Settings',
-                style: TextStyle(fontSize: 18),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: gameConfig.teams.isNotEmpty &&
+                            gameConfig.teams.every((team) => team.length == 2)
+                        ? () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const GameSettingsScreen(),
+                              ),
+                            );
+                          }
+                        : null,
+                    icon: const Icon(Icons.arrow_forward),
+                    label: const Text(
+                      'Next: Game Settings',
+                      style: TextStyle(fontSize: 18),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-} 
+}

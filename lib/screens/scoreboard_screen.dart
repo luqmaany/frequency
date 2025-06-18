@@ -61,7 +61,7 @@ class ScoreboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Round $roundNumber Scoreboard'),
+        title: Text(''),
         automaticallyImplyLeading: false,
       ),
       body: Padding(
@@ -70,7 +70,7 @@ class ScoreboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Team Scores',
+              'Round $roundNumber',
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),

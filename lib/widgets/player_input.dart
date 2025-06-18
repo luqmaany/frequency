@@ -10,7 +10,7 @@ class PlayerInput extends ConsumerStatefulWidget {
 }
 
 class _PlayerInputState extends ConsumerState<PlayerInput> {
-  final _controller = TextEditingController();
+  final TextEditingController _controller = TextEditingController();
   final List<String> _suggestedNames = [
     'Aline',
     'Nazime',
@@ -32,18 +32,49 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   }
 
   void _addPlayer() {
-    if (_controller.text.isNotEmpty) {
-      try {
-        ref.read(gameSetupProvider.notifier).addPlayer(_controller.text);
+    final name = _controller.text.trim();
+    if (name.isEmpty) return;
+    final gameConfig = ref.read(gameSetupProvider);
+    final exists = gameConfig.playerNames
+        .any((n) => n.toLowerCase() == name.toLowerCase());
+    final suggested = _suggestedNames.firstWhere(
+      (s) => s.toLowerCase() == name.toLowerCase(),
+      orElse: () => '',
+    );
+    if (exists) {
+      if (suggested.isNotEmpty) {
+        // If it's in suggestions and already in a team, just add from suggestions (shouldn't happen, but for safety)
+        ref.read(gameSetupProvider.notifier).addPlayer(suggested);
         _controller.clear();
         setState(() {
           _errorMessage = null;
         });
-      } catch (e) {
+      } else {
         setState(() {
-          _errorMessage = e.toString();
+          _errorMessage = '${name} is already in a team';
         });
       }
+      return;
+    }
+    // If it's in suggestions, add from suggestions
+    if (suggested.isNotEmpty) {
+      ref.read(gameSetupProvider.notifier).addPlayer(suggested);
+      _controller.clear();
+      setState(() {
+        _errorMessage = null;
+      });
+      return;
+    }
+    try {
+      ref.read(gameSetupProvider.notifier).addPlayer(name);
+      _controller.clear();
+      setState(() {
+        _errorMessage = null;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
     }
   }
 
@@ -86,25 +117,12 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
             return ActionChip(
               label: Text(suggestion),
               onPressed: () {
-                _controller.text = suggestion;
-                _addPlayer();
+                ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
               },
             );
           }).toList(),
         ),
         const SizedBox(height: 16),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: gameConfig.playerNames.map((name) {
-            return Chip(
-              label: Text(name),
-              onDeleted: () {
-                ref.read(gameSetupProvider.notifier).removePlayer(name);
-              },
-            );
-          }).toList(),
-        ),
       ],
     );
   }
