@@ -12,38 +12,9 @@ class GameSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
-  bool _isRandomizing = false;
-
-  Future<void> _randomizeTeams() async {
-    setState(() {
-      _isRandomizing = true;
-    });
-
-    try {
-      await Future.delayed(const Duration(milliseconds: 500));
-      ref.read(gameSetupProvider.notifier).randomizeTeams();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRandomizing = false;
-        });
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
-    final playerCount = gameConfig.playerNames.length;
 
     return Scaffold(
       appBar: AppBar(
@@ -63,8 +34,8 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Tap a suggested name to add to a team. Players will be assigned to teams in order. When two teams are full, a third team will appear.',
+                const Text(
+                  'Tap a name to add to a team.',
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 12,
