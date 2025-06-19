@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
+import '../models/game_config.dart';
 import '../widgets/player_input.dart';
 import 'game_settings_screen.dart';
 
@@ -11,142 +12,312 @@ class GameSetupScreen extends ConsumerStatefulWidget {
   ConsumerState<GameSetupScreen> createState() => _GameSetupScreenState();
 }
 
-class _GameSetupScreenState extends ConsumerState<GameSetupScreen> {
+class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
+    with TickerProviderStateMixin {
+  List<AnimationController> _controllers = [];
+  List<Animation<double>> _animations = [];
+  List<List<String>> _prevTeams = [];
+
+  @override
+  void initState() {
+    super.initState();
+    final gameConfig = ref.read(gameSetupProvider);
+    _initControllers(gameConfig.teams);
+    _prevTeams = gameConfig.teams.map((t) => List<String>.from(t)).toList();
+  }
+
+  @override
+  void didUpdateWidget(covariant GameSetupScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final gameConfig = ref.read(gameSetupProvider);
+    _updateTeamControllers(gameConfig.teams);
+  }
+
+  void _initControllers(List<List<String>> teams) {
+    _controllers = List.generate(
+      teams.length,
+      (_) => AnimationController(
+        duration: const Duration(milliseconds: 300),
+        vsync: this,
+      ),
+    );
+    _animations = _controllers
+        .map((c) => Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(parent: c, curve: Curves.easeInOut),
+            ))
+        .toList();
+    for (final c in _controllers) {
+      c.forward(from: 0);
+    }
+  }
+
+  void _updateTeamControllers(List<List<String>> teams) {
+    // If team count increased, add controllers
+    if (_controllers.length < teams.length) {
+      final toAdd = teams.length - _controllers.length;
+      for (int i = 0; i < toAdd; i++) {
+        final c = AnimationController(
+          duration: const Duration(milliseconds: 300),
+          vsync: this,
+        );
+        _controllers.add(c);
+        _animations.add(Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(parent: c, curve: Curves.easeInOut),
+        ));
+        c.forward(from: 0);
+      }
+    }
+    // If team count decreased, dispose and remove extra controllers
+    if (_controllers.length > teams.length) {
+      final toRemove = _controllers.length - teams.length;
+      for (int i = 0; i < toRemove; i++) {
+        _controllers.last.dispose();
+        _controllers.removeLast();
+        _animations.removeLast();
+      }
+    }
+    // Animate only changed teams
+    for (int i = 0; i < teams.length; i++) {
+      if (_prevTeams.length <= i || !_listEquals(_prevTeams[i], teams[i])) {
+        _controllers[i].forward(from: 0);
+      }
+    }
+    _prevTeams = teams.map((t) => List<String>.from(t)).toList();
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<GameConfig>(gameSetupProvider, (previous, next) {
+      if (next != null) {
+        _updateTeamControllers(next.teams);
+      }
+    });
     final gameConfig = ref.watch(gameSetupProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Game Setup'),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const Text(
-                  'Add Players to Teams',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Tap a name to add to a team.',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const PlayerInput(),
-                const SizedBox(height: 32),
-                const Text(
-                  'Teams',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (gameConfig.teams.isNotEmpty)
-                  ...gameConfig.teams.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final team = entry.value;
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Team ${index + 1}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Wrap(
-                              spacing: 8,
-                              children: team.map((player) {
-                                return Chip(
-                                  label: Text(player),
-                                  onDeleted: () {
-                                    ref
-                                        .read(gameSetupProvider.notifier)
-                                        .removePlayer(player);
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                if (gameConfig.teams.expand((t) => t).isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Center(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          ref.read(gameSetupProvider.notifier).shuffleTeams();
-                        },
-                        icon: const Icon(Icons.shuffle),
-                        label: const Text('Shuffle Teams'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 16),
-                        ),
+      body: DragTarget<String>(
+        builder: (context, candidateData, rejectedData) {
+          // Main content with teams and players
+          return Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const Text(
+                      'Add Players to Teams',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: gameConfig.teams.length >= 2 &&
-                            gameConfig.teams.every((team) => team.length == 2)
-                        ? () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const GameSettingsScreen(),
-                              ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Tap a name to add to a team.',
+                      style: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const PlayerInput(),
+                    const SizedBox(height: 32),
+                    const Text(
+                      'Teams',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (gameConfig.teams.isNotEmpty)
+                      ...gameConfig.teams.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final team = entry.value;
+                        final colorIndex =
+                            gameConfig.teamColorIndices.length > index
+                                ? gameConfig.teamColorIndices[index]
+                                : index % teamColors.length;
+                        final color = teamColors[colorIndex];
+                        return AnimatedBuilder(
+                          animation: _animations.length > index
+                              ? _animations[index]
+                              : kAlwaysDismissedAnimation,
+                          builder: (context, child) {
+                            final scale = _animations.length > index
+                                ? 1.0 + (_animations[index].value * 0.03)
+                                : 1.0;
+                            return Transform.scale(
+                              scale: scale,
+                              child: child,
                             );
-                          }
-                        : null,
-                    icon: const Icon(Icons.arrow_forward),
-                    label: const Text(
-                      'Next: Game Settings',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(8.0),
+                            decoration: BoxDecoration(
+                              color: color.background,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: color.border,
+                                width: 2,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                  child: Text(
+                                    '${color.name} Team',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: color.text,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Center(
+                                  child: Wrap(
+                                    spacing: 8,
+                                    alignment: WrapAlignment.center,
+                                    children: team
+                                        .where((player) => player.isNotEmpty)
+                                        .map((player) {
+                                      return DragTarget<String>(
+                                        builder: (context, candidateData,
+                                            rejectedData) {
+                                          return Draggable<String>(
+                                            data: player,
+                                            feedback: Material(
+                                              child: Chip(label: Text(player)),
+                                              elevation: 4.0,
+                                            ),
+                                            childWhenDragging: Opacity(
+                                              opacity: 0.5,
+                                              child: Chip(label: Text(player)),
+                                            ),
+                                            child: Chip(
+                                              label: Text(player),
+                                            ),
+                                          );
+                                        },
+                                        onWillAccept: (draggedPlayer) =>
+                                            draggedPlayer != player,
+                                        onAccept: (draggedPlayer) {
+                                          ref
+                                              .read(gameSetupProvider.notifier)
+                                              .swapPlayers(
+                                                  draggedPlayer, player);
+                                        },
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                    if (gameConfig.teams.expand((t) => t).isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                        child: Center(
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              ref
+                                  .read(gameSetupProvider.notifier)
+                                  .shuffleTeams();
+                            },
+                            icon: const Icon(Icons.shuffle),
+                            label: const Text('Shuffle Teams'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 16),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: gameConfig.teams.length >= 2 &&
+                                gameConfig.teams
+                                    .every((team) => team.length == 2)
+                            ? () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const GameSettingsScreen(),
+                                  ),
+                                );
+                              }
+                            : null,
+                        icon: const Icon(Icons.arrow_forward),
+                        label: const Text(
+                          'Next: Game Settings',
+                          style: TextStyle(fontSize: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+        onWillAccept: (player) => true,
+        onAccept: (player) {
+          ref.read(gameSetupProvider.notifier).removePlayer(player);
+        },
       ),
     );
   }
 }
+
+class TeamColor {
+  final String name;
+  final Color background;
+  final Color border;
+  final Color text;
+  TeamColor(this.name, this.background, this.border, this.text);
+}
+
+final List<TeamColor> teamColors = [
+  TeamColor('Red', Colors.red.shade100, Colors.red, Colors.red.shade900),
+  TeamColor('Blue', Colors.blue.shade100, Colors.blue, Colors.blue.shade900),
+  TeamColor(
+      'Green', Colors.green.shade100, Colors.green, Colors.green.shade900),
+  TeamColor(
+      'Orange', Colors.orange.shade100, Colors.orange, Colors.orange.shade900),
+  TeamColor(
+      'Purple', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
+  TeamColor('Teal', Colors.teal.shade100, Colors.teal, Colors.teal.shade900),
+];

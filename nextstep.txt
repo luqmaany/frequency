@@ -1,0 +1,1 @@
+make it so that instead of the chips having a delete button, we can drag them out of a team to remove them.
