@@ -79,12 +79,10 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     state = state.copyWith(teams: newTeams);
   }
 
-  @override
   void addPlayer(String name) {
     addPlayerToTeams(name);
   }
 
-  @override
   void removePlayer(String name) {
     removePlayerAndReassignTeams(name);
   }

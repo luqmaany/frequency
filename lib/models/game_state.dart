@@ -1,9 +1,6 @@
 import 'game_config.dart';
 
-enum PlayerRole {
-  conveyer,
-  guesser
-}
+enum PlayerRole { conveyor, guesser }
 
 class TurnRecord {
   final int teamIndex;
@@ -107,11 +104,11 @@ class GameState {
 
   // Helper methods
   bool isLastTeam() => currentTeamIndex == config.teams.length - 1;
-  
+
   int getNextTeamIndex() => isLastTeam() ? 0 : currentTeamIndex + 1;
-  
+
   int getNextRound() => isLastTeam() ? currentRound + 1 : currentRound;
-  
+
   int getNextTurn() => isLastTeam() ? currentTurn + 1 : currentTurn;
 
   GameState advanceTurn(TurnRecord turnRecord) {
@@ -120,13 +117,14 @@ class GameState {
     newTeamScores[turnRecord.teamIndex] += turnRecord.score;
 
     final newTurnHistory = List<TurnRecord>.from(turnHistory)..add(turnRecord);
-    
+
     final nextTeamIndex = getNextTeamIndex();
     final nextRound = getNextRound();
     final nextTurn = getNextTurn();
 
     // Check if any team has reached the target score AND we're at the end of a round
-    final hasReachedTargetScore = newTeamScores.any((score) => score >= config.targetScore);
+    final hasReachedTargetScore =
+        newTeamScores.any((score) => score >= config.targetScore);
     final isEndOfRound = isLastTeam();
     final isGameOver = hasReachedTargetScore && isEndOfRound;
 
@@ -154,7 +152,8 @@ class GameState {
         timesConveyor++;
         totalScore += turn.score;
         totalSkips += turn.skipsUsed;
-        categoryStats[turn.category] = (categoryStats[turn.category] ?? 0) + turn.score;
+        categoryStats[turn.category] =
+            (categoryStats[turn.category] ?? 0) + turn.score;
       }
       if (turn.guesser == playerName) {
         timesGuesser++;
@@ -175,15 +174,18 @@ class GameState {
   // Get statistics for a specific team
   Map<String, dynamic> getTeamStats(int teamIndex) {
     int totalScore = teamScores[teamIndex];
-    int totalTurns = turnHistory.where((turn) => turn.teamIndex == teamIndex).length;
+    int totalTurns =
+        turnHistory.where((turn) => turn.teamIndex == teamIndex).length;
     int totalWordsGuessed = 0;
     int totalSkips = 0;
     Map<String, int> categoryStats = {};
 
-    for (final turn in turnHistory.where((turn) => turn.teamIndex == teamIndex)) {
+    for (final turn
+        in turnHistory.where((turn) => turn.teamIndex == teamIndex)) {
       totalWordsGuessed += turn.wordsGuessed.length;
       totalSkips += turn.skipsUsed;
-      categoryStats[turn.category] = (categoryStats[turn.category] ?? 0) + turn.score;
+      categoryStats[turn.category] =
+          (categoryStats[turn.category] ?? 0) + turn.score;
     }
 
     return {
@@ -194,4 +196,4 @@ class GameState {
       'categoryStats': categoryStats,
     };
   }
-} 
+}
