@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import 'game_screen.dart';
 import 'word_lists_manager_screen.dart';
+import '../screens/game_setup_screen.dart'; // Import for TeamColor and teamColors
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -103,6 +104,13 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
       );
     }
 
+    // Get the team color for the current team
+    final gameConfig = ref.watch(gameSetupProvider);
+    final colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
+        ? gameConfig.teamColorIndices[widget.teamIndex]
+        : widget.teamIndex % teamColors.length;
+    final teamColor = teamColors[colorIndex];
+
     if (_isTransitioning) {
       return Scaffold(
         body: Center(
@@ -180,12 +188,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                           scale: 1.0 + (_animation.value * 0.03),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
+                              color: teamColor.background,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.primary,
+                                color: teamColor.border,
                                 width: 2,
                               ),
                             ),
@@ -196,7 +202,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     _selectedConveyor!,
                                     style: Theme.of(context)
                                         .textTheme
-                                        .headlineMedium,
+                                        .headlineMedium
+                                        ?.copyWith(color: teamColor.text),
                                   ),
                                 ),
                                 Positioned(
@@ -208,9 +215,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                         .textTheme
                                         .titleMedium
                                         ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
+                                          color: teamColor.border,
                                         ),
                                   ),
                                 ),
@@ -241,12 +246,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                           scale: 1.0 + (_animation.value * 0.03),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer,
+                              color: teamColor.background,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: Theme.of(context).colorScheme.primary,
+                                color: teamColor.border,
                                 width: 2,
                               ),
                             ),
@@ -257,7 +260,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     _selectedGuesser!,
                                     style: Theme.of(context)
                                         .textTheme
-                                        .headlineMedium,
+                                        .headlineMedium
+                                        ?.copyWith(color: teamColor.text),
                                   ),
                                 ),
                                 Positioned(
@@ -269,9 +273,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                         .textTheme
                                         .titleMedium
                                         ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant,
+                                          color: teamColor.border,
                                         ),
                                   ),
                                 ),
