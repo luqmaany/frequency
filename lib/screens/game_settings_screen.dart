@@ -78,12 +78,15 @@ class GameSettingsScreen extends ConsumerWidget {
                     onPressed: validationState.areAllSettingsValid
                         ? () {
                             // Initialize game state with current config
-                            ref.read(gameStateProvider.notifier).initializeGame(gameConfig);
-                            
+                            ref
+                                .read(gameStateProvider.notifier)
+                                .initializeGame(gameConfig);
+
                             // Navigate to role assignment for first team and round
                             Navigator.of(context).pushReplacement(
                               MaterialPageRoute(
-                                builder: (context) => const CategorySelectionScreen(
+                                builder: (context) =>
+                                    const CategorySelectionScreen(
                                   teamIndex: 0,
                                   roundNumber: 1,
                                   turnNumber: 1,
@@ -109,4 +112,4 @@ class GameSettingsScreen extends ConsumerWidget {
       ),
     );
   }
-} 
+}

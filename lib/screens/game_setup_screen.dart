@@ -17,6 +17,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
   List<AnimationController> _controllers = [];
   List<Animation<double>> _animations = [];
   List<List<String>> _prevTeams = [];
+  bool _dropAcceptedByTeam = false;
 
   @override
   void initState() {
@@ -104,12 +105,56 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Game Setup'),
+        title: const Text('Team Setup'),
       ),
-      body: DragTarget<String>(
-        builder: (context, candidateData, rejectedData) {
+      body: Stack(
+        children: [
+          // Global DragTarget for removing players (background)
+          Positioned.fill(
+            child: DragTarget<String>(
+              builder: (context, candidateData, rejectedData) {
+                return Container(
+                  decoration: BoxDecoration(
+                    color: candidateData.isNotEmpty
+                        ? Colors.red.withOpacity(0.1)
+                        : Colors.transparent,
+                    border: candidateData.isNotEmpty
+                        ? Border.all(
+                            color: Colors.red,
+                            width: 2,
+                            style: BorderStyle.solid)
+                        : null,
+                  ),
+                  child: candidateData.isNotEmpty
+                      ? Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.8),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              'Drop to remove player',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        )
+                      : null,
+                );
+              },
+              onWillAccept: (player) => true,
+              onAccept: (player) {
+                _dropAcceptedByTeam =
+                    true; // Prevent onDragEnd from removing the player
+                ref.read(gameSetupProvider.notifier).removePlayer(player);
+              },
+            ),
+          ),
           // Main content with teams and players
-          return Column(
+          Column(
             children: [
               Expanded(
                 child: ListView(
@@ -133,14 +178,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                     const SizedBox(height: 16),
                     const PlayerInput(),
                     const SizedBox(height: 32),
-                    const Text(
-                      'Teams',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
                     if (gameConfig.teams.isNotEmpty)
                       ...gameConfig.teams.asMap().entries.map((entry) {
                         final index = entry.key;
@@ -198,24 +235,60 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                       return DragTarget<String>(
                                         builder: (context, candidateData,
                                             rejectedData) {
-                                          return Draggable<String>(
-                                            data: player,
-                                            feedback: Material(
-                                              child: Chip(label: Text(player)),
-                                              elevation: 4.0,
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                              color: candidateData.isNotEmpty
+                                                  ? color.background
+                                                      .withOpacity(0.3)
+                                                  : Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: candidateData.isNotEmpty
+                                                  ? Border.all(
+                                                      color: color.border,
+                                                      width: 2)
+                                                  : null,
                                             ),
-                                            childWhenDragging: Opacity(
-                                              opacity: 0.5,
-                                              child: Chip(label: Text(player)),
-                                            ),
-                                            child: Chip(
-                                              label: Text(player),
+                                            child: Draggable<String>(
+                                              data: player,
+                                              feedback: Material(
+                                                color: Colors.transparent,
+                                                child: Chip(
+                                                  label: Text(player),
+                                                  backgroundColor:
+                                                      color.background,
+                                                  side: BorderSide(
+                                                      color: color.border),
+                                                ),
+                                              ),
+                                              childWhenDragging: Opacity(
+                                                opacity: 0.5,
+                                                child:
+                                                    Chip(label: Text(player)),
+                                              ),
+                                              child: Chip(
+                                                label: Text(player),
+                                              ),
+                                              onDragStarted: () {
+                                                _dropAcceptedByTeam = false;
+                                              },
+                                              onDragEnd: (details) {
+                                                if (!_dropAcceptedByTeam) {
+                                                  // If the drop wasn't accepted by any team, remove the player
+                                                  ref
+                                                      .read(gameSetupProvider
+                                                          .notifier)
+                                                      .removePlayer(player);
+                                                }
+                                                _dropAcceptedByTeam = false;
+                                              },
                                             ),
                                           );
                                         },
                                         onWillAccept: (draggedPlayer) =>
                                             draggedPlayer != player,
                                         onAccept: (draggedPlayer) {
+                                          _dropAcceptedByTeam = true;
                                           ref
                                               .read(gameSetupProvider.notifier)
                                               .swapPlayers(
@@ -269,8 +342,11 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                     Expanded(
                       child: ElevatedButton.icon(
                         onPressed: gameConfig.teams.length >= 2 &&
-                                gameConfig.teams
-                                    .every((team) => team.length == 2)
+                                gameConfig.teams.every((team) =>
+                                    team
+                                        .where((player) => player.isNotEmpty)
+                                        .length ==
+                                    2)
                             ? () {
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
@@ -282,7 +358,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                             : null,
                         icon: const Icon(Icons.arrow_forward),
                         label: const Text(
-                          'Next: Game Settings',
+                          'Next',
                           style: TextStyle(fontSize: 18),
                         ),
                       ),
@@ -291,12 +367,8 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                 ),
               ),
             ],
-          );
-        },
-        onWillAccept: (player) => true,
-        onAccept: (player) {
-          ref.read(gameSetupProvider.notifier).removePlayer(player);
-        },
+          ),
+        ],
       ),
     );
   }
@@ -319,5 +391,6 @@ final List<TeamColor> teamColors = [
       'Orange', Colors.orange.shade100, Colors.orange, Colors.orange.shade900),
   TeamColor(
       'Purple', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
-  TeamColor('Teal', Colors.teal.shade100, Colors.teal, Colors.teal.shade900),
+  TeamColor(
+      'Brown', Colors.brown.shade100, Colors.brown, Colors.brown.shade900),
 ];

@@ -182,22 +182,26 @@ class _CategorySelectionScreenState
                 ),
               ),
             ),
-            if (_selectedCategory != null)
-              Padding(
-                padding: const EdgeInsets.all(20.0),
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: AnimatedOpacity(
+                opacity: _selectedCategory != null ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => RoleAssignmentScreen(
-                          teamIndex: widget.teamIndex,
-                          roundNumber: widget.roundNumber,
-                          turnNumber: widget.turnNumber,
-                          category: _selectedCategory!,
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: _selectedCategory != null
+                      ? () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => RoleAssignmentScreen(
+                                teamIndex: widget.teamIndex,
+                                roundNumber: widget.roundNumber,
+                                turnNumber: widget.turnNumber,
+                                category: _selectedCategory!,
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                         vertical: 16, horizontal: 32),
@@ -209,6 +213,7 @@ class _CategorySelectionScreenState
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),

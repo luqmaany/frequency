@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
+import '../models/game_config.dart';
 
 class PlayerInput extends ConsumerStatefulWidget {
   const PlayerInput({super.key});
@@ -22,8 +23,11 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     'Siawosh',
     'Nadine',
     'Luqmaan',
+    'Arun',
+    'Malaika'
   ];
   String? _errorMessage;
+  int _currentPage = 0;
 
   @override
   void dispose() {
@@ -106,24 +110,79 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
           },
         ),
         const SizedBox(height: 8),
-        Wrap(
+        _buildSuggestedNames(gameConfig),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildSuggestedNames(GameConfig gameConfig) {
+    final suggestedNames = _suggestedNames
+        .where((suggestion) => !gameConfig.playerNames
+            .any((name) => name.toLowerCase() == suggestion.toLowerCase()))
+        .toList();
+
+    if (suggestedNames.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Estimate items per row based on average chip width
+        const chipWidth = 80.0; // Approximate width of a chip
+        const spacing = 8.0;
+        final itemsPerRow =
+            ((constraints.maxWidth + spacing) / (chipWidth + spacing)).floor();
+        final maxItemsForTwoRows = itemsPerRow * 2;
+
+        // Calculate how many items to show (leaving space for "Show More" if needed)
+        final totalPages = (suggestedNames.length / maxItemsForTwoRows).ceil();
+        final isLastPage = _currentPage >= totalPages - 1;
+        final itemsToShow = isLastPage
+            ? suggestedNames.sublist(_currentPage * maxItemsForTwoRows)
+            : suggestedNames.sublist(
+                _currentPage * maxItemsForTwoRows,
+                (_currentPage + 1) * maxItemsForTwoRows -
+                    1 // Leave space for "Show More"
+                );
+
+        final chips = itemsToShow.map((suggestion) {
+          return ActionChip(
+            label: Text(suggestion),
+            onPressed: () {
+              ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
+            },
+          );
+        }).toList();
+
+        // Add navigation chips
+        if (!isLastPage) {
+          chips.add(ActionChip(
+            label: const Icon(Icons.arrow_forward, size: 20),
+            onPressed: () {
+              setState(() {
+                _currentPage++;
+              });
+            },
+          ));
+        } else if (_currentPage > 0) {
+          chips.add(ActionChip(
+            label: const Icon(Icons.arrow_back, size: 20),
+            onPressed: () {
+              setState(() {
+                _currentPage--;
+              });
+            },
+          ));
+        }
+
+        return Wrap(
           spacing: 8,
           runSpacing: 8,
           alignment: WrapAlignment.start,
-          children: _suggestedNames
-              .where((suggestion) => !gameConfig.playerNames.any(
-                  (name) => name.toLowerCase() == suggestion.toLowerCase()))
-              .map((suggestion) {
-            return ActionChip(
-              label: Text(suggestion),
-              onPressed: () {
-                ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
-              },
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 16),
-      ],
+          children: chips,
+        );
+      },
     );
   }
 }
