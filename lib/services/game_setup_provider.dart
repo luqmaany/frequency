@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math';
 import '../models/game_config.dart';
 import '../screens/game_setup_screen.dart';
 
@@ -12,6 +13,13 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
           targetScore: 30,
           allowedSkips: 3,
         ));
+
+  List<int> _generateRandomColorIndices(int count) {
+    final random = Random();
+    final indices = List<int>.generate(teamColors.length, (i) => i);
+    indices.shuffle(random);
+    return indices.take(count).toList();
+  }
 
   void addPlayerToTeams(String name) {
     // Try to fill the first empty slot in teams
@@ -33,14 +41,18 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
       // Add to a new or existing team (2 per team)
       if (newTeams.isEmpty || newTeams.last.length == 2) {
         newTeams.add([name]);
-        // Assign the first unused color index
+        // Assign a random unused color index
         final usedIndices = newColorIndices.toSet();
-        int colorIdx = 0;
-        while (usedIndices.contains(colorIdx) && colorIdx < teamColors.length) {
-          colorIdx++;
+        final availableIndices = List<int>.generate(teamColors.length, (i) => i)
+            .where((i) => !usedIndices.contains(i))
+            .toList();
+        if (availableIndices.isEmpty) {
+          // If all colors are used, generate a new random set
+          newColorIndices = _generateRandomColorIndices(newTeams.length);
+        } else {
+          availableIndices.shuffle();
+          newColorIndices.add(availableIndices.first);
         }
-        if (colorIdx >= teamColors.length) colorIdx = 0; // fallback if all used
-        newColorIndices.add(colorIdx);
       } else {
         newTeams.last.add(name);
       }
@@ -93,8 +105,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
   }
 
   void createTeams(List<List<String>> teams) {
-    final colorIndices =
-        List<int>.generate(teams.length, (i) => i % teamColors.length);
+    final colorIndices = _generateRandomColorIndices(teams.length);
     state = state.copyWith(teams: teams, teamColorIndices: colorIndices);
   }
 
@@ -107,8 +118,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
         teams.add([players[i], players[i + 1]]);
       }
     }
-    final colorIndices =
-        List<int>.generate(teams.length, (i) => i % teamColors.length);
+    final colorIndices = _generateRandomColorIndices(teams.length);
     state = state.copyWith(teams: teams, teamColorIndices: colorIndices);
   }
 
@@ -123,8 +133,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
       }
       newTeams[i ~/ 2].add(players[i]);
     }
-    final colorIndices =
-        List<int>.generate(newTeams.length, (i) => i % teamColors.length);
+    final colorIndices = _generateRandomColorIndices(newTeams.length);
     state = state.copyWith(teams: newTeams, teamColorIndices: colorIndices);
   }
 
