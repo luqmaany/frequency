@@ -113,27 +113,39 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
 
     if (_isTransitioning) {
       return Scaffold(
-        body: Center(
+        body: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Pass the phone to',
-                style: Theme.of(context).textTheme.headlineMedium,
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Pass the phone to',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        _selectedConveyor!,
+                        style: Theme.of(context).textTheme.displayLarge,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Conveyor',
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineSmall
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.secondary,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              const SizedBox(height: 24),
-              Text(
-                _selectedConveyor!,
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Conveyor',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-              ),
-              const SizedBox(height: 48),
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
@@ -203,20 +215,22 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     style: Theme.of(context)
                                         .textTheme
                                         .headlineMedium
-                                        ?.copyWith(color: teamColor.text),
+                                        ?.copyWith(color: Colors.black),
                                   ),
                                 ),
                                 Positioned(
                                   top: 16,
-                                  left: 16,
-                                  child: Text(
-                                    'Conveyor',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: teamColor.border,
-                                        ),
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: Text(
+                                      'Conveyor',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: teamColor.text,
+                                        fontSize: 22,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -261,20 +275,22 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     style: Theme.of(context)
                                         .textTheme
                                         .headlineMedium
-                                        ?.copyWith(color: teamColor.text),
+                                        ?.copyWith(color: Colors.black),
                                   ),
                                 ),
                                 Positioned(
                                   top: 16,
-                                  left: 16,
-                                  child: Text(
-                                    'Guesser',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
-                                          color: teamColor.border,
-                                        ),
+                                  left: 0,
+                                  right: 0,
+                                  child: Center(
+                                    child: Text(
+                                      'Guesser',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: teamColor.text,
+                                        fontSize: 22,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
