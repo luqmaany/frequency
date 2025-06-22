@@ -97,9 +97,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
   @override
   Widget build(BuildContext context) {
     ref.listen<GameConfig>(gameSetupProvider, (previous, next) {
-      if (next != null) {
-        _updateTeamControllers(next.teams);
-      }
+      _updateTeamControllers(next.teams);
     });
     final gameConfig = ref.watch(gameSetupProvider);
 

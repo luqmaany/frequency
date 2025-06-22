@@ -120,6 +120,7 @@ class _WordListsManagerScreenState
               children: [
                 // Category selector
                 SegmentedButton<WordCategory>(
+                  showSelectedIcon: false,
                   segments: const [
                     ButtonSegment(
                       value: WordCategory.person,
