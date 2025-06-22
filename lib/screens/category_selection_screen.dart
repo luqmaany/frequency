@@ -133,10 +133,7 @@ class _CategorySelectionScreenState
                   children: [
                     Text(
                       "${currentTeamPlayers[0]} & ${currentTeamPlayers[1]}'s Turn",
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                      style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),

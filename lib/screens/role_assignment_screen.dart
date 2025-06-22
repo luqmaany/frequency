@@ -163,7 +163,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   padding: const EdgeInsets.all(16),
                 ),
                 child: const Text(
-                  'Ready to Begin',
+                  'Start',
                   style: TextStyle(fontSize: 18),
                 ),
               ),

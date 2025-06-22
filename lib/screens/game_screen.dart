@@ -28,7 +28,8 @@ class GameScreen extends ConsumerStatefulWidget {
   ConsumerState<GameScreen> createState() => _GameScreenState();
 }
 
-class _GameScreenState extends ConsumerState<GameScreen> {
+class _GameScreenState extends ConsumerState<GameScreen>
+    with TickerProviderStateMixin {
   late int _timeLeft;
   late int _skipsLeft;
   int _correctCount = 0;
@@ -41,6 +42,12 @@ class _GameScreenState extends ConsumerState<GameScreen> {
   List<String> _wordsGuessed = [];
   List<String> _wordsSkipped = [];
   Set<String> _disputedWords = {};
+
+  // Animation controllers for fade-in effects
+  late AnimationController _topCardAnimationController;
+  late AnimationController _bottomCardAnimationController;
+  late Animation<double> _topCardAnimation;
+  late Animation<double> _bottomCardAnimation;
 
   static const List<Map<String, String>> _highScoreMessages = [
     {'text': 'You\'re the dynamic duo of word games!', 'emoji': '🦸‍♂️'},
@@ -121,8 +128,35 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     final gameConfig = ref.read(gameSetupProvider);
     _timeLeft = gameConfig.roundTimeSeconds;
     _skipsLeft = gameConfig.allowedSkips;
+
+    // Initialize animation controllers
+    _topCardAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _bottomCardAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+    _topCardAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _topCardAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    _bottomCardAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _bottomCardAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     _startTimer();
     _loadInitialWords();
+
+    // Start initial fade-in animations
+    _topCardAnimationController.forward();
+    _bottomCardAnimationController.forward();
   }
 
   @override
@@ -130,6 +164,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     _timer?.cancel();
     _topCardController.dispose();
     _bottomCardController.dispose();
+    _topCardAnimationController.dispose();
+    _bottomCardAnimationController.dispose();
     super.dispose();
   }
 
@@ -272,6 +308,15 @@ class _GameScreenState extends ConsumerState<GameScreen> {
         _currentWords[index] = newWord;
         _usedWords.add(newWord.text);
       });
+
+      // Trigger fade-in animation for the new card
+      if (index == 0) {
+        _topCardAnimationController.reset();
+        _topCardAnimationController.forward();
+      } else {
+        _bottomCardAnimationController.reset();
+        _bottomCardAnimationController.forward();
+      }
     }
   }
 
@@ -288,19 +333,25 @@ class _GameScreenState extends ConsumerState<GameScreen> {
     }
   }
 
+  AllowedSwipeDirection _getAllowedSwipeDirection() {
+    if (_skipsLeft > 0) {
+      return AllowedSwipeDirection.symmetric(horizontal: true, vertical: false);
+    } else {
+      // Only allow right swipes when no skips are left
+      return AllowedSwipeDirection.only(right: true);
+    }
+  }
+
   Widget _buildCard(Word word) {
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+          width: 2,
+        ),
       ),
       child: Center(
         child: Text(
@@ -419,309 +470,311 @@ class _GameScreenState extends ConsumerState<GameScreen> {
 
     if (_isTurnOver) {
       return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Turn Over!',
-                style: Theme.of(context).textTheme.headlineLarge,
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 40.0),
+            child: Column(
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    'Score: $_disputedScore',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
-                child: Text(
-                  'Score: $_disputedScore',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(height: 20),
+                Text(
+                  'Tap words to contest them',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary,
                       ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Tap words to contest them',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Words Guessed:',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        if (_wordsGuessed.isNotEmpty) ...[
-                          for (var i = 0; i < _wordsGuessed.length; i += 2)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () =>
-                                          _onWordDisputed(_wordsGuessed[i]),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 8, horizontal: 12),
-                                        decoration: BoxDecoration(
-                                          color: _disputedWords
-                                                  .contains(_wordsGuessed[i])
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .errorContainer
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .primaryContainer,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
+                const SizedBox(height: 20),
+                Text(
+                  'Words Guessed:',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          if (_wordsGuessed.isNotEmpty) ...[
+                            for (var i = 0; i < _wordsGuessed.length; i += 2)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () =>
+                                            _onWordDisputed(_wordsGuessed[i]),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8, horizontal: 12),
+                                          decoration: BoxDecoration(
                                             color: _disputedWords
                                                     .contains(_wordsGuessed[i])
                                                 ? Theme.of(context)
                                                     .colorScheme
-                                                    .error
-                                                : Colors.transparent,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                _wordsGuessed[i],
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleMedium,
-                                                textAlign: TextAlign.center,
-                                              ),
-                                            ),
-                                            if (_disputedWords
-                                                .contains(_wordsGuessed[i]))
-                                              Icon(
-                                                Icons.close,
-                                                color: Theme.of(context)
+                                                    .errorContainer
+                                                : Theme.of(context)
                                                     .colorScheme
-                                                    .error,
-                                                size: 20,
+                                                    .primaryContainer,
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _disputedWords.contains(
+                                                      _wordsGuessed[i])
+                                                  ? Theme.of(context)
+                                                      .colorScheme
+                                                      .error
+                                                  : Colors.transparent,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  _wordsGuessed[i],
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleMedium,
+                                                  textAlign: TextAlign.center,
+                                                ),
                                               ),
-                                          ],
+                                              if (_disputedWords
+                                                  .contains(_wordsGuessed[i]))
+                                                Icon(
+                                                  Icons.close,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .error,
+                                                  size: 20,
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: i + 1 < _wordsGuessed.length
-                                        ? GestureDetector(
-                                            onTap: () => _onWordDisputed(
-                                                _wordsGuessed[i + 1]),
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 8,
-                                                      horizontal: 12),
-                                              decoration: BoxDecoration(
-                                                color: _disputedWords.contains(
-                                                        _wordsGuessed[i + 1])
-                                                    ? Theme.of(context)
-                                                        .colorScheme
-                                                        .errorContainer
-                                                    : Theme.of(context)
-                                                        .colorScheme
-                                                        .primaryContainer,
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                border: Border.all(
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: i + 1 < _wordsGuessed.length
+                                          ? GestureDetector(
+                                              onTap: () => _onWordDisputed(
+                                                  _wordsGuessed[i + 1]),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                        horizontal: 12),
+                                                decoration: BoxDecoration(
                                                   color:
                                                       _disputedWords.contains(
                                                               _wordsGuessed[
                                                                   i + 1])
                                                           ? Theme.of(context)
                                                               .colorScheme
-                                                              .error
-                                                          : Colors.transparent,
-                                                  width: 2,
+                                                              .errorContainer
+                                                          : Theme.of(context)
+                                                              .colorScheme
+                                                              .primaryContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: _disputedWords
+                                                            .contains(
+                                                                _wordsGuessed[
+                                                                    i + 1])
+                                                        ? Theme.of(context)
+                                                            .colorScheme
+                                                            .error
+                                                        : Colors.transparent,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        _wordsGuessed[i + 1],
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleMedium,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                    if (_disputedWords.contains(
+                                                        _wordsGuessed[i + 1]))
+                                                      Icon(
+                                                        Icons.close,
+                                                        color: Theme.of(context)
+                                                            .colorScheme
+                                                            .error,
+                                                        size: 20,
+                                                      ),
+                                                  ],
                                                 ),
                                               ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      _wordsGuessed[i + 1],
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleMedium,
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                  if (_disputedWords.contains(
-                                                      _wordsGuessed[i + 1]))
-                                                    Icon(
-                                                      Icons.close,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .error,
-                                                      size: 20,
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                        : const SizedBox(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 16),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .tertiaryContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _getPerformanceMessage(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onTertiaryContainer,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ] else ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 20),
-                            decoration: BoxDecoration(
-                              color:
-                                  Theme.of(context).colorScheme.errorContainer,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _getRandomMessage(_zeroScoreMessages),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onErrorContainer,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                        if (_wordsSkipped.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          Text(
-                            'Words Skipped:',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 10),
-                          for (var word in _wordsSkipped)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .errorContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  word,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onErrorContainer,
-                                      ),
-                                  textAlign: TextAlign.center,
+                                            )
+                                          : const SizedBox(),
+                                    ),
+                                  ],
                                 ),
                               ),
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .tertiaryContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _getPerformanceMessage(),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onTertiaryContainer,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
+                          ] else ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .errorContainer,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                _getRandomMessage(_zeroScoreMessages),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onErrorContainer,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                          if (_wordsSkipped.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            Text(
+                              'Words Skipped:',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 10),
+                            for (var word in _wordsSkipped)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .errorContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    word,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onErrorContainer,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    if (_disputedWords.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Text(
-                          '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
-                                  ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      if (_disputedWords.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: Text(
+                            '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                          ),
+                        ),
+                      ElevatedButton(
+                        onPressed: _confirmScore,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 16, horizontal: 32),
+                          minimumSize: const Size(double.infinity, 60),
+                        ),
+                        child: const Text(
+                          'Confirm Score',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                       ),
-                    ElevatedButton(
-                      onPressed: _confirmScore,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 32),
-                        minimumSize: const Size(double.infinity, 60),
-                      ),
-                      child: const Text(
-                        'Confirm Score',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       );
@@ -744,190 +797,224 @@ class _GameScreenState extends ConsumerState<GameScreen> {
               padding: const EdgeInsets.all(16.0),
               child: Text(
                 "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                style: Theme.of(context).textTheme.headlineMedium,
                 textAlign: TextAlign.center,
               ),
             ),
             // Top bar with timer, skips, and category
             Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: Row(
                 children: [
-                  // Score indicator
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
+                  // Timer - on the left
+                  Expanded(
+                    flex: 1,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .primary
+                                .withOpacity(0.4),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          '$_timeLeft',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineMedium
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 36,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Right side - stacked category, score, and skips
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      children: [
+                        // Category
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.tertiaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            _getCategoryName(widget.category),
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        // Skips
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Skips: $_skipsLeft',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ],
                     ),
-                    child: Text(
-                      'Score: $_correctCount',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Category indicator
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Category: ${_getCategoryName(widget.category)}',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Timer and skips
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Timer
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '$_timeLeft s',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                      // Skip counter
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color:
-                              Theme.of(context).colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          'Skips: $_skipsLeft',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                    ],
                   ),
                 ],
               ),
             ),
             // Word cards with Swiper
             Expanded(
-              child: Column(
+              child: Stack(
                 children: [
-                  // Top card
-                  Expanded(
-                    child: CardSwiper(
-                      controller: _topCardController,
-                      cardsCount: 1,
-                      cardBuilder: (context,
-                          index,
-                          horizontalThresholdPercentage,
-                          verticalThresholdPercentage) {
-                        return _buildCard(_currentWords[0]);
-                      },
-                      onSwipe: (previousIndex, currentIndex, direction) {
-                        if (direction == CardSwiperDirection.right) {
-                          // Correct guess
-                          _onWordGuessed(_currentWords[0].text);
-                          _incrementWordUsage(_currentWords[0]);
-                          _loadNewWord(0);
-                          return true;
-                        } else if (direction == CardSwiperDirection.left) {
-                          // Skip
-                          if (_skipsLeft > 0) {
-                            _onWordSkipped(_currentWords[0].text);
-                            setState(() {
-                              _loadNewWord(0);
-                            });
-                            return true;
-                          } else {
-                            // Show feedback for no skips left
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('No skips left!'),
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.error,
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 1),
+                  Column(
+                    children: [
+                      // Top card
+                      Expanded(
+                        child: AnimatedBuilder(
+                          animation: _topCardAnimation,
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: _topCardAnimation.value,
+                              child: CardSwiper(
+                                controller: _topCardController,
+                                cardsCount: 1,
+                                cardBuilder: (context,
+                                    index,
+                                    horizontalThresholdPercentage,
+                                    verticalThresholdPercentage) {
+                                  return _buildCard(_currentWords[0]);
+                                },
+                                onSwipe:
+                                    (previousIndex, currentIndex, direction) {
+                                  if (direction == CardSwiperDirection.right) {
+                                    // Correct guess
+                                    _onWordGuessed(_currentWords[0].text);
+                                    _incrementWordUsage(_currentWords[0]);
+                                    _loadNewWord(0);
+                                    return true;
+                                  } else if (direction ==
+                                      CardSwiperDirection.left) {
+                                    // Skip
+                                    if (_skipsLeft > 0) {
+                                      _onWordSkipped(_currentWords[0].text);
+                                      setState(() {
+                                        _loadNewWord(0);
+                                      });
+                                      return true;
+                                    } else {
+                                      // Prevent the swipe and show feedback
+                                      return false;
+                                    }
+                                  }
+                                  return false;
+                                },
+                                allowedSwipeDirection:
+                                    _getAllowedSwipeDirection(),
+                                numberOfCardsDisplayed: 1,
+                                padding: const EdgeInsets.all(24.0),
                               ),
                             );
-                          }
-                        }
-                        return false;
-                      },
-                      allowedSwipeDirection: AllowedSwipeDirection.symmetric(
-                          horizontal: true, vertical: false),
-                      numberOfCardsDisplayed: 1,
-                      padding: const EdgeInsets.all(24.0),
+                          },
+                        ),
+                      ),
+                      // Bottom card
+                      Expanded(
+                        child: AnimatedBuilder(
+                          animation: _bottomCardAnimation,
+                          builder: (context, child) {
+                            return Opacity(
+                              opacity: _bottomCardAnimation.value,
+                              child: CardSwiper(
+                                controller: _bottomCardController,
+                                cardsCount: 1,
+                                cardBuilder: (context,
+                                    index,
+                                    horizontalThresholdPercentage,
+                                    verticalThresholdPercentage) {
+                                  return _buildCard(_currentWords[1]);
+                                },
+                                onSwipe:
+                                    (previousIndex, currentIndex, direction) {
+                                  if (direction == CardSwiperDirection.right) {
+                                    // Correct guess
+                                    _onWordGuessed(_currentWords[1].text);
+                                    _incrementWordUsage(_currentWords[1]);
+                                    _loadNewWord(1);
+                                    return true;
+                                  } else if (direction ==
+                                      CardSwiperDirection.left) {
+                                    // Skip
+                                    if (_skipsLeft > 0) {
+                                      _onWordSkipped(_currentWords[1].text);
+                                      setState(() {
+                                        _loadNewWord(1);
+                                      });
+                                      return true;
+                                    } else {
+                                      // Prevent the swipe and show feedback
+                                      return false;
+                                    }
+                                  }
+                                  return false;
+                                },
+                                allowedSwipeDirection:
+                                    _getAllowedSwipeDirection(),
+                                numberOfCardsDisplayed: 1,
+                                padding: const EdgeInsets.all(24.0),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Skip icon positioned between cards on the left
+                  Positioned(
+                    left: 8,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: const Text(
+                        '🚫',
+                        style: const TextStyle(fontSize: 24),
+                      ),
                     ),
                   ),
-                  // Bottom card
-                  Expanded(
-                    child: CardSwiper(
-                      controller: _bottomCardController,
-                      cardsCount: 1,
-                      cardBuilder: (context,
-                          index,
-                          horizontalThresholdPercentage,
-                          verticalThresholdPercentage) {
-                        return _buildCard(_currentWords[1]);
-                      },
-                      onSwipe: (previousIndex, currentIndex, direction) {
-                        if (direction == CardSwiperDirection.right) {
-                          // Correct guess
-                          _onWordGuessed(_currentWords[1].text);
-                          _incrementWordUsage(_currentWords[1]);
-                          _loadNewWord(1);
-                          return true;
-                        } else if (direction == CardSwiperDirection.left) {
-                          // Skip
-                          if (_skipsLeft > 0) {
-                            _onWordSkipped(_currentWords[1].text);
-                            setState(() {
-                              _loadNewWord(1);
-                            });
-                            return true;
-                          } else {
-                            // Show feedback for no skips left
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('No skips left!'),
-                                backgroundColor:
-                                    Theme.of(context).colorScheme.error,
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 1),
-                              ),
-                            );
-                          }
-                        }
-                        return false;
-                      },
-                      allowedSwipeDirection: AllowedSwipeDirection.symmetric(
-                          horizontal: true, vertical: false),
-                      numberOfCardsDisplayed: 1,
-                      padding: const EdgeInsets.all(24.0),
+                  // Tick icon positioned between cards on the right
+                  Positioned(
+                    right: 8,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: const Text(
+                        '✔️',
+                        style: const TextStyle(fontSize: 24),
+                      ),
                     ),
                   ),
                 ],
