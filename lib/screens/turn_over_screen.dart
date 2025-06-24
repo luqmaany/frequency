@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../models/game_state.dart';
+import '../models/game_config.dart';
 import 'game_over_screen.dart';
 import 'category_selection_screen.dart';
 import 'scoreboard_screen.dart';
