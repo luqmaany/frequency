@@ -4,6 +4,7 @@ import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../widgets/game_settings.dart';
 import 'category_selection_screen.dart';
+import 'package:convey/widgets/team_color_button.dart';
 
 class GameSettingsScreen extends ConsumerWidget {
   const GameSettingsScreen({super.key});
@@ -58,51 +59,46 @@ class GameSettingsScreen extends ConsumerWidget {
             child: Row(
               children: [
                 Expanded(
-                  child: OutlinedButton(
+                  child: TeamColorButton(
+                    text: 'Back to Teams',
+                    icon: Icons.arrow_back,
+                    color: teamColors[1], // Blue
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      minimumSize: const Size(double.infinity, 56),
-                    ),
-                    child: const Text(
-                      'Back to Teams',
-                      style: TextStyle(fontSize: 18),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
+                  child: TeamColorButton(
+                    text: 'Start Game',
+                    icon: Icons.play_arrow_rounded,
+                    color: teamColors[2], // Green
                     onPressed: validationState.areAllSettingsValid
-                        ? () {
-                            // Initialize game state with current config
-                            ref
-                                .read(gameStateProvider.notifier)
-                                .initializeGame(gameConfig);
+                        ? () async {
+                            FocusScope.of(context).unfocus();
+                            await Future.delayed(
+                                const Duration(milliseconds: 150));
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              // Initialize game state with current config
+                              ref
+                                  .read(gameStateProvider.notifier)
+                                  .initializeGame(gameConfig);
 
-                            // Navigate to role assignment for first team and round
-                            Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const CategorySelectionScreen(
-                                  teamIndex: 0,
-                                  roundNumber: 1,
-                                  turnNumber: 1,
+                              // Navigate to role assignment for first team and round
+                              Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CategorySelectionScreen(
+                                    teamIndex: 0,
+                                    roundNumber: 1,
+                                    turnNumber: 1,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            });
                           }
                         : null,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      minimumSize: const Size(double.infinity, 56),
-                    ),
-                    child: const Text(
-                      'Start Game',
-                      style: TextStyle(fontSize: 18),
-                    ),
                   ),
                 ),
               ],

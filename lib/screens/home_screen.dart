@@ -8,6 +8,14 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Define a list of colors for the buttons
+    final List<Color> buttonColors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+    ];
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -36,8 +44,10 @@ class HomeScreen extends ConsumerWidget {
                 Icons.play_arrow_rounded,
                 () => Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const GameSetupScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const GameSetupScreen()),
                 ),
+                buttonColors[0],
               ),
               const SizedBox(height: 16),
               _buildMenuButton(
@@ -47,6 +57,7 @@ class HomeScreen extends ConsumerWidget {
                 () {
                   // TODO: Implement last game recap
                 },
+                buttonColors[1],
               ),
               const SizedBox(height: 16),
               _buildMenuButton(
@@ -56,6 +67,7 @@ class HomeScreen extends ConsumerWidget {
                 () {
                   // TODO: Implement settings
                 },
+                buttonColors[2],
               ),
               const SizedBox(height: 16),
               _buildMenuButton(
@@ -65,9 +77,11 @@ class HomeScreen extends ConsumerWidget {
                 () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const WordListsManagerScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const WordListsManagerScreen()),
                   );
                 },
+                buttonColors[3],
               ),
               const SizedBox(height: 16),
               _buildMenuButton(
@@ -77,6 +91,7 @@ class HomeScreen extends ConsumerWidget {
                 () {
                   // TODO: Implement stats & history
                 },
+                buttonColors[4],
               ),
             ],
           ),
@@ -90,26 +105,50 @@ class HomeScreen extends ConsumerWidget {
     String text,
     IconData icon,
     VoidCallback onPressed,
+    Color color,
   ) {
-    return ElevatedButton(
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 24),
-          const SizedBox(width: 12),
-          Text(
-            text,
-            style: const TextStyle(fontSize: 18),
+    // Use a style similar to the category box in game_screen.dart
+    final Color buttonColor = color.withOpacity(0.2);
+    final Color borderColor = color;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+          decoration: BoxDecoration(
+            color: buttonColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: borderColor,
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor.withOpacity(0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 24, color: borderColor),
+              const SizedBox(width: 12),
+              Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
-} 
+}

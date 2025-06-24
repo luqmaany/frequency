@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_state_provider.dart';
 import 'category_selection_screen.dart';
+import 'package:convey/widgets/team_color_button.dart';
 
 class ScoreboardScreen extends ConsumerWidget {
   final int roundNumber;
@@ -88,9 +89,28 @@ class ScoreboardScreen extends ConsumerWidget {
                     final isTopThisRound =
                         roundScores[teamIndex] == topRoundScore &&
                             topRoundScore > 0;
-                    return Padding(
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8.0),
                       padding: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 4.0),
+                          vertical: 12.0, horizontal: 10.0),
+                      decoration: BoxDecoration(
+                        color: teamColors[gameState
+                                        .config.teamColorIndices.length >
+                                    teamIndex
+                                ? gameState.config.teamColorIndices[teamIndex]
+                                : teamIndex % teamColors.length]
+                            .background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: teamColors[gameState
+                                          .config.teamColorIndices.length >
+                                      teamIndex
+                                  ? gameState.config.teamColorIndices[teamIndex]
+                                  : teamIndex % teamColors.length]
+                              .border,
+                          width: 2,
+                        ),
+                      ),
                       child: Row(
                         children: [
                           Expanded(
@@ -101,12 +121,24 @@ class ScoreboardScreen extends ConsumerWidget {
                                   .titleLarge
                                   ?.copyWith(
                                       fontSize: 22,
-                                      fontWeight: FontWeight.bold),
+                                      fontWeight: FontWeight.bold,
+                                      color: teamColors[gameState.config
+                                                      .teamColorIndices.length >
+                                                  teamIndex
+                                              ? gameState.config
+                                                  .teamColorIndices[teamIndex]
+                                              : teamIndex % teamColors.length]
+                                          .text),
                             ),
                           ),
                           CircleAvatar(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
+                            backgroundColor: teamColors[
+                                    gameState.config.teamColorIndices.length >
+                                            teamIndex
+                                        ? gameState
+                                            .config.teamColorIndices[teamIndex]
+                                        : teamIndex % teamColors.length]
+                                .border,
                             radius: 18,
                             child: Text(
                               totalScore.toString(),
@@ -116,8 +148,7 @@ class ScoreboardScreen extends ConsumerWidget {
                                   ?.copyWith(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
+                                    color: Colors.white,
                                   ),
                             ),
                           ),
@@ -125,24 +156,24 @@ class ScoreboardScreen extends ConsumerWidget {
                           // Arrow for leaderboard movement
                           Text(
                             roundNumber == 1
-                                ? '–'
+                                ? ''
                                 : currRanks[teamIndex] < prevRanks[teamIndex]
                                     ? '▲'
                                     : currRanks[teamIndex] >
                                             prevRanks[teamIndex]
                                         ? '▼'
-                                        : '–',
+                                        : '',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
                               color: roundNumber == 1
-                                  ? Colors.grey
+                                  ? Colors.transparent
                                   : currRanks[teamIndex] < prevRanks[teamIndex]
                                       ? Colors.green
                                       : currRanks[teamIndex] >
                                               prevRanks[teamIndex]
                                           ? Colors.red
-                                          : Colors.grey,
+                                          : Colors.transparent,
                             ),
                           ),
                         ],
@@ -158,7 +189,10 @@ class ScoreboardScreen extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: TeamColorButton(
+                    text: 'Next Round',
+                    icon: Icons.arrow_forward,
+                    color: teamColors[2], // Green
                     onPressed: () {
                       // Next round
                       final nextRound = roundNumber + 1;
@@ -172,16 +206,6 @@ class ScoreboardScreen extends ConsumerWidget {
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 32),
-                      minimumSize: const Size(0, 60), // Only control height
-                    ),
-                    child: const Text(
-                      'Next Round',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
                   ),
                 ),
               ],

@@ -5,10 +5,6 @@ import 'dart:async';
 import 'word_lists_manager_screen.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
-import '../models/game_state.dart';
-import 'game_over_screen.dart';
-import 'category_selection_screen.dart';
-import 'scoreboard_screen.dart';
 import 'turn_over_screen.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
@@ -44,6 +40,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
   List<String> _wordsSkipped = [];
   Set<String> _disputedWords = {};
 
+  // Countdown state
+  bool _isCountdownActive = true;
+  int _countdownNumber = 3;
+  late AnimationController _countdownAnimationController;
+  late Animation<double> _countdownAnimation;
+
   // Animation controllers for fade-in effects
   late AnimationController _topCardAnimationController;
   late AnimationController _bottomCardAnimationController;
@@ -56,6 +58,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
     final gameConfig = ref.read(gameSetupProvider);
     _timeLeft = gameConfig.roundTimeSeconds;
     _skipsLeft = gameConfig.allowedSkips;
+
+    // Initialize countdown animation controller
+    _countdownAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _countdownAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _countdownAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
 
     // Initialize animation controllers
     _topCardAnimationController = AnimationController(
@@ -79,12 +93,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
       ),
     );
 
-    _startTimer();
+    // Load words and start countdown immediately
     _loadInitialWords();
 
-    // Start initial fade-in animations
-    _topCardAnimationController.forward();
-    _bottomCardAnimationController.forward();
+    // Use a microtask to ensure the countdown starts after the first build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startCountdown();
+    });
   }
 
   @override
@@ -94,7 +109,36 @@ class _GameScreenState extends ConsumerState<GameScreen>
     _bottomCardController.dispose();
     _topCardAnimationController.dispose();
     _bottomCardAnimationController.dispose();
+    _countdownAnimationController.dispose();
     super.dispose();
+  }
+
+  void _startCountdown() {
+    // Start the first countdown animation immediately
+    _countdownAnimationController.forward();
+
+    Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_countdownNumber > 1) {
+        setState(() {
+          _countdownNumber--;
+        });
+        _countdownAnimationController.reset();
+        _countdownAnimationController.forward();
+      } else {
+        timer.cancel();
+        setState(() {
+          _isCountdownActive = false;
+        });
+        _startGame();
+      }
+    });
+  }
+
+  void _startGame() {
+    _startTimer();
+    // Start initial fade-in animations for cards
+    _topCardAnimationController.forward();
+    _bottomCardAnimationController.forward();
   }
 
   void _startTimer() {
@@ -265,6 +309,19 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
+  Color _getCategoryColor(WordCategory category) {
+    switch (category) {
+      case WordCategory.person:
+        return Colors.blue;
+      case WordCategory.action:
+        return Colors.green;
+      case WordCategory.world:
+        return Colors.orange;
+      case WordCategory.random:
+        return Colors.purple;
+    }
+  }
+
   AllowedSwipeDirection _getAllowedSwipeDirection() {
     if (_skipsLeft > 0) {
       return AllowedSwipeDirection.symmetric(horizontal: true, vertical: false);
@@ -278,17 +335,27 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: _getCategoryColor(widget.category).withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline,
+          color: _getCategoryColor(widget.category),
           width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: _getCategoryColor(widget.category).withOpacity(0.2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Center(
         child: Text(
           word.text,
-          style: Theme.of(context).textTheme.headlineMedium,
+          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
           textAlign: TextAlign.center,
         ),
       ),
@@ -304,6 +371,126 @@ class _GameScreenState extends ConsumerState<GameScreen>
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Show countdown overlay
+    if (_isCountdownActive) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Title showing current players
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                // Category indicator
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor(widget.category).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _getCategoryColor(widget.category),
+                      width: 2,
+                    ),
+                  ),
+                  child: Text(
+                    _getCategoryName(widget.category),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: _getCategoryColor(widget.category),
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 60),
+                // Countdown display
+                AnimatedBuilder(
+                  animation: _countdownAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: 0.5 + (_countdownAnimation.value * 0.5),
+                      child: Opacity(
+                        opacity: _countdownAnimation.value,
+                        child: Container(
+                          width: 200,
+                          height: 200,
+                          decoration: BoxDecoration(
+                            color: _getCategoryColor(widget.category),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getCategoryColor(widget.category)
+                                    .withOpacity(0.4),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$_countdownNumber',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .displayLarge
+                                  ?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 120,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 60),
+                // Instructions
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 32),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.grey.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Get Ready!',
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Swipe right for a correct guess\nSwipe left to skip',
+                        style: Theme.of(context).textTheme.bodyLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }
@@ -333,13 +520,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 20),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
+                        color: _getCategoryColor(widget.category),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary
+                            color: _getCategoryColor(widget.category)
                                 .withOpacity(0.4),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
@@ -353,7 +538,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                               .textTheme
                               .headlineMedium
                               ?.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimary,
+                                color: Colors.white,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 36,
                               ),
@@ -374,13 +559,23 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 8),
                           decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.tertiaryContainer,
+                            color: _getCategoryColor(widget.category)
+                                .withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _getCategoryColor(widget.category),
+                              width: 1,
+                            ),
                           ),
                           child: Text(
                             _getCategoryName(widget.category),
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w600,
+                                ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -391,13 +586,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 8),
                           decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
+                            color: _getCategoryColor(widget.category)
+                                .withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             'Skips: $_skipsLeft',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.black,
+                                ),
                             textAlign: TextAlign.center,
                           ),
                         ),
@@ -519,9 +719,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     top: 0,
                     bottom: 0,
                     child: Center(
-                      child: const Text(
-                        '🚫',
-                        style: const TextStyle(fontSize: 24),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.red,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.block,
+                          color: Colors.red,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ),
@@ -531,9 +743,21 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     top: 0,
                     bottom: 0,
                     child: Center(
-                      child: const Text(
-                        '✔️',
-                        style: const TextStyle(fontSize: 24),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.green,
+                            width: 2,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.check,
+                          color: Colors.green,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ),

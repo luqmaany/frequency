@@ -4,6 +4,7 @@ import '../services/game_setup_provider.dart';
 import '../models/game_config.dart';
 import '../widgets/player_input.dart';
 import 'game_settings_screen.dart';
+import 'package:convey/widgets/team_color_button.dart';
 
 class GameSetupScreen extends ConsumerStatefulWidget {
   const GameSetupScreen({super.key});
@@ -305,17 +306,17 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                         child: Center(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              ref
-                                  .read(gameSetupProvider.notifier)
-                                  .shuffleTeams();
-                            },
-                            icon: const Icon(Icons.shuffle),
-                            label: const Text('Shuffle Teams'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 24, vertical: 16),
+                          child: SizedBox(
+                            width: 200,
+                            child: TeamColorButton(
+                              text: 'Shuffle Teams',
+                              icon: Icons.shuffle,
+                              color: teamColors[1],
+                              onPressed: () {
+                                ref
+                                    .read(gameSetupProvider.notifier)
+                                    .shuffleTeams();
+                              },
                             ),
                           ),
                         ),
@@ -338,7 +339,10 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                 child: Row(
                   children: [
                     Expanded(
-                      child: ElevatedButton.icon(
+                      child: TeamColorButton(
+                        text: 'Next',
+                        icon: Icons.arrow_forward,
+                        color: teamColors[2],
                         onPressed: gameConfig.teams.length >= 2 &&
                                 gameConfig.teams.every((team) =>
                                     team
@@ -354,11 +358,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                 );
                               }
                             : null,
-                        icon: const Icon(Icons.arrow_forward),
-                        label: const Text(
-                          'Next',
-                          style: TextStyle(fontSize: 18),
-                        ),
                       ),
                     ),
                   ],
@@ -371,24 +370,3 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
     );
   }
 }
-
-class TeamColor {
-  final String name;
-  final Color background;
-  final Color border;
-  final Color text;
-  TeamColor(this.name, this.background, this.border, this.text);
-}
-
-final List<TeamColor> teamColors = [
-  TeamColor('Red', Colors.red.shade100, Colors.red, Colors.red.shade900),
-  TeamColor('Blue', Colors.blue.shade100, Colors.blue, Colors.blue.shade900),
-  TeamColor(
-      'Green', Colors.green.shade100, Colors.green, Colors.green.shade900),
-  TeamColor(
-      'Orange', Colors.orange.shade100, Colors.orange, Colors.orange.shade900),
-  TeamColor(
-      'Purple', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
-  TeamColor(
-      'Brown', Colors.brown.shade100, Colors.brown, Colors.brown.shade900),
-];
