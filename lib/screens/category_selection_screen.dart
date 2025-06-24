@@ -5,6 +5,8 @@ import 'dart:async';
 import 'word_lists_manager_screen.dart';
 import 'role_assignment_screen.dart';
 import '../services/game_state_provider.dart';
+import '../screens/game_setup_screen.dart' show teamColors, TeamColor;
+import 'package:convey/widgets/team_color_button.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -25,31 +27,42 @@ class CategorySelectionScreen extends ConsumerStatefulWidget {
 
 class _CategorySelectionScreenState
     extends ConsumerState<CategorySelectionScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+    with TickerProviderStateMixin {
+  late AnimationController _scaleController;
+  late Animation<double> _scaleAnimation;
+
   bool _isSpinning = false;
   WordCategory? _selectedCategory;
   String _currentCategory = '';
   Timer? _categoryTimer;
   int _spinCount = 0;
-  static const int _totalSpins = 20; // Total number of category changes
-  static const int _initialDelay =
-      50; // Initial delay between changes in milliseconds
-  static const int _finalDelay =
-      500; // Final delay between changes in milliseconds
+  static const int _totalSpins = 30; // More spins for smoother effect
+  static const int _initialDelay = 25; // Faster initial speed
+  static const int _finalDelay = 120; // Smoother final speed
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 3),
+
+    // Scale animation controller for tap feedback
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 150),
       vsync: this,
     );
+
+    // Setup animations
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.easeInOut,
+    ));
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _scaleController.dispose();
     _categoryTimer?.cancel();
     super.dispose();
   }
@@ -80,6 +93,21 @@ class _CategorySelectionScreenState
     }
   }
 
+  WordCategory _getCategoryFromName(String categoryName) {
+    switch (categoryName) {
+      case 'Person':
+        return WordCategory.person;
+      case 'Action':
+        return WordCategory.action;
+      case 'World':
+        return WordCategory.world;
+      case 'Random':
+        return WordCategory.random;
+      default:
+        return WordCategory.person; // fallback
+    }
+  }
+
   void _spinCategories() {
     if (_isSpinning) return;
 
@@ -89,15 +117,25 @@ class _CategorySelectionScreenState
       _spinCount = 0;
     });
 
+    // Add a subtle scale animation for feedback
+    _scaleController.forward().then((_) => _scaleController.reverse());
+
     void updateCategory() {
       if (_spinCount >= _totalSpins) {
         _categoryTimer?.cancel();
+
+        // Final selection with smooth transition
+        final finalCategory = WordCategory
+            .values[math.Random().nextInt(WordCategory.values.length)];
+
         setState(() {
           _isSpinning = false;
-          _selectedCategory = WordCategory
-              .values[math.Random().nextInt(WordCategory.values.length)];
-          _currentCategory = _getCategoryName(_selectedCategory!);
+          _selectedCategory = finalCategory;
+          _currentCategory = _getCategoryName(finalCategory);
         });
+
+        // Add a celebration animation
+        _scaleController.forward().then((_) => _scaleController.reverse());
         return;
       }
 
@@ -107,10 +145,14 @@ class _CategorySelectionScreenState
       });
 
       _spinCount++;
-      // Calculate delay that increases as we get closer to the end
+
+      // Use an easing curve for more natural deceleration
       final progress = _spinCount / _totalSpins;
+      final easedProgress = Curves.easeInOut.transform(progress);
       final delay =
-          _initialDelay + ((_finalDelay - _initialDelay) * progress).round();
+          (_initialDelay + ((_finalDelay - _initialDelay) * easedProgress))
+              .round();
+
       _categoryTimer = Timer(Duration(milliseconds: delay), updateCategory);
     }
 
@@ -136,42 +178,59 @@ class _CategorySelectionScreenState
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
-                    Text(
-                      'Tap to Spin!',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
                     const SizedBox(height: 40),
                     GestureDetector(
                       onTap: (!_isSpinning && _selectedCategory == null)
                           ? _spinCategories
                           : null,
-                      child: Container(
-                        width: 300,
-                        height: 300,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey, width: 2),
-                        ),
-                        child: Center(
-                          child: AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 200),
-                            child: Text(
-                              _currentCategory.isEmpty
-                                  ? 'Tap to Start'
-                                  : _currentCategory,
-                              key: ValueKey<String>(_currentCategory),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .displayLarge
-                                  ?.copyWith(
-                                    color: _selectedCategory != null
-                                        ? _getCategoryColor(_selectedCategory!)
-                                        : Theme.of(context).colorScheme.primary,
+                      child: AnimatedBuilder(
+                        animation: _scaleController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _scaleAnimation.value,
+                            child: Container(
+                              width: 300,
+                              height: 300,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.grey,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Center(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 150),
+                                  transitionBuilder: (Widget child,
+                                      Animation<double> animation) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    );
+                                  },
+                                  child: Text(
+                                    _currentCategory.isEmpty
+                                        ? 'Tap to Spin'
+                                        : _currentCategory,
+                                    key: ValueKey<String>(_currentCategory),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .displayLarge
+                                        ?.copyWith(
+                                          color: _currentCategory.isNotEmpty
+                                              ? _getCategoryColor(
+                                                  _getCategoryFromName(
+                                                      _currentCategory))
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .primary,
+                                        ),
                                   ),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -184,30 +243,31 @@ class _CategorySelectionScreenState
               child: AnimatedOpacity(
                 opacity: _selectedCategory != null ? 1.0 : 0.0,
                 duration: const Duration(milliseconds: 300),
-                child: ElevatedButton(
-                  onPressed: _selectedCategory != null
-                      ? () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => RoleAssignmentScreen(
-                                teamIndex: widget.teamIndex,
-                                roundNumber: widget.roundNumber,
-                                turnNumber: widget.turnNumber,
-                                category: _selectedCategory!,
-                              ),
-                            ),
-                          );
-                        }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 16, horizontal: 32),
-                    minimumSize: const Size(double.infinity, 60),
-                  ),
-                  child: const Text(
-                    'Start Round',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildTeamColorButton(
+                        context: context,
+                        text: 'Next',
+                        icon: Icons.arrow_forward,
+                        color: teamColors[2], // Green
+                        onPressed: _selectedCategory != null
+                            ? () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => RoleAssignmentScreen(
+                                      teamIndex: widget.teamIndex,
+                                      roundNumber: widget.roundNumber,
+                                      turnNumber: widget.turnNumber,
+                                      category: _selectedCategory!,
+                                    ),
+                                  ),
+                                );
+                              }
+                            : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -216,4 +276,56 @@ class _CategorySelectionScreenState
       ),
     );
   }
+}
+
+Widget _buildTeamColorButton({
+  required BuildContext context,
+  required String text,
+  required IconData icon,
+  required TeamColor color,
+  required VoidCallback? onPressed,
+}) {
+  final bool enabled = onPressed != null;
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2.0),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: enabled ? onPressed : null,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: enabled ? color.background : color.background.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: enabled ? color.border : Colors.grey.shade300,
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: (enabled ? color.border : Colors.grey.shade300)
+                  .withOpacity(0.08),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon,
+                size: 24, color: enabled ? color.border : Colors.grey.shade400),
+            const SizedBox(width: 12),
+            Text(
+              text,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: enabled ? color.text : Colors.grey.shade400,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }

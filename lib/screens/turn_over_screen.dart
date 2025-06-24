@@ -8,6 +8,7 @@ import 'game_over_screen.dart';
 import 'category_selection_screen.dart';
 import 'scoreboard_screen.dart';
 import 'word_lists_manager_screen.dart';
+import 'package:convey/widgets/team_color_button.dart';
 
 class TurnOverScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -96,6 +97,32 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
   void initState() {
     super.initState();
     _disputedWords = Set.from(widget.disputedWords);
+  }
+
+  String _getCategoryName(WordCategory category) {
+    switch (category) {
+      case WordCategory.person:
+        return 'Person';
+      case WordCategory.action:
+        return 'Action';
+      case WordCategory.world:
+        return 'World';
+      case WordCategory.random:
+        return 'Random';
+    }
+  }
+
+  Color _getCategoryColor(WordCategory category) {
+    switch (category) {
+      case WordCategory.person:
+        return Colors.blue;
+      case WordCategory.action:
+        return Colors.green;
+      case WordCategory.world:
+        return Colors.orange;
+      case WordCategory.random:
+        return Colors.purple;
+    }
   }
 
   String _getPerformanceMessage() {
@@ -200,18 +227,38 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
           padding: const EdgeInsets.only(top: 40.0),
           child: Column(
             children: [
+              // Category display
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _getCategoryColor(widget.category).withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _getCategoryColor(widget.category),
+                    width: 2,
+                  ),
+                ),
+                child: Text(
+                  _getCategoryName(widget.category),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // Score display
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: _getCategoryColor(widget.category),
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.3),
+                      color:
+                          _getCategoryColor(widget.category).withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -220,17 +267,10 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                 child: Text(
                   'Score: $_disputedScore',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onPrimary,
+                        color: Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Tap words to contest them',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
               ),
               const SizedBox(height: 20),
               Text(
@@ -262,21 +302,18 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                         decoration: BoxDecoration(
                                           color: _disputedWords.contains(
                                                   widget.wordsGuessed[i])
-                                              ? Theme.of(context)
-                                                  .colorScheme
-                                                  .errorContainer
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .primaryContainer,
+                                              ? Colors.red.withOpacity(0.1)
+                                              : _getCategoryColor(
+                                                      widget.category)
+                                                  .withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                           border: Border.all(
                                             color: _disputedWords.contains(
                                                     widget.wordsGuessed[i])
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .error
-                                                : Colors.transparent,
+                                                ? Colors.red
+                                                : _getCategoryColor(
+                                                    widget.category),
                                             width: 2,
                                           ),
                                         ),
@@ -297,9 +334,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                 widget.wordsGuessed[i]))
                                               Icon(
                                                 Icons.close,
-                                                color: Theme.of(context)
-                                                    .colorScheme
-                                                    .error,
+                                                color: Colors.red,
                                                 size: 20,
                                               ),
                                           ],
@@ -322,12 +357,11 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                 color: _disputedWords.contains(
                                                         widget.wordsGuessed[
                                                             i + 1])
-                                                    ? Theme.of(context)
-                                                        .colorScheme
-                                                        .errorContainer
-                                                    : Theme.of(context)
-                                                        .colorScheme
-                                                        .primaryContainer,
+                                                    ? Colors.red
+                                                        .withOpacity(0.1)
+                                                    : _getCategoryColor(
+                                                            widget.category)
+                                                        .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                                 border: Border.all(
@@ -335,10 +369,9 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                           .contains(widget
                                                                   .wordsGuessed[
                                                               i + 1])
-                                                      ? Theme.of(context)
-                                                          .colorScheme
-                                                          .error
-                                                      : Colors.transparent,
+                                                      ? Colors.red
+                                                      : _getCategoryColor(
+                                                          widget.category),
                                                   width: 2,
                                                 ),
                                               ),
@@ -363,9 +396,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                           .wordsGuessed[i + 1]))
                                                     Icon(
                                                       Icons.close,
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .error,
+                                                      color: Colors.red,
                                                       size: 20,
                                                     ),
                                                 ],
@@ -378,15 +409,28 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                               ),
                             ),
                           const SizedBox(height: 16),
+                          Text(
+                            'Tap words to contest them',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: _getCategoryColor(widget.category),
+                                ),
+                          ),
+                          const SizedBox(height: 16),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .tertiaryContainer,
+                              color: _getCategoryColor(widget.category)
+                                  .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _getCategoryColor(widget.category),
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               _getPerformanceMessage(),
@@ -394,9 +438,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                   .textTheme
                                   .titleMedium
                                   ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onTertiaryContainer,
+                                    color: Colors.black,
                                   ),
                               textAlign: TextAlign.center,
                             ),
@@ -407,9 +449,12 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 16, horizontal: 20),
                             decoration: BoxDecoration(
-                              color:
-                                  Theme.of(context).colorScheme.errorContainer,
+                              color: Colors.red.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.red,
+                                width: 1,
+                              ),
                             ),
                             child: Text(
                               _getRandomMessage(_zeroScoreMessages),
@@ -417,9 +462,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                   .textTheme
                                   .titleMedium
                                   ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onErrorContainer,
+                                    color: Colors.black,
                                   ),
                               textAlign: TextAlign.center,
                             ),
@@ -440,10 +483,14 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8, horizontal: 12),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .errorContainer,
+                                  color: _getCategoryColor(widget.category)
+                                      .withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: _getCategoryColor(widget.category)
+                                        .withOpacity(0.3),
+                                    width: 1,
+                                  ),
                                 ),
                                 child: Text(
                                   word,
@@ -451,9 +498,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                       .textTheme
                                       .titleMedium
                                       ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onErrorContainer,
+                                        color: Colors.black,
                                       ),
                                   textAlign: TextAlign.center,
                                 ),
@@ -477,22 +522,20 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                           '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.error,
+                                    color: Colors.red,
                                   ),
                         ),
                       ),
-                    ElevatedButton(
+                    TeamColorButton(
+                      text: 'Confirm Score',
+                      icon: Icons.check,
+                      color: TeamColor(
+                        'Category',
+                        _getCategoryColor(widget.category).withOpacity(0.1),
+                        _getCategoryColor(widget.category),
+                        _getCategoryColor(widget.category),
+                      ),
                       onPressed: _confirmScore,
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 32),
-                        minimumSize: const Size(double.infinity, 60),
-                      ),
-                      child: const Text(
-                        'Confirm Score',
-                        style: TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
                     ),
                   ],
                 ),

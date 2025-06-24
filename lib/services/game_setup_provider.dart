@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../models/game_config.dart';
-import '../screens/game_setup_screen.dart';
+import 'package:convey/widgets/team_color_button.dart';
 
 class GameSetupNotifier extends StateNotifier<GameConfig> {
   GameSetupNotifier()

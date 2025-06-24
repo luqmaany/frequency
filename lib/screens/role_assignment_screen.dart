@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import 'game_screen.dart';
 import 'word_lists_manager_screen.dart';
-import '../screens/game_setup_screen.dart'; // Import for TeamColor and teamColors
+import 'package:convey/widgets/team_color_button.dart';
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -146,25 +146,24 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   ),
                 ),
               ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                      builder: (context) => GameScreen(
-                        teamIndex: widget.teamIndex,
-                        roundNumber: widget.roundNumber,
-                        turnNumber: widget.turnNumber,
-                        category: widget.category,
+              SizedBox(
+                width: 200,
+                child: TeamColorButton(
+                  text: 'Start',
+                  icon: Icons.play_arrow,
+                  color: teamColors[2], // Green
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => GameScreen(
+                          teamIndex: widget.teamIndex,
+                          roundNumber: widget.roundNumber,
+                          turnNumber: widget.turnNumber,
+                          category: widget.category,
+                        ),
                       ),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.all(16),
-                ),
-                child: const Text(
-                  'Start',
-                  style: TextStyle(fontSize: 18),
+                    );
+                  },
                 ),
               ),
             ],
@@ -304,25 +303,30 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               ),
             ),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () {
-                _assignRandomRoles();
-                _showTransitionScreen();
-              },
-              icon: const Icon(Icons.shuffle),
-              label: const Text('Random'),
+            Center(
+              child: SizedBox(
+                width: 200,
+                child: TeamColorButton(
+                  text: 'Random',
+                  icon: Icons.shuffle,
+                  color: teamColors[1], // Blue
+                  onPressed: () {
+                    _assignRandomRoles();
+                    _showTransitionScreen();
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {
-                _showTransitionScreen();
-              },
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.all(16),
-              ),
-              child: const Text(
-                'Begin Turn',
-                style: TextStyle(fontSize: 18),
+            SizedBox(
+              width: 200,
+              child: TeamColorButton(
+                text: 'Next',
+                icon: Icons.arrow_forward,
+                color: teamColors[2], // Green
+                onPressed: () {
+                  _showTransitionScreen();
+                },
               ),
             ),
           ],
