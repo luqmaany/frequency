@@ -1,0 +1,3 @@
+[] - Fix max teams count when we add a player after 6 teams it makes another team
+[] - make it so that whe we add a player it creates a chip not automatically add to team
+[] - add sounds to game
