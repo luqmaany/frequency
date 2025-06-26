@@ -142,18 +142,11 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _startTimer() {
-    debugPrint(
-        'Starting timer for round ${widget.roundNumber}, turn ${widget.turnNumber}');
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_timeLeft > 0) {
           _timeLeft--;
-          if (_timeLeft % 5 == 0) {
-            // Print every 5 seconds
-            debugPrint('Time left: $_timeLeft seconds');
-          }
         } else {
-          debugPrint('Timer reached zero, ending turn');
           _endTurn();
         }
       });
@@ -161,11 +154,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
   }
 
   void _endTurn() {
-    debugPrint('\n=== TURN ENDED ===');
-    debugPrint('Round ${widget.roundNumber}, Turn ${widget.turnNumber}');
-    debugPrint('Final Score: ${_correctCount - _disputedWords.length}');
-    debugPrint('Skips Remaining: $_skipsLeft');
-
     _timer?.cancel();
     setState(() {
       _isTurnOver = true;
@@ -187,28 +175,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
         ),
       ),
     );
-
-    // Log detailed score information with a small delay to ensure visibility
-    Future.delayed(const Duration(milliseconds: 100), () {
-      final gameState = ref.read(gameStateProvider);
-      if (gameState != null) {
-        debugPrint('\n=== Turn ${widget.turnNumber} Results ===');
-        debugPrint('Team ${widget.teamIndex + 1} Turn Details:');
-        debugPrint(
-            '- Correct Guesses: ${_correctCount - _disputedWords.length}');
-        debugPrint('- Disputed Words: ${_disputedWords.join(", ")}');
-        debugPrint(
-            '- Skips Used: ${ref.read(gameSetupProvider).allowedSkips - _skipsLeft}');
-        debugPrint(
-            '- Words Guessed: ${_wordsGuessed.where((word) => !_disputedWords.contains(word)).join(", ")}');
-        debugPrint('- Words Skipped: ${_wordsSkipped.join(", ")}');
-        debugPrint('\nCurrent Team Scores:');
-        for (var i = 0; i < gameState.teamScores.length; i++) {
-          debugPrint('Team ${i + 1}: ${gameState.teamScores[i]} points');
-        }
-        debugPrint('===========================\n');
-      }
-    });
   }
 
   void _onWordGuessed(String word) {
