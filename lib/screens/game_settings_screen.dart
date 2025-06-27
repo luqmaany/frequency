@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
+import '../services/game_navigation_service.dart';
 import '../widgets/game_settings.dart';
-import 'category_selection_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
 class GameSettingsScreen extends ConsumerWidget {
@@ -85,16 +85,10 @@ class GameSettingsScreen extends ConsumerWidget {
                                   .read(gameStateProvider.notifier)
                                   .initializeGame(gameConfig);
 
-                              // Navigate to role assignment for first team and round
-                              Navigator.of(context).pushReplacement(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const CategorySelectionScreen(
-                                    teamIndex: 0,
-                                    roundNumber: 1,
-                                    turnNumber: 1,
-                                  ),
-                                ),
+                              // Use navigation service to navigate to the first screen
+                              GameNavigationService.navigateToNextScreen(
+                                context,
+                                ref,
                               );
                             });
                           }

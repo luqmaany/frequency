@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
-import 'game_screen.dart';
+import '../services/game_navigation_service.dart';
 import 'word_lists_manager_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
@@ -153,15 +153,13 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   icon: Icons.play_arrow,
                   color: teamColors[2], // Green
                   onPressed: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(
-                        builder: (context) => GameScreen(
-                          teamIndex: widget.teamIndex,
-                          roundNumber: widget.roundNumber,
-                          turnNumber: widget.turnNumber,
-                          category: widget.category,
-                        ),
-                      ),
+                    // Use navigation service to navigate to game screen
+                    GameNavigationService.navigateToGameScreen(
+                      context,
+                      widget.teamIndex,
+                      widget.roundNumber,
+                      widget.turnNumber,
+                      widget.category,
                     );
                   },
                 ),

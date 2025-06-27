@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
+import '../services/game_navigation_service.dart';
 import '../models/game_config.dart';
 import '../widgets/player_input.dart';
-import 'game_settings_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
 class GameSetupScreen extends ConsumerStatefulWidget {
@@ -350,12 +350,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                         .length ==
                                     2)
                             ? () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const GameSettingsScreen(),
-                                  ),
-                                );
+                                // Use navigation service to navigate to game settings
+                                GameNavigationService.navigateToGameSettings(
+                                    context);
                               }
                             : null,
                       ),
