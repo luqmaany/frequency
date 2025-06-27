@@ -41,7 +41,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Set<String> _disputedWords = {};
 
   // Countdown state
-  bool _isCountdownActive = true;
+  bool _isCountdownActive = false;
   int _countdownNumber = 3;
   late AnimationController _countdownAnimationController;
   late Animation<double> _countdownAnimation;
@@ -93,12 +93,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
       ),
     );
 
-    // Load words and start countdown immediately
+    // Load words and start game immediately (skip countdown for testing)
     _loadInitialWords();
 
-    // Use a microtask to ensure the countdown starts after the first build
+    // Use a microtask to ensure the game starts after the first build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startCountdown();
+      _startGame();
     });
   }
 
