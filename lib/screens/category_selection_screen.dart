@@ -3,8 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'dart:async';
 import 'word_lists_manager_screen.dart';
-import 'role_assignment_screen.dart';
 import '../services/game_state_provider.dart';
+import '../services/game_navigation_service.dart';
 import '../screens/game_setup_screen.dart' show teamColors, TeamColor;
 import '../utils/category_utils.dart';
 import 'package:convey/widgets/team_color_button.dart';
@@ -228,15 +228,13 @@ class _CategorySelectionScreenState
                         color: teamColors[2], // Green
                         onPressed: _selectedCategory != null
                             ? () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => RoleAssignmentScreen(
-                                      teamIndex: widget.teamIndex,
-                                      roundNumber: widget.roundNumber,
-                                      turnNumber: widget.turnNumber,
-                                      category: _selectedCategory!,
-                                    ),
-                                  ),
+                                // Use navigation service to navigate to role assignment
+                                GameNavigationService.navigateToRoleAssignment(
+                                  context,
+                                  widget.teamIndex,
+                                  widget.roundNumber,
+                                  widget.turnNumber,
+                                  _selectedCategory!,
                                 );
                               }
                             : null,

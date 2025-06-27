@@ -5,8 +5,8 @@ import 'dart:async';
 import 'word_lists_manager_screen.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
+import '../services/game_navigation_service.dart';
 import '../utils/category_utils.dart';
-import 'turn_over_screen.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -160,21 +160,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _isTurnOver = true;
     });
 
-    // Navigate to TurnOverScreen
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => TurnOverScreen(
-          teamIndex: widget.teamIndex,
-          roundNumber: widget.roundNumber,
-          turnNumber: widget.turnNumber,
-          category: widget.category,
-          correctCount: _correctCount,
-          skipsLeft: _skipsLeft,
-          wordsGuessed: _wordsGuessed,
-          wordsSkipped: _wordsSkipped,
-          disputedWords: _disputedWords,
-        ),
-      ),
+    // Use navigation service to navigate to turn over screen
+    GameNavigationService.navigateToTurnOver(
+      context,
+      widget.teamIndex,
+      widget.roundNumber,
+      widget.turnNumber,
+      widget.category,
+      _correctCount,
+      _skipsLeft,
+      _wordsGuessed,
+      _wordsSkipped,
+      _disputedWords,
     );
   }
 

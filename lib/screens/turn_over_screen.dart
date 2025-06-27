@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
+import '../services/game_navigation_service.dart';
 import '../models/game_state.dart';
 import '../models/game_config.dart';
 import '../utils/category_utils.dart';
-import 'game_over_screen.dart';
-import 'category_selection_screen.dart';
-import 'scoreboard_screen.dart';
 import 'word_lists_manager_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
@@ -158,39 +156,9 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
 
       ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
 
-      // Navigate to next screen
-      final gameState = ref.read(gameStateProvider);
-      if (gameState == null) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
-        return;
-      }
-
-      if (gameState.isGameOver) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const GameOverScreen(),
-          ),
-        );
-      } else if (isLastTeamThisRound) {
-        // End of round: show scoreboard
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => ScoreboardScreen(
-              roundNumber: gameState.currentRound - 1,
-            ),
-          ),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => CategorySelectionScreen(
-              teamIndex: gameState.currentTeamIndex,
-              roundNumber: gameState.currentRound,
-              turnNumber: gameState.currentTurn,
-            ),
-          ),
-        );
-      }
+      // Use navigation service to navigate to next screen
+      GameNavigationService.navigateToNextScreen(context, ref,
+          teamIndex: widget.teamIndex);
     }
   }
 
