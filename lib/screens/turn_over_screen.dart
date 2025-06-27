@@ -4,6 +4,7 @@ import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../models/game_state.dart';
 import '../models/game_config.dart';
+import '../utils/category_utils.dart';
 import 'game_over_screen.dart';
 import 'category_selection_screen.dart';
 import 'scoreboard_screen.dart';
@@ -97,32 +98,6 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
   void initState() {
     super.initState();
     _disputedWords = Set.from(widget.disputedWords);
-  }
-
-  String _getCategoryName(WordCategory category) {
-    switch (category) {
-      case WordCategory.person:
-        return 'Person';
-      case WordCategory.action:
-        return 'Action';
-      case WordCategory.world:
-        return 'World';
-      case WordCategory.random:
-        return 'Random';
-    }
-  }
-
-  Color _getCategoryColor(WordCategory category) {
-    switch (category) {
-      case WordCategory.person:
-        return Colors.blue;
-      case WordCategory.action:
-        return Colors.green;
-      case WordCategory.world:
-        return Colors.orange;
-      case WordCategory.random:
-        return Colors.purple;
-    }
   }
 
   String _getPerformanceMessage() {
@@ -232,15 +207,16 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(widget.category).withOpacity(0.2),
+                  color: CategoryUtils.getCategoryColor(widget.category)
+                      .withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _getCategoryColor(widget.category),
+                    color: CategoryUtils.getCategoryColor(widget.category),
                     width: 2,
                   ),
                 ),
                 child: Text(
-                  _getCategoryName(widget.category),
+                  CategoryUtils.getCategoryName(widget.category),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.black,
                         fontWeight: FontWeight.w600,
@@ -253,12 +229,12 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(widget.category),
+                  color: CategoryUtils.getCategoryColor(widget.category),
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color:
-                          _getCategoryColor(widget.category).withOpacity(0.3),
+                      color: CategoryUtils.getCategoryColor(widget.category)
+                          .withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -303,7 +279,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                           color: _disputedWords.contains(
                                                   widget.wordsGuessed[i])
                                               ? Colors.red.withOpacity(0.1)
-                                              : _getCategoryColor(
+                                              : CategoryUtils.getCategoryColor(
                                                       widget.category)
                                                   .withOpacity(0.1),
                                           borderRadius:
@@ -312,8 +288,9 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                             color: _disputedWords.contains(
                                                     widget.wordsGuessed[i])
                                                 ? Colors.red
-                                                : _getCategoryColor(
-                                                    widget.category),
+                                                : CategoryUtils
+                                                    .getCategoryColor(
+                                                        widget.category),
                                             width: 2,
                                           ),
                                         ),
@@ -359,8 +336,9 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                             i + 1])
                                                     ? Colors.red
                                                         .withOpacity(0.1)
-                                                    : _getCategoryColor(
-                                                            widget.category)
+                                                    : CategoryUtils
+                                                            .getCategoryColor(
+                                                                widget.category)
                                                         .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
@@ -370,8 +348,9 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                                   .wordsGuessed[
                                                               i + 1])
                                                       ? Colors.red
-                                                      : _getCategoryColor(
-                                                          widget.category),
+                                                      : CategoryUtils
+                                                          .getCategoryColor(
+                                                              widget.category),
                                                   width: 2,
                                                 ),
                                               ),
@@ -415,7 +394,8 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                 .textTheme
                                 .titleLarge
                                 ?.copyWith(
-                                  color: _getCategoryColor(widget.category),
+                                  color: CategoryUtils.getCategoryColor(
+                                      widget.category),
                                 ),
                           ),
                           const SizedBox(height: 16),
@@ -424,11 +404,13 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: _getCategoryColor(widget.category)
+                              color: CategoryUtils.getCategoryColor(
+                                      widget.category)
                                   .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: _getCategoryColor(widget.category),
+                                color: CategoryUtils.getCategoryColor(
+                                    widget.category),
                                 width: 1,
                               ),
                             ),
@@ -483,11 +465,13 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8, horizontal: 12),
                                 decoration: BoxDecoration(
-                                  color: _getCategoryColor(widget.category)
+                                  color: CategoryUtils.getCategoryColor(
+                                          widget.category)
                                       .withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: _getCategoryColor(widget.category)
+                                    color: CategoryUtils.getCategoryColor(
+                                            widget.category)
                                         .withOpacity(0.3),
                                     width: 1,
                                   ),
@@ -531,9 +515,10 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                       icon: Icons.check,
                       color: TeamColor(
                         'Category',
-                        _getCategoryColor(widget.category).withOpacity(0.1),
-                        _getCategoryColor(widget.category),
-                        _getCategoryColor(widget.category),
+                        CategoryUtils.getCategoryColor(widget.category)
+                            .withOpacity(0.1),
+                        CategoryUtils.getCategoryColor(widget.category),
+                        CategoryUtils.getCategoryColor(widget.category),
                       ),
                       onPressed: _confirmScore,
                     ),

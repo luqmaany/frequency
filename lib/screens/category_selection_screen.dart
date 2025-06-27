@@ -6,6 +6,7 @@ import 'word_lists_manager_screen.dart';
 import 'role_assignment_screen.dart';
 import '../services/game_state_provider.dart';
 import '../screens/game_setup_screen.dart' show teamColors, TeamColor;
+import '../utils/category_utils.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
@@ -67,32 +68,6 @@ class _CategorySelectionScreenState
     super.dispose();
   }
 
-  String _getCategoryName(WordCategory category) {
-    switch (category) {
-      case WordCategory.person:
-        return 'Person';
-      case WordCategory.action:
-        return 'Action';
-      case WordCategory.world:
-        return 'World';
-      case WordCategory.random:
-        return 'Random';
-    }
-  }
-
-  Color _getCategoryColor(WordCategory category) {
-    switch (category) {
-      case WordCategory.person:
-        return Colors.blue;
-      case WordCategory.action:
-        return Colors.green;
-      case WordCategory.world:
-        return Colors.orange;
-      case WordCategory.random:
-        return Colors.purple;
-    }
-  }
-
   WordCategory _getCategoryFromName(String categoryName) {
     switch (categoryName) {
       case 'Person':
@@ -131,7 +106,7 @@ class _CategorySelectionScreenState
         setState(() {
           _isSpinning = false;
           _selectedCategory = finalCategory;
-          _currentCategory = _getCategoryName(finalCategory);
+          _currentCategory = CategoryUtils.getCategoryName(finalCategory);
         });
 
         // Add a celebration animation
@@ -140,7 +115,7 @@ class _CategorySelectionScreenState
       }
 
       setState(() {
-        _currentCategory = _getCategoryName(WordCategory
+        _currentCategory = CategoryUtils.getCategoryName(WordCategory
             .values[math.Random().nextInt(WordCategory.values.length)]);
       });
 
@@ -218,7 +193,7 @@ class _CategorySelectionScreenState
                                         .displayLarge
                                         ?.copyWith(
                                           color: _currentCategory.isNotEmpty
-                                              ? _getCategoryColor(
+                                              ? CategoryUtils.getCategoryColor(
                                                   _getCategoryFromName(
                                                       _currentCategory))
                                               : Theme.of(context)

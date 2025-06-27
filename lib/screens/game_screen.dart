@@ -5,6 +5,7 @@ import 'dart:async';
 import 'word_lists_manager_screen.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
+import '../utils/category_utils.dart';
 import 'turn_over_screen.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
@@ -262,32 +263,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
   }
 
-  String _getCategoryName(WordCategory category) {
-    switch (category) {
-      case WordCategory.person:
-        return 'Person';
-      case WordCategory.action:
-        return 'Action';
-      case WordCategory.world:
-        return 'World';
-      case WordCategory.random:
-        return 'Random';
-    }
-  }
-
-  Color _getCategoryColor(WordCategory category) {
-    switch (category) {
-      case WordCategory.person:
-        return Colors.blue;
-      case WordCategory.action:
-        return Colors.green;
-      case WordCategory.world:
-        return Colors.orange;
-      case WordCategory.random:
-        return Colors.purple;
-    }
-  }
-
   AllowedSwipeDirection _getAllowedSwipeDirection() {
     if (_skipsLeft > 0) {
       return AllowedSwipeDirection.symmetric(horizontal: true, vertical: false);
@@ -301,15 +276,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
     return Container(
       margin: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: _getCategoryColor(widget.category).withOpacity(0.1),
+        color: CategoryUtils.getCategoryColor(widget.category).withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _getCategoryColor(widget.category),
+          color: CategoryUtils.getCategoryColor(widget.category),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: _getCategoryColor(widget.category).withOpacity(0.2),
+            color: CategoryUtils.getCategoryColor(widget.category)
+                .withOpacity(0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -365,17 +341,19 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: _getCategoryColor(widget.category).withOpacity(0.2),
+                    color: CategoryUtils.getCategoryColor(widget.category)
+                        .withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: _getCategoryColor(widget.category),
+                      color: CategoryUtils.getCategoryColor(widget.category),
                       width: 2,
                     ),
                   ),
                   child: Text(
-                    _getCategoryName(widget.category),
+                    CategoryUtils.getCategoryName(widget.category),
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: _getCategoryColor(widget.category),
+                          color:
+                              CategoryUtils.getCategoryColor(widget.category),
                           fontWeight: FontWeight.bold,
                         ),
                     textAlign: TextAlign.center,
@@ -394,11 +372,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           width: 200,
                           height: 200,
                           decoration: BoxDecoration(
-                            color: _getCategoryColor(widget.category),
+                            color:
+                                CategoryUtils.getCategoryColor(widget.category),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: _getCategoryColor(widget.category)
+                                color: CategoryUtils.getCategoryColor(
+                                        widget.category)
                                     .withOpacity(0.4),
                                 blurRadius: 20,
                                 spreadRadius: 5,
@@ -486,12 +466,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 20),
                       decoration: BoxDecoration(
-                        color: _getCategoryColor(widget.category),
+                        color: CategoryUtils.getCategoryColor(widget.category),
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: _getCategoryColor(widget.category)
-                                .withOpacity(0.4),
+                            color:
+                                CategoryUtils.getCategoryColor(widget.category)
+                                    .withOpacity(0.4),
                             blurRadius: 8,
                             offset: const Offset(0, 4),
                           ),
@@ -525,16 +506,18 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 8),
                           decoration: BoxDecoration(
-                            color: _getCategoryColor(widget.category)
-                                .withOpacity(0.2),
+                            color:
+                                CategoryUtils.getCategoryColor(widget.category)
+                                    .withOpacity(0.2),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: _getCategoryColor(widget.category),
+                              color: CategoryUtils.getCategoryColor(
+                                  widget.category),
                               width: 1,
                             ),
                           ),
                           child: Text(
-                            _getCategoryName(widget.category),
+                            CategoryUtils.getCategoryName(widget.category),
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -552,8 +535,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 8),
                           decoration: BoxDecoration(
-                            color: _getCategoryColor(widget.category)
-                                .withOpacity(0.1),
+                            color:
+                                CategoryUtils.getCategoryColor(widget.category)
+                                    .withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
