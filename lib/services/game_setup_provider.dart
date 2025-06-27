@@ -9,8 +9,8 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
           playerNames: [],
           teams: [],
           teamColorIndices: [],
-          roundTimeSeconds: 10,
-          targetScore: 30,
+          roundTimeSeconds: 2,
+          targetScore: 2,
           allowedSkips: 3,
         ));
 
