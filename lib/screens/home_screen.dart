@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_navigation_service.dart';
-import 'word_lists_manager_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

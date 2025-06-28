@@ -5,7 +5,6 @@ import 'dart:async';
 import 'word_lists_manager_screen.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
-import '../screens/game_setup_screen.dart' show teamColors, TeamColor;
 import '../utils/category_utils.dart';
 import 'package:convey/widgets/team_color_button.dart';
 

@@ -10,7 +10,6 @@ import '../screens/game_screen.dart';
 import '../screens/turn_over_screen.dart';
 import '../screens/game_setup_screen.dart';
 import '../screens/word_lists_manager_screen.dart';
-import '../utils/category_utils.dart';
 import '../services/game_state_provider.dart';
 
 class GameNavigationService {

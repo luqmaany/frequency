@@ -4,7 +4,6 @@ import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
 import '../models/game_state.dart';
-import '../models/game_config.dart';
 import '../utils/category_utils.dart';
 import 'word_lists_manager_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
@@ -137,8 +136,6 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
     // Record the turn in game state with final disputed score
     final currentTeamPlayers = ref.read(currentTeamPlayersProvider);
     if (currentTeamPlayers.length >= 2) {
-      final isLastTeamThisRound = widget.teamIndex ==
-          ref.read(gameStateProvider)!.config.teams.length - 1;
       final turnRecord = TurnRecord(
         teamIndex: widget.teamIndex,
         roundNumber: widget.roundNumber,
