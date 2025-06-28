@@ -32,7 +32,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
   late int _skipsLeft;
   int _correctCount = 0;
   Timer? _timer;
-  bool _isTurnOver = false;
   List<Word> _currentWords = [];
   Set<String> _usedWords = {};
   final CardSwiperController _topCardController = CardSwiperController();
@@ -156,9 +155,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   void _endTurn() {
     _timer?.cancel();
-    setState(() {
-      _isTurnOver = true;
-    });
 
     // Use navigation service to navigate to turn over screen
     GameNavigationService.navigateToTurnOver(
@@ -212,9 +208,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
         words.where((word) => word.category == widget.category).toList();
 
     if (categoryWords.isEmpty) {
-      setState(() {
-        _isTurnOver = true;
-      });
       return;
     }
 
@@ -303,9 +296,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   @override
   Widget build(BuildContext context) {
-    final gameState = ref.watch(gameStateProvider);
-    final isGameOver = ref.watch(isGameOverProvider);
-
     if (_currentWords.isEmpty) {
       return const Scaffold(
         body: Center(
