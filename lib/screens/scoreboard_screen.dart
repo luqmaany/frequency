@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_state_provider.dart';
-import 'category_selection_screen.dart';
+import '../services/game_navigation_service.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
 class ScoreboardScreen extends ConsumerWidget {
@@ -194,17 +194,9 @@ class ScoreboardScreen extends ConsumerWidget {
                     icon: Icons.arrow_forward,
                     color: teamColors[2], // Green
                     onPressed: () {
-                      // Next round
-                      final nextRound = roundNumber + 1;
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                          builder: (context) => CategorySelectionScreen(
-                            teamIndex: gameState.currentTeamIndex,
-                            roundNumber: nextRound,
-                            turnNumber: 1,
-                          ),
-                        ),
-                      );
+                      // Use navigation service to navigate to next round
+                      GameNavigationService.navigateToNextRound(
+                          context, roundNumber + 1);
                     },
                   ),
                 ),

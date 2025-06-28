@@ -8,11 +8,17 @@ import '../screens/game_settings_screen.dart';
 import '../screens/role_assignment_screen.dart';
 import '../screens/game_screen.dart';
 import '../screens/turn_over_screen.dart';
+import '../screens/game_setup_screen.dart';
 import '../screens/word_lists_manager_screen.dart';
 import '../utils/category_utils.dart';
 import '../services/game_state_provider.dart';
 
 class GameNavigationService {
+  // ============================================================================
+  // PUBLIC NAVIGATION METHODS
+  // ============================================================================
+
+  /// Main navigation method that decides where to go based on game state
   static void navigateToNextScreen(BuildContext context, WidgetRef ref,
       {int? teamIndex}) {
     final gameState = ref.read(gameStateProvider);
@@ -36,6 +42,25 @@ class GameNavigationService {
     }
   }
 
+  /// Navigate from home screen to game setup
+  static void navigateToGameSetup(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const GameSetupScreen(),
+      ),
+    );
+  }
+
+  /// Navigate from home screen to word lists manager
+  static void navigateToWordListsManager(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const WordListsManagerScreen(),
+      ),
+    );
+  }
+
+  /// Navigate from game setup to game settings
   static void navigateToGameSettings(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -44,6 +69,7 @@ class GameNavigationService {
     );
   }
 
+  /// Navigate from category selection to role assignment
   static void navigateToRoleAssignment(
     BuildContext context,
     int teamIndex,
@@ -63,6 +89,7 @@ class GameNavigationService {
     );
   }
 
+  /// Navigate from role assignment to game screen
   static void navigateToGameScreen(
     BuildContext context,
     int teamIndex,
@@ -82,6 +109,7 @@ class GameNavigationService {
     );
   }
 
+  /// Navigate from game screen to turn over screen
   static void navigateToTurnOver(
     BuildContext context,
     int teamIndex,
@@ -111,7 +139,24 @@ class GameNavigationService {
     );
   }
 
-  // Helper methods
+  /// Navigate from scoreboard to next round
+  static void navigateToNextRound(BuildContext context, int nextRound) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => CategorySelectionScreen(
+          teamIndex: 0, // Start with first team
+          roundNumber: nextRound,
+          turnNumber: 1,
+        ),
+      ),
+    );
+  }
+
+  // ============================================================================
+  // HELPER METHODS
+  // ============================================================================
+
+  /// Check if the current team is the last team in the round
   static bool _isEndOfRound(GameState gameState, int? teamIndex) {
     // If teamIndex is provided, use it to check if it was the last team
     // Otherwise, use the current team index from the game state
@@ -119,17 +164,23 @@ class GameNavigationService {
     return indexToCheck == gameState.config.teams.length - 1;
   }
 
-  // Navigation methods
+  // ============================================================================
+  // PRIVATE NAVIGATION METHODS
+  // ============================================================================
+
+  /// Navigate back to home screen
   static void _navigateToHome(BuildContext context) {
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  /// Navigate to game over screen
   static void _navigateToGameOver(BuildContext context) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => const GameOverScreen()),
     );
   }
 
+  /// Navigate to scoreboard screen
   static void _navigateToScoreboard(BuildContext context, int roundNumber) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -138,6 +189,7 @@ class GameNavigationService {
     );
   }
 
+  /// Navigate to category selection screen
   static void _navigateToCategorySelection(
     BuildContext context,
     GameState gameState,

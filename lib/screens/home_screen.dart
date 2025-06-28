@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'game_setup_screen.dart';
+import '../services/game_navigation_service.dart';
 import 'word_lists_manager_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -42,11 +42,7 @@ class HomeScreen extends ConsumerWidget {
                 context,
                 'Start Game',
                 Icons.play_arrow_rounded,
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const GameSetupScreen()),
-                ),
+                () => GameNavigationService.navigateToGameSetup(context),
                 buttonColors[0],
               ),
               const SizedBox(height: 16),
@@ -74,13 +70,7 @@ class HomeScreen extends ConsumerWidget {
                 context,
                 'Word Lists Manager',
                 Icons.list_alt_rounded,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const WordListsManagerScreen()),
-                  );
-                },
+                () => GameNavigationService.navigateToWordListsManager(context),
                 buttonColors[3],
               ),
               const SizedBox(height: 16),
