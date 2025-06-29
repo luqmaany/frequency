@@ -151,8 +151,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 onWordSkipped: (word) {
                   handleWordSkipped(word);
                 },
-                onLoadNewWord: () {
-                  // This is handled by the GameCards widget internally
+                onLoadNewWord: (index) {
+                  // Load new word for the specific card that was swiped
+                  loadNewWord(index);
                 },
               ),
             ),

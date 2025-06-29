@@ -65,6 +65,7 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     setState(() {
       _correctCount++;
       _wordsGuessed.add(word);
+      _usedWords.add(word);
     });
     onWordGuessed(word);
   }
@@ -75,6 +76,7 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       setState(() {
         _skipsLeft--;
         _wordsSkipped.add(word);
+        _usedWords.add(word);
       });
       onWordSkipped(word);
     }
@@ -126,6 +128,7 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       final availableWords =
           words.where((word) => word.category == category).toList();
       if (availableWords.isNotEmpty) {
+        availableWords.shuffle(); // Shuffle before taking first word
         return availableWords.first;
       }
       return null;
