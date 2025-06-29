@@ -9,7 +9,7 @@ class GameCards extends StatefulWidget {
   final int skipsLeft;
   final Function(String) onWordGuessed;
   final Function(String) onWordSkipped;
-  final VoidCallback onLoadNewWord;
+  final Function(int) onLoadNewWord;
 
   const GameCards({
     super.key,
@@ -93,7 +93,7 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
       _bottomCardAnimationController.reset();
       _bottomCardAnimationController.forward();
     }
-    widget.onLoadNewWord();
+    widget.onLoadNewWord(index);
   }
 
   @override
@@ -114,6 +114,7 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                   return Opacity(
                     opacity: _topCardAnimation.value,
                     child: CardSwiper(
+                      key: ValueKey('top_${widget.currentWords[0].text}'),
                       controller: _topCardController,
                       cardsCount: 1,
                       cardBuilder: (context,
@@ -160,6 +161,7 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                   return Opacity(
                     opacity: _bottomCardAnimation.value,
                     child: CardSwiper(
+                      key: ValueKey('bottom_${widget.currentWords[1].text}'),
                       controller: _bottomCardController,
                       cardsCount: 1,
                       cardBuilder: (context,
