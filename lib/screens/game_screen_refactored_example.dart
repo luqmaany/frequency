@@ -9,13 +9,13 @@ import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
 import '../widgets/game_countdown.dart';
 
-class GameScreen extends ConsumerStatefulWidget {
+class GameScreenRefactored extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
   final WordCategory category;
 
-  const GameScreen({
+  const GameScreenRefactored({
     super.key,
     required this.teamIndex,
     required this.roundNumber,
@@ -24,11 +24,12 @@ class GameScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<GameScreen> createState() => _GameScreenState();
+  ConsumerState<GameScreenRefactored> createState() =>
+      _GameScreenRefactoredState();
 }
 
-class _GameScreenState extends ConsumerState<GameScreen>
-    with GameMechanicsMixin<GameScreen> {
+class _GameScreenRefactoredState extends ConsumerState<GameScreenRefactored>
+    with GameMechanicsMixin<GameScreenRefactored> {
   bool _isCountdownActive = true;
 
   @override
