@@ -12,12 +12,14 @@ class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
+  final bool isTiebreaker;
 
   const CategorySelectionScreen({
     super.key,
     required this.teamIndex,
     required this.roundNumber,
     required this.turnNumber,
+    this.isTiebreaker = false,
   });
 
   @override
@@ -58,6 +60,19 @@ class _CategorySelectionScreenState
       parent: _scaleController,
       curve: Curves.easeInOut,
     ));
+
+    // If this is a tiebreaker round and category is already set, use it
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final isTiebreaker = ref.read(isTiebreakerRoundProvider);
+      final tiebreakerCategory = ref.read(tiebreakerCategoryProvider);
+
+      if (isTiebreaker && tiebreakerCategory != null) {
+        setState(() {
+          _selectedCategory = tiebreakerCategory;
+          _currentCategory = CategoryUtils.getCategoryName(tiebreakerCategory);
+        });
+      }
+    });
   }
 
   @override
@@ -108,6 +123,14 @@ class _CategorySelectionScreenState
           _currentCategory = CategoryUtils.getCategoryName(finalCategory);
         });
 
+        // If this is a tiebreaker round, set the category in game state
+        final isTiebreaker = ref.read(isTiebreakerRoundProvider);
+        if (isTiebreaker) {
+          ref
+              .read(gameStateProvider.notifier)
+              .setTiebreakerCategory(finalCategory);
+        }
+
         // Add a celebration animation
         _scaleController.forward().then((_) => _scaleController.reverse());
         return;
@@ -136,12 +159,39 @@ class _CategorySelectionScreenState
   @override
   Widget build(BuildContext context) {
     final currentTeamPlayers = ref.watch(currentTeamPlayersProvider);
+    final isTiebreaker = ref.watch(isTiebreakerRoundProvider);
+    final tiebreakerCategory = ref.watch(tiebreakerCategoryProvider);
+    final hasExistingTiebreakerCategory =
+        isTiebreaker && tiebreakerCategory != null;
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Tiebreaker indicator
+            if (isTiebreaker)
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange, width: 2),
+                ),
+                child: Text(
+                  hasExistingTiebreakerCategory
+                      ? '🏆 TIEBREAKER ROUND - Same Category 🏆'
+                      : '🏆 TIEBREAKER ROUND 🏆',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Colors.orange,
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             Expanded(
               child: Center(
                 child: Column(
@@ -152,9 +202,25 @@ class _CategorySelectionScreenState
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
+                    if (isTiebreaker) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        hasExistingTiebreakerCategory
+                            ? 'Using same category - Highest score wins!'
+                            : 'Tiebreaker round - Highest score wins!',
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                     const SizedBox(height: 40),
                     GestureDetector(
-                      onTap: (!_isSpinning && _selectedCategory == null)
+                      onTap: (!_isSpinning &&
+                              _selectedCategory == null &&
+                              !hasExistingTiebreakerCategory)
                           ? _spinCategories
                           : null,
                       child: AnimatedBuilder(
@@ -222,7 +288,8 @@ class _CategorySelectionScreenState
                     Expanded(
                       child: _buildTeamColorButton(
                         context: context,
-                        text: 'Next',
+                        text:
+                            hasExistingTiebreakerCategory ? 'Continue' : 'Next',
                         icon: Icons.arrow_forward,
                         color: teamColors[2], // Green
                         onPressed: _selectedCategory != null
