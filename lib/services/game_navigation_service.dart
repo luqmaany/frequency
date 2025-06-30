@@ -33,7 +33,22 @@ class GameNavigationService {
     }
 
     if (gameState.isGameOver) {
+      // Clear tiebreaker category when game is over
+      if (gameState.tiebreakerCategory != null) {
+        ref.read(gameStateProvider.notifier).clearTiebreakerCategory();
+      }
       _navigateToGameOver(context);
+    } else if (gameState.needsTiebreaker() &&
+        _isEndOfRound(gameState, teamIndex)) {
+      // Check if we need a new tiebreaker round (teams still tied)
+      if (gameState.needsNewTiebreakerRound()) {
+        // Clear the old tiebreaker category and start a new tiebreaker round
+        ref.read(gameStateProvider.notifier).clearTiebreakerCategory();
+        _navigateToTiebreakerRound(context, gameState);
+      } else {
+        // Navigate to tiebreaker round with existing category
+        _navigateToTiebreakerRound(context, gameState);
+      }
     } else if (_isEndOfRound(gameState, teamIndex)) {
       _navigateToScoreboard(context, gameState.currentRound - 1);
     } else {
@@ -199,6 +214,20 @@ class GameNavigationService {
           teamIndex: gameState.currentTeamIndex,
           roundNumber: gameState.currentRound,
           turnNumber: gameState.currentTurn,
+        ),
+      ),
+    );
+  }
+
+  /// Navigate to tiebreaker round with only tied teams
+  static void _navigateToTiebreakerRound(
+      BuildContext context, GameState gameState) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => CategorySelectionScreen(
+          teamIndex: 0, // Start with first tied team
+          roundNumber: gameState.currentRound,
+          turnNumber: 1,
         ),
       ),
     );
