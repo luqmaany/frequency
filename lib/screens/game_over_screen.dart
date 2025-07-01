@@ -16,9 +16,6 @@ class GameOverScreen extends ConsumerWidget {
       ..sort(
           (a, b) => gameState.teamScores[b].compareTo(gameState.teamScores[a]));
 
-    // Check if this was a tiebreaker game
-    final wasTiebreaker = gameState.tiebreakerCategory != null;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(''),
@@ -34,27 +31,6 @@ class GameOverScreen extends ConsumerWidget {
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),
-            if (wasTiebreaker) ...[
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange, width: 2),
-                ),
-                child: Text(
-                  '🏆 TIEBREAKER WINNER 🏆',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ],
             const SizedBox(height: 16),
             Text(
               'Final Scores',

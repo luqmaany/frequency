@@ -1,5 +1,4 @@
 import 'game_config.dart';
-import '../screens/word_lists_manager_screen.dart';
 
 enum PlayerRole { conveyor, guesser }
 
@@ -63,7 +62,6 @@ class GameState {
   final int currentTurn;
   final int currentTeamIndex;
   final bool isGameOver;
-  final WordCategory? tiebreakerCategory;
 
   GameState({
     required this.config,
@@ -73,7 +71,6 @@ class GameState {
     required this.currentTurn,
     required this.currentTeamIndex,
     required this.isGameOver,
-    this.tiebreakerCategory,
   });
 
   GameState.initial(GameConfig config)
@@ -83,8 +80,7 @@ class GameState {
         currentRound = 1,
         currentTurn = 1,
         currentTeamIndex = 0,
-        isGameOver = false,
-        tiebreakerCategory = null;
+        isGameOver = false;
 
   GameState copyWith({
     GameConfig? config,
@@ -94,7 +90,6 @@ class GameState {
     int? currentTurn,
     int? currentTeamIndex,
     bool? isGameOver,
-    WordCategory? tiebreakerCategory,
   }) {
     return GameState(
       config: config ?? this.config,
@@ -104,7 +99,6 @@ class GameState {
       currentTurn: currentTurn ?? this.currentTurn,
       currentTeamIndex: currentTeamIndex ?? this.currentTeamIndex,
       isGameOver: isGameOver ?? this.isGameOver,
-      tiebreakerCategory: tiebreakerCategory ?? this.tiebreakerCategory,
     );
   }
 
@@ -132,22 +126,7 @@ class GameState {
     final hasReachedTargetScore =
         newTeamScores.any((score) => score >= config.targetScore);
     final isEndOfRound = isLastTeam();
-
-    // Check for tiebreaker condition: multiple teams at or above target
-    final teamsAtTarget =
-        newTeamScores.where((score) => score >= config.targetScore).length;
-    final isTiebreaker = teamsAtTarget > 1 && isEndOfRound;
-
-    // In tiebreaker rounds, check if the round is complete and determine winner
-    final isTiebreakerRound = tiebreakerCategory != null;
-    final isTiebreakerRoundComplete = isTiebreakerRound && isEndOfRound;
-
-    // Game is over if:
-    // 1. Teams reached target AND it's end of round AND no tiebreaker needed, OR
-    // 2. It's the end of a tiebreaker round (let the full round complete)
-    final isGameOver =
-        (hasReachedTargetScore && isEndOfRound && !isTiebreaker) ||
-            isTiebreakerRoundComplete;
+    final isGameOver = hasReachedTargetScore && isEndOfRound;
 
     return copyWith(
       teamScores: newTeamScores,
@@ -157,50 +136,6 @@ class GameState {
       currentTeamIndex: nextTeamIndex,
       isGameOver: isGameOver,
     );
-  }
-
-  // Helper method to check if we need a tiebreaker round
-  bool needsTiebreaker() {
-    final teamsAtTarget =
-        teamScores.where((score) => score >= config.targetScore).length;
-    return teamsAtTarget > 1;
-  }
-
-  // Get teams that are tied (at or above target score)
-  List<int> getTiedTeams() {
-    final tiedTeams = <int>[];
-    for (int i = 0; i < teamScores.length; i++) {
-      if (teamScores[i] >= config.targetScore) {
-        tiedTeams.add(i);
-      }
-    }
-    return tiedTeams;
-  }
-
-  // Set the category for tiebreaker rounds
-  GameState setTiebreakerCategory(WordCategory category) {
-    return copyWith(tiebreakerCategory: category);
-  }
-
-  // Clear tiebreaker category (when tiebreaker is resolved)
-  GameState clearTiebreakerCategory() {
-    return copyWith(tiebreakerCategory: null);
-  }
-
-  // Check if we need a new tiebreaker round (teams still tied after current tiebreaker)
-  bool needsNewTiebreakerRound() {
-    if (!needsTiebreaker()) return false;
-
-    // If we don't have a tiebreaker category set, we need a new tiebreaker round
-    if (tiebreakerCategory == null) return true;
-
-    // Check if any team scored in the current tiebreaker round
-    final currentRoundTurns =
-        turnHistory.where((turn) => turn.roundNumber == currentRound);
-    final hasAnyScore = currentRoundTurns.any((turn) => turn.score > 0);
-
-    // If no one scored in this tiebreaker round, we need a new one
-    return !hasAnyScore;
   }
 
   // Get statistics for a specific player
