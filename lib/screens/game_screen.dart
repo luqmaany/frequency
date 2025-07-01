@@ -69,7 +69,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
         gameConfig.roundTimeSeconds, gameConfig.allowedSkips);
     loadInitialWords();
 
-    // Countdown will start automatically and call _onCountdownComplete when done
+    // Disable countdown for testing
+    _isCountdownActive = false;
+    startTimer();
   }
 
   @override
