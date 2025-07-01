@@ -30,10 +30,9 @@ class GameScreen extends ConsumerStatefulWidget {
 class _GameScreenState extends ConsumerState<GameScreen>
     with GameMechanicsMixin<GameScreen> {
   bool _isCountdownActive = true;
-  WordCategory _currentCategory = WordCategory.person; // Default value
 
   @override
-  WordCategory get category => _currentCategory;
+  WordCategory get category => widget.category;
 
   @override
   void onTurnEnd() {
@@ -43,7 +42,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
       widget.teamIndex,
       widget.roundNumber,
       widget.turnNumber,
-      _currentCategory,
+      widget.category,
       correctCount,
       skipsLeft,
       wordsGuessed,
@@ -65,30 +64,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void initState() {
     super.initState();
-    // Start with the widget category
-    _currentCategory = widget.category;
-
     final gameConfig = ref.read(gameSetupProvider);
     initializeGameMechanics(
         gameConfig.roundTimeSeconds, gameConfig.allowedSkips);
     loadInitialWords();
 
     // Countdown will start automatically and call _onCountdownComplete when done
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    // Update the category based on tiebreaker status after dependencies are available
-    final isTiebreaker = ref.watch(isTiebreakerRoundProvider);
-    final tiebreakerCategory = ref.watch(tiebreakerCategoryProvider);
-
-    if (isTiebreaker && tiebreakerCategory != null) {
-      _currentCategory = tiebreakerCategory;
-    } else {
-      _currentCategory = widget.category;
-    }
   }
 
   @override
@@ -129,34 +110,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
       );
     }
 
-    final isTiebreaker = ref.watch(isTiebreakerRoundProvider);
-
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // Tiebreaker indicator
-            if (isTiebreaker)
-              Container(
-                width: double.infinity,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                margin: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.orange, width: 2),
-                ),
-                child: Text(
-                  '🏆 TIEBREAKER ROUND 🏆',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.orange,
-                        fontWeight: FontWeight.bold,
-                      ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
             // Title showing current players
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -172,7 +129,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
               timeLeft: timeLeft,
               category: category,
               skipsLeft: skipsLeft,
-              isTiebreaker: isTiebreaker,
+              isTiebreaker: false,
             ),
 
             // Word cards with swiping mechanics

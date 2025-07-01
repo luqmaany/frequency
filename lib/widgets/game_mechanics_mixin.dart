@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/word_lists_manager_screen.dart';
-import '../services/game_state_provider.dart';
 
 mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   late int _timeLeft;
