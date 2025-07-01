@@ -6,9 +6,15 @@ import 'package:convey/widgets/team_color_button.dart';
 
 class ScoreboardScreen extends ConsumerWidget {
   final int roundNumber;
+  final bool isTiebreaker;
+  final List<int>? tiedTeamIndices;
 
-  const ScoreboardScreen({Key? key, required this.roundNumber})
-      : super(key: key);
+  const ScoreboardScreen({
+    Key? key,
+    required this.roundNumber,
+    this.isTiebreaker = false,
+    this.tiedTeamIndices,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,6 +76,15 @@ class ScoreboardScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            if (isTiebreaker) ...[
+              Text(
+                'Tiebreaker! Teams in a tie are highlighted.',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: Colors.deepOrange, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(
               'Round $roundNumber',
               style: Theme.of(context).textTheme.headlineMedium,
@@ -89,25 +104,39 @@ class ScoreboardScreen extends ConsumerWidget {
                     final isTopThisRound =
                         roundScores[teamIndex] == topRoundScore &&
                             topRoundScore > 0;
+                    // Tiebreaker coloring logic
+                    final bool isTied = isTiebreaker &&
+                        (tiedTeamIndices?.contains(teamIndex) ?? false);
+                    final Color backgroundColor = isTiebreaker && !isTied
+                        ? Colors.grey.shade300
+                        : teamColors[gameState.config.teamColorIndices.length >
+                                    teamIndex
+                                ? gameState.config.teamColorIndices[teamIndex]
+                                : teamIndex % teamColors.length]
+                            .background;
+                    final Color borderColor = isTiebreaker && !isTied
+                        ? Colors.grey
+                        : teamColors[gameState.config.teamColorIndices.length >
+                                    teamIndex
+                                ? gameState.config.teamColorIndices[teamIndex]
+                                : teamIndex % teamColors.length]
+                            .border;
+                    final Color textColor = isTiebreaker && !isTied
+                        ? Colors.grey.shade600
+                        : teamColors[gameState.config.teamColorIndices.length >
+                                    teamIndex
+                                ? gameState.config.teamColorIndices[teamIndex]
+                                : teamIndex % teamColors.length]
+                            .text;
                     return Container(
                       margin: const EdgeInsets.symmetric(vertical: 8.0),
                       padding: const EdgeInsets.symmetric(
                           vertical: 12.0, horizontal: 10.0),
                       decoration: BoxDecoration(
-                        color: teamColors[gameState
-                                        .config.teamColorIndices.length >
-                                    teamIndex
-                                ? gameState.config.teamColorIndices[teamIndex]
-                                : teamIndex % teamColors.length]
-                            .background,
+                        color: backgroundColor,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: teamColors[gameState
-                                          .config.teamColorIndices.length >
-                                      teamIndex
-                                  ? gameState.config.teamColorIndices[teamIndex]
-                                  : teamIndex % teamColors.length]
-                              .border,
+                          color: borderColor,
                           width: 2,
                         ),
                       ),
@@ -122,23 +151,11 @@ class ScoreboardScreen extends ConsumerWidget {
                                   ?.copyWith(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
-                                      color: teamColors[gameState.config
-                                                      .teamColorIndices.length >
-                                                  teamIndex
-                                              ? gameState.config
-                                                  .teamColorIndices[teamIndex]
-                                              : teamIndex % teamColors.length]
-                                          .text),
+                                      color: textColor),
                             ),
                           ),
                           CircleAvatar(
-                            backgroundColor: teamColors[
-                                    gameState.config.teamColorIndices.length >
-                                            teamIndex
-                                        ? gameState
-                                            .config.teamColorIndices[teamIndex]
-                                        : teamIndex % teamColors.length]
-                                .border,
+                            backgroundColor: borderColor,
                             radius: 18,
                             child: Text(
                               totalScore.toString(),

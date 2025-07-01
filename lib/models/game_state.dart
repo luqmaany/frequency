@@ -1,4 +1,5 @@
 import 'game_config.dart';
+import '../screens/word_lists_manager_screen.dart';
 
 enum PlayerRole { conveyor, guesser }
 
@@ -62,6 +63,12 @@ class GameState {
   final int currentTurn;
   final int currentTeamIndex;
   final bool isGameOver;
+  final bool isTiebreaker;
+  final List<int> tiebreakerScores;
+  final List<int> tiedTeamIndices;
+  final bool isInTiebreaker;
+  final int tiebreakerRound;
+  final WordCategory? tiebreakerCategory;
 
   GameState({
     required this.config,
@@ -71,6 +78,12 @@ class GameState {
     required this.currentTurn,
     required this.currentTeamIndex,
     required this.isGameOver,
+    required this.isTiebreaker,
+    required this.tiebreakerScores,
+    required this.tiedTeamIndices,
+    required this.isInTiebreaker,
+    required this.tiebreakerRound,
+    this.tiebreakerCategory,
   });
 
   GameState.initial(GameConfig config)
@@ -80,7 +93,13 @@ class GameState {
         currentRound = 1,
         currentTurn = 1,
         currentTeamIndex = 0,
-        isGameOver = false;
+        isGameOver = false,
+        isTiebreaker = false,
+        tiebreakerScores = [],
+        tiedTeamIndices = [],
+        isInTiebreaker = false,
+        tiebreakerRound = 0,
+        tiebreakerCategory = null;
 
   GameState copyWith({
     GameConfig? config,
@@ -90,6 +109,12 @@ class GameState {
     int? currentTurn,
     int? currentTeamIndex,
     bool? isGameOver,
+    bool? isTiebreaker,
+    List<int>? tiebreakerScores,
+    List<int>? tiedTeamIndices,
+    bool? isInTiebreaker,
+    int? tiebreakerRound,
+    WordCategory? tiebreakerCategory,
   }) {
     return GameState(
       config: config ?? this.config,
@@ -99,6 +124,12 @@ class GameState {
       currentTurn: currentTurn ?? this.currentTurn,
       currentTeamIndex: currentTeamIndex ?? this.currentTeamIndex,
       isGameOver: isGameOver ?? this.isGameOver,
+      isTiebreaker: isTiebreaker ?? this.isTiebreaker,
+      tiebreakerScores: tiebreakerScores ?? this.tiebreakerScores,
+      tiedTeamIndices: tiedTeamIndices ?? this.tiedTeamIndices,
+      isInTiebreaker: isInTiebreaker ?? this.isInTiebreaker,
+      tiebreakerRound: tiebreakerRound ?? this.tiebreakerRound,
+      tiebreakerCategory: tiebreakerCategory ?? this.tiebreakerCategory,
     );
   }
 
@@ -126,7 +157,26 @@ class GameState {
     final hasReachedTargetScore =
         newTeamScores.any((score) => score >= config.targetScore);
     final isEndOfRound = isLastTeam();
-    final isGameOver = hasReachedTargetScore && isEndOfRound;
+
+    // Calculate if it's a tiebreaker (more than one team reached target score at end of round)
+    bool isTiebreaker = false;
+    List<int> tiedTeamIndices = [];
+    if (hasReachedTargetScore && isEndOfRound) {
+      final teamsAtTarget =
+          newTeamScores.where((score) => score >= config.targetScore).length;
+      isTiebreaker = teamsAtTarget > 1;
+      if (isTiebreaker) {
+        // Find teams that reached the target score
+        for (int i = 0; i < newTeamScores.length; i++) {
+          if (newTeamScores[i] >= config.targetScore) {
+            tiedTeamIndices.add(i);
+          }
+        }
+      }
+    }
+
+    // Only set isGameOver to true if there is a winner (not a tiebreaker)
+    final isGameOver = hasReachedTargetScore && isEndOfRound && !isTiebreaker;
 
     return copyWith(
       teamScores: newTeamScores,
@@ -135,6 +185,82 @@ class GameState {
       currentTurn: nextTurn,
       currentTeamIndex: nextTeamIndex,
       isGameOver: isGameOver,
+      isTiebreaker: isTiebreaker,
+      tiedTeamIndices: tiedTeamIndices,
+    );
+  }
+
+  // Start tiebreaker mode
+  GameState startTiebreaker(WordCategory category) {
+    return copyWith(
+      isInTiebreaker: true,
+      tiebreakerRound: 1,
+      tiebreakerScores: List.filled(tiedTeamIndices.length, 0),
+      currentTeamIndex: 0, // Start with first tied team
+      currentRound: 1,
+      currentTurn: 1,
+      tiebreakerCategory: category,
+    );
+  }
+
+  // Advance tiebreaker turn
+  GameState advanceTiebreakerTurn(TurnRecord turnRecord) {
+    final newTiebreakerScores = List<int>.from(tiebreakerScores);
+    // Find the index of the team in the tiedTeamIndices list
+    final teamIndexInTiebreaker = tiedTeamIndices.indexOf(turnRecord.teamIndex);
+    if (teamIndexInTiebreaker != -1) {
+      newTiebreakerScores[teamIndexInTiebreaker] += turnRecord.score;
+    }
+
+    final newTurnHistory = List<TurnRecord>.from(turnHistory)..add(turnRecord);
+
+    // Check if we're at the end of the tiebreaker round
+    final nextTeamIndexInTiebreaker =
+        (tiedTeamIndices.indexOf(currentTeamIndex) + 1) %
+            tiedTeamIndices.length;
+    final isEndOfTiebreakerRound = nextTeamIndexInTiebreaker == 0;
+
+    bool isGameOver = false;
+    List<int> newTiedTeamIndices = List.from(tiedTeamIndices);
+    int newTiebreakerRound = tiebreakerRound;
+    bool newIsInTiebreaker = isInTiebreaker;
+
+    if (isEndOfTiebreakerRound) {
+      // Find the highest score in tiebreaker
+      final maxScore = newTiebreakerScores.reduce((a, b) => a > b ? a : b);
+      final teamsWithMaxScore = <int>[];
+
+      for (int i = 0; i < newTiebreakerScores.length; i++) {
+        if (newTiebreakerScores[i] == maxScore) {
+          teamsWithMaxScore.add(tiedTeamIndices[i]);
+        }
+      }
+
+      if (teamsWithMaxScore.length == 1) {
+        // One team won the tiebreaker
+        isGameOver = true;
+        newIsInTiebreaker = false;
+      } else {
+        // Still tied, continue to next tiebreaker round
+        newTiedTeamIndices = teamsWithMaxScore;
+        newTiebreakerRound++;
+        // Reset tiebreaker scores for the remaining teams
+        newTiebreakerScores.clear();
+        newTiebreakerScores.addAll(List.filled(newTiedTeamIndices.length, 0));
+      }
+    }
+
+    return copyWith(
+      tiebreakerScores: newTiebreakerScores,
+      turnHistory: newTurnHistory,
+      currentTeamIndex: isEndOfTiebreakerRound
+          ? 0
+          : tiedTeamIndices[nextTeamIndexInTiebreaker],
+      currentTurn: isEndOfTiebreakerRound ? currentTurn + 1 : currentTurn,
+      isGameOver: isGameOver,
+      tiedTeamIndices: newTiedTeamIndices,
+      tiebreakerRound: newTiebreakerRound,
+      isInTiebreaker: newIsInTiebreaker,
     );
   }
 

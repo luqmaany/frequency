@@ -32,10 +32,34 @@ class GameNavigationService {
       return;
     }
 
+    // Tiebreaker mode: only tied teams play
+    if (gameState.isInTiebreaker) {
+      final tiedTeamIndices = gameState.tiedTeamIndices;
+      final tiebreakerTeamIndex =
+          tiedTeamIndices[gameState.currentTeamIndex % tiedTeamIndices.length];
+      // If at the end of tiebreaker round, show scoreboard
+      if (_isEndOfTiebreakerRound(gameState)) {
+        _navigateToScoreboard(context, gameState.tiebreakerRound,
+            gameState: gameState);
+      } else {
+        // Go to role assignment for the next tied team
+        navigateToRoleAssignment(
+          context,
+          tiebreakerTeamIndex,
+          gameState.tiebreakerRound,
+          gameState.currentTurn,
+          // You may want to store the tiebreaker category in state if needed
+          null, // Pass category if you have it
+        );
+      }
+      return;
+    }
+
     if (gameState.isGameOver) {
       _navigateToGameOver(context);
     } else if (_isEndOfRound(gameState, teamIndex)) {
-      _navigateToScoreboard(context, gameState.currentRound - 1);
+      _navigateToScoreboard(context, gameState.currentRound - 1,
+          gameState: gameState);
     } else {
       _navigateToCategorySelection(context, gameState);
     }
@@ -74,7 +98,7 @@ class GameNavigationService {
     int teamIndex,
     int roundNumber,
     int turnNumber,
-    WordCategory category,
+    WordCategory? category,
   ) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -82,7 +106,7 @@ class GameNavigationService {
           teamIndex: teamIndex,
           roundNumber: roundNumber,
           turnNumber: turnNumber,
-          category: category,
+          category: category ?? WordCategory.values.first, // fallback
         ),
       ),
     );
@@ -163,6 +187,11 @@ class GameNavigationService {
     return indexToCheck == gameState.config.teams.length - 1;
   }
 
+  // Helper to check if at the end of a tiebreaker round
+  static bool _isEndOfTiebreakerRound(GameState gameState) {
+    return gameState.currentTeamIndex == gameState.tiedTeamIndices.length - 1;
+  }
+
   // ============================================================================
   // PRIVATE NAVIGATION METHODS
   // ============================================================================
@@ -180,10 +209,24 @@ class GameNavigationService {
   }
 
   /// Navigate to scoreboard screen
-  static void _navigateToScoreboard(BuildContext context, int roundNumber) {
+  static void _navigateToScoreboard(BuildContext context, int roundNumber,
+      {GameState? gameState}) {
+    // Use the tiebreaker fields from GameState
+    bool isTiebreaker = false;
+    List<int>? tiedTeamIndices;
+    if (gameState != null) {
+      isTiebreaker = gameState.isTiebreaker;
+      tiedTeamIndices = gameState.tiedTeamIndices.isNotEmpty
+          ? gameState.tiedTeamIndices
+          : null;
+    }
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => ScoreboardScreen(roundNumber: roundNumber),
+        builder: (context) => ScoreboardScreen(
+          roundNumber: roundNumber,
+          isTiebreaker: isTiebreaker,
+          tiedTeamIndices: tiedTeamIndices,
+        ),
       ),
     );
   }
