@@ -213,7 +213,7 @@ class ScoreboardScreen extends ConsumerWidget {
                     onPressed: () {
                       // Use navigation service to navigate to next round
                       GameNavigationService.navigateToNextRound(
-                          context, roundNumber + 1);
+                          context, ref, roundNumber + 1);
                     },
                   ),
                 ),
