@@ -8,20 +8,26 @@ class TeamColor {
   TeamColor(this.name, this.background, this.border, this.text);
 }
 
-final List<TeamColor> teamColors = [
-  TeamColor('Red', Colors.red.shade100, Colors.red, Colors.red.shade900),
+final List<TeamColor> uiColors = [
   TeamColor('Blue', Colors.blue.shade100, Colors.blue, Colors.blue.shade900),
-  TeamColor(
-      'Green', Colors.green.shade100, Colors.green, Colors.green.shade900),
-  TeamColor(
-      'Orange', Colors.orange.shade100, Colors.orange, Colors.orange.shade900),
-  TeamColor(
-      'Purple', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
-  TeamColor(
-      'Brown', Colors.brown.shade100, Colors.brown, Colors.brown.shade900),
+  TeamColor('Green', Colors.green.shade100, Colors.green, Colors.green.shade900)
 ];
 
-class TeamColorButton extends StatelessWidget {
+final List<TeamColor> teamColors = [
+  TeamColor(
+      'Turquoise', Color(0xFF1DE9B6), Color(0xFF00BFAE), Color(0xFF00695C)),
+  TeamColor('Magenta', Color(0xFFF8BBD0), Color(0xFFE91E63), Color(0xFF880E4F)),
+  TeamColor(
+      'Violet', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
+  TeamColor(
+      'Coral', Colors.orange.shade100, Colors.orange, Colors.orange.shade900),
+  TeamColor(
+      'Indigo', Colors.indigo.shade100, Colors.indigo, Colors.indigo.shade900),
+  TeamColor('Olive', Color.fromARGB(255, 227, 224, 158), Color(0xFF808000),
+      Color(0xFF556B2F)),
+];
+
+class TeamColorButton extends StatefulWidget {
   final String text;
   final IconData icon;
   final TeamColor color;
@@ -40,48 +46,90 @@ class TeamColorButton extends StatelessWidget {
   });
 
   @override
+  State<TeamColorButton> createState() => _TeamColorButtonState();
+}
+
+class _TeamColorButtonState extends State<TeamColorButton> {
+  double _scale = 1.0;
+
+  void _onTapDown(TapDownDetails details) {
+    setState(() {
+      _scale = 0.97; // adjust to taste
+    });
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    setState(() {
+      _scale = 1.0;
+    });
+  }
+
+  void _onTapCancel() {
+    setState(() {
+      _scale = 1.0;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final bool enabled = onPressed != null;
+    final bool enabled = widget.onPressed != null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: enabled ? onPressed : null,
-        child: Container(
-          padding: padding,
-          decoration: BoxDecoration(
-            color:
-                enabled ? color.background : color.background.withOpacity(0.5),
+      child: AnimatedScale(
+        scale: _scale,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOut,
+        child: Material(
+          color: enabled
+              ? widget.color.background
+              : widget.color.background.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: enabled ? color.border : Colors.grey.shade300,
-              width: 1.5,
+            onTap: enabled ? widget.onPressed : null,
+            onTapDown: enabled ? _onTapDown : null,
+            onTapUp: enabled ? _onTapUp : null,
+            onTapCancel: enabled ? _onTapCancel : null,
+            child: Container(
+              padding: widget.padding,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: enabled ? widget.color.border : Colors.grey.shade300,
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        (enabled ? widget.color.border : Colors.grey.shade300)
+                            .withOpacity(0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(widget.icon,
+                      size: widget.iconSize,
+                      color:
+                          enabled ? widget.color.border : Colors.grey.shade400),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.text,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: enabled
+                              ? widget.color.text
+                              : Colors.grey.shade400,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                        ),
+                  ),
+                ],
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: (enabled ? color.border : Colors.grey.shade300)
-                    .withOpacity(0.08),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon,
-                  size: iconSize,
-                  color: enabled ? color.border : Colors.grey.shade400),
-              const SizedBox(width: 12),
-              Text(
-                text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: enabled ? color.text : Colors.grey.shade400,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    ),
-              ),
-            ],
           ),
         ),
       ),
