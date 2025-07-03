@@ -206,6 +206,63 @@ class _GameScreenState extends ConsumerState<GameScreen>
     );
   }
 }
+
+## ⚠️ **CRITICAL: advanceTurn() Timing Considerations**
+
+### The Problem
+The `advanceTurn()` method from `GameState` is called **before** navigation to the next screen. This means the game state changes (scores, team indices, round numbers, etc.) happen **before** the navigation logic runs.
+
+### Key Issues to Watch For
+
+1. **Off-by-One Errors**: `currentTeamIndex` is incremented before navigation
+2. **State Mismatch**: Navigation logic sees updated state, not the state from when the turn started
+3. **Tiebreaker Confusion**: `isInTiebreaker` and `tiedTeamIndices` may change during `advanceTurn()`
+
+### Best Practices
+
+**✅ Always pass the `teamIndex` parameter** to navigation methods:
+```dart
+// ❌ WRONG - uses potentially changed state
+GameNavigationService.navigateToNextScreen(context, ref);
+
+// ✅ CORRECT - uses the team that just played
+GameNavigationService.navigateToNextScreen(context, ref, teamIndex: widget.teamIndex);
+```
+
+**✅ Use passed parameters instead of reading from updated state**:
+```dart
+// ❌ WRONG - relies on currentTeamIndex after advanceTurn()
+final teamIndexInTiedTeams = tiedTeamIndices.indexOf(gameState.currentTeamIndex);
+
+// ✅ CORRECT - uses the team that just played
+final teamIndexInTiedTeams = tiedTeamIndices.indexOf(teamIndex ?? gameState.currentTeamIndex);
+```
+
+**✅ Be explicit about which state you're checking**:
+```dart
+// Check if the team that just played was the last team
+if (teamIndex == gameState.config.teams.length - 1) {
+  // End of round logic
+}
+```
+
+### The Golden Rule
+**The key is to always be aware that `advanceTurn()` changes the game state, so any navigation logic needs to work with the state as it was BEFORE the turn was recorded, not after.**
+
+### Flow Summary
+1. `TurnOverScreen._confirmScore()` creates `TurnRecord`
+2. `GameStateNotifier.recordTurn()` calls `advanceTurn()`
+3. `GameState.advanceTurn()` updates all game state
+4. `GameNavigationService.navigateToNextScreen()` runs with **updated** state
+5. Navigation logic must use passed parameters, not rely on current state
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 ```
 
 ## Benefits

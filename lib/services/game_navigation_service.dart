@@ -32,37 +32,14 @@ class GameNavigationService {
       return;
     }
 
-    // Tiebreaker mode: only tied teams play
+    // Handle tiebreaker navigation
     if (gameState.isInTiebreaker) {
-      final tiedTeamIndices = gameState.tiedTeamIndices;
-      final tiebreakerTeamIndex =
-          tiedTeamIndices[gameState.currentTeamIndex % tiedTeamIndices.length];
-      // If at the end of tiebreaker round, show scoreboard
-      if (_isEndOfTiebreakerRound(gameState)) {
-        _navigateToScoreboard(context, gameState.tiebreakerRound,
-            gameState: gameState);
-      } else {
-        // Go to role assignment for the next tied team
-        navigateToRoleAssignment(
-          context,
-          tiebreakerTeamIndex,
-          gameState.tiebreakerRound,
-          gameState.currentTurn,
-          // You may want to store the tiebreaker category in state if needed
-          null, // Pass category if you have it
-        );
-      }
+      _handleTiebreakerNavigation(context, gameState, teamIndex);
       return;
     }
 
-    if (gameState.isGameOver) {
-      _navigateToGameOver(context);
-    } else if (_isEndOfRound(gameState, teamIndex)) {
-      _navigateToScoreboard(context, gameState.currentRound - 1,
-          gameState: gameState);
-    } else {
-      _navigateToCategorySelection(context, gameState);
-    }
+    // Handle normal game navigation
+    _handleNormalGameNavigation(context, gameState, teamIndex);
   }
 
   /// Navigate from home screen to game setup
@@ -163,15 +140,76 @@ class GameNavigationService {
   }
 
   /// Navigate from scoreboard to next round
-  static void navigateToNextRound(BuildContext context, int nextRound) {
+  static void navigateToNextRound(
+      BuildContext context, WidgetRef ref, int nextRound) {
+    final gameState = ref.read(gameStateProvider);
+    if (gameState != null && gameState.isTiebreaker) {
+      // For tiebreaker, navigate to category selection for the first tied team
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => CategorySelectionScreen(
+            teamIndex: gameState.tiedTeamIndices[0],
+            roundNumber: gameState.tiebreakerRound,
+            turnNumber: 1,
+            displayString: 'Tiebreaker Round',
+          ),
+        ),
+      );
+      return;
+    }
+    // Normal next round navigation
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => CategorySelectionScreen(
           teamIndex: 0, // Start with first team
           roundNumber: nextRound,
           turnNumber: 1,
+          displayString: gameState != null &&
+                  gameState.config.teams[0].length >= 2
+              ? "${gameState.config.teams[0][0]} & ${gameState.config.teams[0][1]}'s Turn"
+              : '',
         ),
       ),
+    );
+  }
+
+  /// Navigate from category selection to the appropriate next screen based on game state
+  static void navigateFromCategorySelection(
+    BuildContext context,
+    WidgetRef ref,
+    int teamIndex,
+    int roundNumber,
+    int turnNumber,
+    WordCategory category,
+  ) {
+    final gameState = ref.read(gameStateProvider);
+    if (gameState == null) {
+      _navigateToHome(context);
+      return;
+    }
+
+    // Handle tiebreaker logic
+    if (gameState.isTiebreaker) {
+      // Start tiebreaker mode
+      ref.read(gameStateProvider.notifier).startTiebreaker(category);
+      // Navigate to role assignment for first tied team
+      navigateToRoleAssignment(
+        context,
+        gameState.tiedTeamIndices.isNotEmpty ? gameState.tiedTeamIndices[0] : 0,
+        gameState.tiebreakerRound,
+        1,
+        category,
+      );
+      return;
+    }
+
+    // Normal flow: navigate to role assignment
+    navigateToRoleAssignment(
+      context,
+      teamIndex,
+      roundNumber,
+      turnNumber,
+      category,
     );
   }
 
@@ -185,11 +223,6 @@ class GameNavigationService {
     // Otherwise, use the current team index from the game state
     final indexToCheck = teamIndex ?? gameState.currentTeamIndex;
     return indexToCheck == gameState.config.teams.length - 1;
-  }
-
-  // Helper to check if at the end of a tiebreaker round
-  static bool _isEndOfTiebreakerRound(GameState gameState) {
-    return gameState.currentTeamIndex == gameState.tiedTeamIndices.length - 1;
   }
 
   // ============================================================================
@@ -242,8 +275,76 @@ class GameNavigationService {
           teamIndex: gameState.currentTeamIndex,
           roundNumber: gameState.currentRound,
           turnNumber: gameState.currentTurn,
+          displayString: gameState
+                      .config.teams[gameState.currentTeamIndex].length >=
+                  2
+              ? "${gameState.config.teams[gameState.currentTeamIndex][0]} & ${gameState.config.teams[gameState.currentTeamIndex][1]}'s Turn"
+              : '',
         ),
       ),
     );
+  }
+
+  /// Handle navigation for tiebreaker mode
+  static void _handleTiebreakerNavigation(
+      BuildContext context, GameState gameState, int? teamIndex) {
+    final tiedTeamIndices = gameState.tiedTeamIndices;
+
+    // Ensure we have a valid team index that's actually in the tiebreaker
+    final effectiveTeamIndex = teamIndex ?? gameState.currentTeamIndex;
+    final teamIndexInTiedTeams = tiedTeamIndices.indexOf(effectiveTeamIndex);
+
+    // Safety check: if the team isn't in the tiebreaker, start with the first tied team
+    if (teamIndexInTiedTeams == -1) {
+      _navigateToNextTiedTeam(context, gameState, -1); // Start with first team
+      return;
+    }
+
+    if (_isEndOfTiebreakerRound(teamIndexInTiedTeams, tiedTeamIndices.length)) {
+      _navigateToScoreboard(context, gameState.tiebreakerRound,
+          gameState: gameState);
+    } else {
+      _navigateToNextTiedTeam(context, gameState, teamIndexInTiedTeams);
+    }
+  }
+
+  /// Handle navigation for normal game mode
+  static void _handleNormalGameNavigation(
+      BuildContext context, GameState gameState, int? teamIndex) {
+    if (gameState.isGameOver) {
+      _navigateToGameOver(context);
+    } else if (_isEndOfRound(gameState, teamIndex)) {
+      _navigateToScoreboard(context, gameState.currentRound - 1,
+          gameState: gameState);
+    } else {
+      _navigateToCategorySelection(context, gameState);
+    }
+  }
+
+  /// Navigate to the next tied team in tiebreaker mode
+  static void _navigateToNextTiedTeam(BuildContext context, GameState gameState,
+      int currentTeamIndexInTiedTeams) {
+    final tiedTeamIndices = gameState.tiedTeamIndices;
+
+    // If currentTeamIndexInTiedTeams is -1, start with the first team
+    // Otherwise, get the next team in the sequence
+    final nextTeamIndexInTiedTeams =
+        currentTeamIndexInTiedTeams == -1 ? 0 : currentTeamIndexInTiedTeams + 1;
+
+    final nextTiedTeamIndex = tiedTeamIndices[nextTeamIndexInTiedTeams];
+
+    navigateToRoleAssignment(
+      context,
+      nextTiedTeamIndex,
+      gameState.tiebreakerRound,
+      gameState.currentTurn,
+      gameState.tiebreakerCategory,
+    );
+  }
+
+  /// Check if we're at the end of a tiebreaker round
+  static bool _isEndOfTiebreakerRound(
+      int teamIndexInTiedTeams, int totalTiedTeams) {
+    return teamIndexInTiedTeams == totalTiedTeams - 1;
   }
 }

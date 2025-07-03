@@ -144,136 +144,156 @@ class GameState {
 
   GameState advanceTurn(TurnRecord turnRecord) {
     if (isInTiebreaker) {
-      // --- Tiebreaker logic ---
-      final newTiebreakerScores = List<int>.from(tiebreakerScores);
-      // Find the index of the team in the tiedTeamIndices list
-      final teamIndexInTiebreaker =
-          tiedTeamIndices.indexOf(turnRecord.teamIndex);
-      if (teamIndexInTiebreaker != -1) {
-        newTiebreakerScores[teamIndexInTiebreaker] += turnRecord.score;
-      }
-
-      final newTurnHistory = List<TurnRecord>.from(turnHistory)
-        ..add(turnRecord);
-
-      // Check if we're at the end of the tiebreaker round
-      final nextTeamIndexInTiebreaker =
-          (tiedTeamIndices.indexOf(currentTeamIndex) + 1) %
-              tiedTeamIndices.length;
-      final isEndOfTiebreakerRound = nextTeamIndexInTiebreaker == 0;
-
-      bool isGameOver = false;
-      List<int> newTiedTeamIndices = List.from(tiedTeamIndices);
-      int newTiebreakerRound = tiebreakerRound;
-      bool newIsInTiebreaker = isInTiebreaker;
-
-      if (isEndOfTiebreakerRound) {
-        // Find the highest score in tiebreaker
-        final maxScore = newTiebreakerScores.reduce((a, b) => a > b ? a : b);
-        final teamsWithMaxScore = <int>[];
-
-        for (int i = 0; i < newTiebreakerScores.length; i++) {
-          if (newTiebreakerScores[i] == maxScore) {
-            teamsWithMaxScore.add(tiedTeamIndices[i]);
-          }
-        }
-
-        if (teamsWithMaxScore.length == 1) {
-          // One team won the tiebreaker
-          isGameOver = true;
-          newIsInTiebreaker = false;
-        } else {
-          // Still tied, continue to next tiebreaker round
-          newTiedTeamIndices = teamsWithMaxScore;
-          newTiebreakerRound++;
-          // Reset tiebreaker scores for the remaining teams
-          newTiebreakerScores.clear();
-          newTiebreakerScores.addAll(List.filled(newTiedTeamIndices.length, 0));
-          newIsInTiebreaker = true;
-        }
-      }
-
-      final result = copyWith(
-        tiebreakerScores: newTiebreakerScores,
-        turnHistory: newTurnHistory,
-        currentTeamIndex: isEndOfTiebreakerRound
-            ? 0
-            : tiedTeamIndices[nextTeamIndexInTiebreaker],
-        currentTurn: isEndOfTiebreakerRound ? currentTurn + 1 : currentTurn,
-        isGameOver: isGameOver,
-        tiedTeamIndices: newTiedTeamIndices,
-        tiebreakerRound: newTiebreakerRound,
-        isInTiebreaker: newIsInTiebreaker,
-      );
-      print(
-          '[DEBUG] advanceTurn (tiebreaker): isInTiebreaker=${result.isInTiebreaker}');
-      return result;
+      return _advanceTiebreakerTurn(turnRecord);
     } else {
-      // --- Normal round logic ---
-      final newTeamScores = List<int>.from(teamScores);
-      // Update the team's score with the disputed score
-      newTeamScores[turnRecord.teamIndex] += turnRecord.score;
-
-      final newTurnHistory = List<TurnRecord>.from(turnHistory)
-        ..add(turnRecord);
-
-      final nextTeamIndex = getNextTeamIndex();
-      final nextRound = getNextRound();
-      final nextTurn = getNextTurn();
-
-      // Check if any team has reached the target score AND we're at the end of a round
-      final hasReachedTargetScore =
-          newTeamScores.any((score) => score >= config.targetScore);
-      final isEndOfRound = isLastTeam();
-
-      // Calculate if it's a tiebreaker (more than one team reached target score at end of round)
-      bool isTiebreaker = false;
-      List<int> tiedTeamIndices = [];
-      if (hasReachedTargetScore && isEndOfRound) {
-        final teamsAtTarget =
-            newTeamScores.where((score) => score >= config.targetScore).length;
-        isTiebreaker = teamsAtTarget > 1;
-        if (isTiebreaker) {
-          // Find teams that reached the target score
-          for (int i = 0; i < newTeamScores.length; i++) {
-            if (newTeamScores[i] >= config.targetScore) {
-              tiedTeamIndices.add(i);
-            }
-          }
-        }
-      }
-
-      // Only set isGameOver to true if there is a winner (not a tiebreaker)
-      final isGameOver = hasReachedTargetScore && isEndOfRound && !isTiebreaker;
-
-      final result = copyWith(
-        teamScores: newTeamScores,
-        turnHistory: newTurnHistory,
-        currentRound: nextRound,
-        currentTurn: nextTurn,
-        currentTeamIndex: nextTeamIndex,
-        isGameOver: isGameOver,
-        isTiebreaker: isTiebreaker,
-        tiedTeamIndices: tiedTeamIndices,
-      );
-      print(
-          '[DEBUG] advanceTurn (normal): isInTiebreaker=${result.isInTiebreaker}');
-      return result;
+      return _advanceNormalTurn(turnRecord);
     }
   }
 
+  // Private method for tiebreaker turn logic
+  GameState _advanceTiebreakerTurn(TurnRecord turnRecord) {
+    final newTiebreakerScores = List<int>.from(tiebreakerScores);
+    final teamIndexInTiebreaker = tiedTeamIndices.indexOf(turnRecord.teamIndex);
+
+    if (teamIndexInTiebreaker != -1) {
+      newTiebreakerScores[teamIndexInTiebreaker] += turnRecord.score;
+    }
+
+    final newTurnHistory = List<TurnRecord>.from(turnHistory)..add(turnRecord);
+    // Use the team that just played to find the next team in tiebreaker
+    final nextTeamIndexInTiebreaker =
+        (teamIndexInTiebreaker + 1) % tiedTeamIndices.length;
+    final isEndOfTiebreakerRound = nextTeamIndexInTiebreaker == 0;
+
+    bool isGameOver = false;
+    List<int> newTiedTeamIndices = List.from(tiedTeamIndices);
+    int newTiebreakerRound = tiebreakerRound;
+    bool newIsInTiebreaker = isInTiebreaker;
+
+    if (isEndOfTiebreakerRound) {
+      final tiebreakerResult = _resolveTiebreakerRound(newTiebreakerScores);
+      isGameOver = tiebreakerResult['isGameOver'] as bool;
+      newTiedTeamIndices = tiebreakerResult['newTiedTeamIndices'] as List<int>;
+      newTiebreakerRound = tiebreakerResult['newTiebreakerRound'] as int;
+      newIsInTiebreaker = tiebreakerResult['newIsInTiebreaker'] as bool;
+    }
+
+    final nextTeamIndex = isEndOfTiebreakerRound
+        ? (newTiedTeamIndices.isNotEmpty ? newTiedTeamIndices[0] : 0)
+        : tiedTeamIndices[nextTeamIndexInTiebreaker];
+
+    return copyWith(
+      tiebreakerScores: newTiebreakerScores,
+      turnHistory: newTurnHistory,
+      currentTeamIndex: nextTeamIndex,
+      currentTurn: isEndOfTiebreakerRound ? currentTurn + 1 : currentTurn,
+      isGameOver: isGameOver,
+      tiedTeamIndices: newTiedTeamIndices,
+      tiebreakerRound: newTiebreakerRound,
+      isInTiebreaker: newIsInTiebreaker,
+    );
+  }
+
+  // Private method for normal turn logic
+  GameState _advanceNormalTurn(TurnRecord turnRecord) {
+    final newTeamScores = List<int>.from(teamScores);
+    newTeamScores[turnRecord.teamIndex] += turnRecord.score;
+
+    final newTurnHistory = List<TurnRecord>.from(turnHistory)..add(turnRecord);
+    final nextTeamIndex = getNextTeamIndex();
+    final nextRound = getNextRound();
+    final nextTurn = getNextTurn();
+
+    final hasReachedTargetScore =
+        newTeamScores.any((score) => score >= config.targetScore);
+    final isEndOfRound = isLastTeam();
+
+    final tiebreakerCheck =
+        _checkForTiebreaker(newTeamScores, hasReachedTargetScore, isEndOfRound);
+    final isTiebreaker = tiebreakerCheck['isTiebreaker'] as bool;
+    final tiedTeamIndices = tiebreakerCheck['tiedTeamIndices'] as List<int>;
+    final isGameOver = hasReachedTargetScore && isEndOfRound && !isTiebreaker;
+
+    return copyWith(
+      teamScores: newTeamScores,
+      turnHistory: newTurnHistory,
+      currentRound: nextRound,
+      currentTurn: nextTurn,
+      currentTeamIndex: nextTeamIndex,
+      isGameOver: isGameOver,
+      isTiebreaker: isTiebreaker,
+      tiedTeamIndices: tiedTeamIndices,
+    );
+  }
+
+  // Helper method to resolve tiebreaker round
+  Map<String, dynamic> _resolveTiebreakerRound(List<int> tiebreakerScores) {
+    final maxScore = tiebreakerScores.reduce((a, b) => a > b ? a : b);
+    final teamsWithMaxScore = <int>[];
+
+    for (int i = 0; i < tiebreakerScores.length; i++) {
+      if (tiebreakerScores[i] == maxScore) {
+        teamsWithMaxScore.add(tiedTeamIndices[i]);
+      }
+    }
+
+    if (teamsWithMaxScore.length == 1) {
+      // One team won the tiebreaker
+      return {
+        'isGameOver': true,
+        'newTiedTeamIndices': <int>[],
+        'newTiebreakerRound': tiebreakerRound,
+        'newIsInTiebreaker': false,
+      };
+    } else {
+      // Still tied, continue to next tiebreaker round
+      return {
+        'isGameOver': false,
+        'newTiedTeamIndices': teamsWithMaxScore,
+        'newTiebreakerRound': tiebreakerRound + 1,
+        'newIsInTiebreaker': true,
+      };
+    }
+  }
+
+  // Helper method to check for tiebreaker conditions
+  Map<String, dynamic> _checkForTiebreaker(
+      List<int> teamScores, bool hasReachedTargetScore, bool isEndOfRound) {
+    bool isTiebreaker = false;
+    List<int> tiedTeamIndices = [];
+
+    if (hasReachedTargetScore && isEndOfRound) {
+      final teamsAtTarget =
+          teamScores.where((score) => score >= config.targetScore).length;
+      isTiebreaker = teamsAtTarget > 1;
+      if (isTiebreaker) {
+        for (int i = 0; i < teamScores.length; i++) {
+          if (teamScores[i] >= config.targetScore) {
+            tiedTeamIndices.add(i);
+          }
+        }
+      }
+    }
+
+    return {
+      'isTiebreaker': isTiebreaker,
+      'tiedTeamIndices': tiedTeamIndices,
+    };
+  }
+
   // Start tiebreaker mode
-  GameState startTiebreaker(WordCategory category) {
+  GameState startTiebreaker() {
     final result = copyWith(
       isInTiebreaker: true,
       tiebreakerRound: 1,
       tiebreakerScores: List.filled(tiedTeamIndices.length, 0),
-      currentTeamIndex: 0, // Start with first tied team
-      currentRound: 1,
+      currentTeamIndex: tiedTeamIndices.isNotEmpty
+          ? tiedTeamIndices[0]
+          : 0, // Start with first tied team
       currentTurn: 1,
-      tiebreakerCategory: category,
+      // Keep currentRound unchanged - don't reset it
+      // Do not set tiebreakerCategory here
     );
-    print('[DEBUG] startTiebreaker: isInTiebreaker=${result.isInTiebreaker}');
     return result;
   }
 

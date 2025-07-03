@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'dart:async';
 import 'word_lists_manager_screen.dart';
-import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
 import '../utils/category_utils.dart';
 import 'package:convey/widgets/team_color_button.dart';
@@ -12,12 +11,14 @@ class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
+  final String displayString;
 
   const CategorySelectionScreen({
     super.key,
     required this.teamIndex,
     required this.roundNumber,
     required this.turnNumber,
+    required this.displayString,
   });
 
   @override
@@ -135,8 +136,6 @@ class _CategorySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
-    final currentTeamPlayers = ref.watch(currentTeamPlayersProvider);
-
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -148,7 +147,7 @@ class _CategorySelectionScreenState
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      "${currentTeamPlayers[0]} & ${currentTeamPlayers[1]}'s Turn",
+                      widget.displayString,
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -227,9 +226,11 @@ class _CategorySelectionScreenState
                         color: teamColors[2], // Green
                         onPressed: _selectedCategory != null
                             ? () {
-                                // Use navigation service to navigate to role assignment
-                                GameNavigationService.navigateToRoleAssignment(
+                                // Use navigation service to handle all navigation logic based on game state
+                                GameNavigationService
+                                    .navigateFromCategorySelection(
                                   context,
+                                  ref,
                                   widget.teamIndex,
                                   widget.roundNumber,
                                   widget.turnNumber,
