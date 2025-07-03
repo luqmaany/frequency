@@ -76,7 +76,7 @@ If you'd like to help, please open an issue or submit a pull request.
 ## Contact
 
 Questions, ideas, or want to collaborate?  
-Reach out via [GitHub Issues](https://github.com/yourusername/convey/issues) or email: your.email@example.com
+Reach out via [GitHub Issues](https://github.com/yourusername/convey/issues) or email: luqmaankataaliy@gmail.com
 
 ---
 
