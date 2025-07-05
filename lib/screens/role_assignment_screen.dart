@@ -151,7 +151,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                 child: TeamColorButton(
                   text: 'Start',
                   icon: Icons.play_arrow,
-                  color: teamColors[2], // Green
+                  color: uiColors[1], // Green
                   onPressed: () {
                     // Use navigation service to navigate to game screen
                     GameNavigationService.navigateToGameScreen(
@@ -307,7 +307,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                 child: TeamColorButton(
                   text: 'Random',
                   icon: Icons.shuffle,
-                  color: teamColors[1], // Blue
+                  color: uiColors[0], // Blue
                   onPressed: () {
                     _assignRandomRoles();
                     _showTransitionScreen();
@@ -321,7 +321,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               child: TeamColorButton(
                 text: 'Next',
                 icon: Icons.arrow_forward,
-                color: teamColors[2], // Green
+                color: uiColors[1], // Green
                 onPressed: () {
                   _showTransitionScreen();
                 },

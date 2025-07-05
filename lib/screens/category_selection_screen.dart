@@ -219,11 +219,10 @@ class _CategorySelectionScreenState
                 child: Row(
                   children: [
                     Expanded(
-                      child: _buildTeamColorButton(
-                        context: context,
+                      child: TeamColorButton(
                         text: 'Next',
                         icon: Icons.arrow_forward,
-                        color: teamColors[2], // Green
+                        color: uiColors[1], // Green
                         onPressed: _selectedCategory != null
                             ? () {
                                 // Use navigation service to handle all navigation logic based on game state
@@ -249,56 +248,4 @@ class _CategorySelectionScreenState
       ),
     );
   }
-}
-
-Widget _buildTeamColorButton({
-  required BuildContext context,
-  required String text,
-  required IconData icon,
-  required TeamColor color,
-  required VoidCallback? onPressed,
-}) {
-  final bool enabled = onPressed != null;
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2.0),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: enabled ? onPressed : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-        decoration: BoxDecoration(
-          color: enabled ? color.background : color.background.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: enabled ? color.border : Colors.grey.shade300,
-            width: 1.5,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: (enabled ? color.border : Colors.grey.shade300)
-                  .withOpacity(0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                size: 24, color: enabled ? color.border : Colors.grey.shade400),
-            const SizedBox(width: 12),
-            Text(
-              text,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: enabled ? color.text : Colors.grey.shade400,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }

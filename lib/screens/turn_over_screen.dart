@@ -478,13 +478,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                     TeamColorButton(
                       text: 'Confirm Score',
                       icon: Icons.check,
-                      color: TeamColor(
-                        'Category',
-                        CategoryUtils.getCategoryColor(widget.category)
-                            .withOpacity(0.1),
-                        CategoryUtils.getCategoryColor(widget.category),
-                        CategoryUtils.getCategoryColor(widget.category),
-                      ),
+                      color: uiColors[0],
                       onPressed: _confirmScore,
                     ),
                   ],

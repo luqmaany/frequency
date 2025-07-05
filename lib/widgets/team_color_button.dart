@@ -14,8 +14,8 @@ final List<TeamColor> uiColors = [
 ];
 
 final List<TeamColor> teamColors = [
-  TeamColor(
-      'Turquoise', Color(0xFF1DE9B6), Color(0xFF00BFAE), Color(0xFF00695C)),
+  TeamColor('Turquoise', Color.fromARGB(255, 153, 229, 210), Color(0xFF00BFAE),
+      Color(0xFF00695C)),
   TeamColor('Magenta', Color(0xFFF8BBD0), Color(0xFFE91E63), Color(0xFF880E4F)),
   TeamColor(
       'Violet', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
