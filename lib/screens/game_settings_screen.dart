@@ -62,7 +62,7 @@ class GameSettingsScreen extends ConsumerWidget {
                   child: TeamColorButton(
                     text: 'Back to Teams',
                     icon: Icons.arrow_back,
-                    color: teamColors[1], // Blue
+                    color: uiColors[0], // Blue
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -73,7 +73,7 @@ class GameSettingsScreen extends ConsumerWidget {
                   child: TeamColorButton(
                     text: 'Start Game',
                     icon: Icons.play_arrow_rounded,
-                    color: teamColors[2], // Green
+                    color: uiColors[1], // Green
                     onPressed: validationState.areAllSettingsValid
                         ? () async {
                             FocusScope.of(context).unfocus();

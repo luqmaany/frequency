@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_state_provider.dart';
+import '../widgets/team_color_button.dart';
 
 class GameOverScreen extends ConsumerWidget {
   const GameOverScreen({super.key});
@@ -96,46 +97,27 @@ class GameOverScreen extends ConsumerWidget {
             const SizedBox(height: 32),
             const Spacer(),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: TeamColorButton(
+                    text: 'New Game',
+                    icon: Icons.refresh,
+                    color: uiColors[1], // Green
                     onPressed: () {
                       ref.read(gameStateProvider.notifier).resetGame();
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 32),
-                      minimumSize: const Size(0, 60), // Only control height
-                    ),
-                    child: const Text(
-                      'New Game',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
-                  child: ElevatedButton(
+                  child: TeamColorButton(
+                    text: 'Home',
+                    icon: Icons.home,
+                    color: uiColors[0], // Blue
                     onPressed: () {
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 16, horizontal: 32),
-                      minimumSize: const Size(0, 60), // Only control height
-                      backgroundColor:
-                          Theme.of(context).colorScheme.tertiaryContainer,
-                      foregroundColor:
-                          Theme.of(context).colorScheme.onTertiaryContainer,
-                    ),
-                    child: const Text(
-                      'Home',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
                   ),
                 ),
               ],

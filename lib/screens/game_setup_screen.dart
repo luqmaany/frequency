@@ -311,7 +311,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                             child: TeamColorButton(
                               text: 'Shuffle Teams',
                               icon: Icons.shuffle,
-                              color: teamColors[1],
+                              color: uiColors[0],
                               onPressed: () {
                                 ref
                                     .read(gameSetupProvider.notifier)
@@ -342,7 +342,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                       child: TeamColorButton(
                         text: 'Next',
                         icon: Icons.arrow_forward,
-                        color: teamColors[2],
+                        color: uiColors[1],
                         onPressed: gameConfig.teams.length >= 2 &&
                                 gameConfig.teams.every((team) =>
                                     team
