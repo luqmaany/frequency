@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_state_provider.dart';
 import '../widgets/team_color_button.dart';
+import '../widgets/podium_display.dart';
 
 class GameOverScreen extends ConsumerWidget {
   const GameOverScreen({super.key});
@@ -27,72 +28,22 @@ class GameOverScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Game Over!',
-              style: Theme.of(context).textTheme.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Final Scores',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Column(
-                children: List.generate(
-                  sortedTeamIndices.length,
-                  (i) {
-                    final teamIndex = sortedTeamIndices[i];
-                    final playerNames =
-                        gameState.config.teams[teamIndex].join(' & ');
-                    final totalScore = gameState.teamScores[teamIndex];
-                    final isWinner = i == 0 && totalScore > 0;
+            PodiumDisplay(
+              teams: sortedTeamIndices.map((i) {
+                final teamIndex = i;
+                final playerNames =
+                    gameState.config.teams[teamIndex].join(' & ');
+                final totalScore = gameState.teamScores[teamIndex];
+                final isWinner = i == 0 && totalScore > 0;
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 8.0, horizontal: 4.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              isWinner ? '$playerNames 🏆' : playerNames,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                          CircleAvatar(
-                            backgroundColor:
-                                Theme.of(context).colorScheme.primary,
-                            radius: 18,
-                            child: Text(
-                              totalScore.toString(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                        Theme.of(context).colorScheme.onPrimary,
-                                  ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
+                return {
+                  'name': playerNames,
+                  'score': totalScore,
+                  'isWinner': isWinner,
+                  'teamIndex': teamIndex,
+                };
+              }).toList(),
+              teamColors: teamColors,
             ),
             const SizedBox(height: 32),
             const Spacer(),
