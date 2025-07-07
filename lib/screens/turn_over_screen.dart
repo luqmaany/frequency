@@ -142,7 +142,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
         turnNumber: widget.turnNumber,
         conveyor: currentTeamPlayers[0],
         guesser: currentTeamPlayers[1],
-        category: widget.category.toString(),
+        category: CategoryUtils.getCategoryName(widget.category),
         score: _disputedScore,
         skipsUsed: ref.read(gameSetupProvider).allowedSkips - widget.skipsLeft,
         wordsGuessed: widget.wordsGuessed

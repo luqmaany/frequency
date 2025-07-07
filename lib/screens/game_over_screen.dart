@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_state_provider.dart';
 import '../widgets/team_color_button.dart';
-import '../widgets/podium_display.dart';
+import 'game_insights_screen.dart';
 
-class GameOverScreen extends ConsumerWidget {
+class GameOverScreen extends ConsumerStatefulWidget {
   const GameOverScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameOverScreen> createState() => _GameOverScreenState();
+}
+
+class _GameOverScreenState extends ConsumerState<GameOverScreen> {
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameStateProvider);
     if (gameState == null) return const SizedBox.shrink();
 
@@ -23,40 +28,134 @@ class GameOverScreen extends ConsumerWidget {
         title: Text(''),
         automaticallyImplyLeading: false,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(27.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PodiumDisplay(
-              teams: sortedTeamIndices.map((i) {
-                final teamIndex = i;
-                final playerNames =
-                    gameState.config.teams[teamIndex].join(' & ');
-                final totalScore = gameState.teamScores[teamIndex];
-                final isWinner = i == 0 && totalScore > 0;
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(27.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Game Over!',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      children: List.generate(
+                        sortedTeamIndices.length,
+                        (i) {
+                          final teamIndex = sortedTeamIndices[i];
+                          final playerNames =
+                              gameState.config.teams[teamIndex].join(' & ');
+                          final totalScore = gameState.teamScores[teamIndex];
+                          final isWinner = i == 0 && totalScore > 0;
 
-                return {
-                  'name': playerNames,
-                  'score': totalScore,
-                  'isWinner': isWinner,
-                  'teamIndex': teamIndex,
-                };
-              }).toList(),
-              teamColors: teamColors,
+                          final Color backgroundColor = teamColors[gameState
+                                          .config.teamColorIndices.length >
+                                      teamIndex
+                                  ? gameState.config.teamColorIndices[teamIndex]
+                                  : teamIndex % teamColors.length]
+                              .background;
+                          final Color borderColor = teamColors[gameState
+                                          .config.teamColorIndices.length >
+                                      teamIndex
+                                  ? gameState.config.teamColorIndices[teamIndex]
+                                  : teamIndex % teamColors.length]
+                              .border;
+                          final Color textColor = teamColors[gameState
+                                          .config.teamColorIndices.length >
+                                      teamIndex
+                                  ? gameState.config.teamColorIndices[teamIndex]
+                                  : teamIndex % teamColors.length]
+                              .text;
+
+                          return Container(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 12.0, horizontal: 10.0),
+                            decoration: BoxDecoration(
+                              color: backgroundColor,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: borderColor,
+                                width: 2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    isWinner ? '$playerNames 🏆' : playerNames,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                            color: textColor),
+                                  ),
+                                ),
+                                CircleAvatar(
+                                  backgroundColor: borderColor,
+                                  radius: 18,
+                                  child: Text(
+                                    totalScore.toString(),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge
+                                        ?.copyWith(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
-            const SizedBox(height: 32),
-            const Spacer(),
-            Row(
+          ),
+          // Bottom section with Game Insights and Home buttons (pinned)
+          Container(
+            padding: const EdgeInsets.all(27.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.1),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: Row(
               children: [
                 Expanded(
                   child: TeamColorButton(
-                    text: 'New Game',
-                    icon: Icons.refresh,
-                    color: uiColors[1], // Green
+                    text: 'Insights',
+                    icon: Icons.analytics,
+                    color: teamColors[2], // Violet (Purple)
                     onPressed: () {
-                      ref.read(gameStateProvider.notifier).resetGame();
-                      Navigator.of(context).popUntil((route) => route.isFirst);
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const GameInsightsScreen(),
+                        ),
+                      );
                     },
                   ),
                 ),
@@ -73,8 +172,8 @@ class GameOverScreen extends ConsumerWidget {
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
