@@ -1,4 +1,4 @@
-package com.example.convey
+package com.example.Conveyor
 
 import io.flutter.embedding.android.FlutterActivity
 
