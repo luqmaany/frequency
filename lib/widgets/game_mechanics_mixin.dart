@@ -78,6 +78,8 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         _wordsSkipped.add(word);
         _usedWords.add(word);
       });
+      // Increment skip count for the word
+      ref.read(wordsProvider.notifier).incrementWordSkip(word);
       onWordSkipped(word);
     }
   }
@@ -91,6 +93,7 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
           text: w.text,
           category: w.category,
           usageCount: w.usageCount + 1,
+          skipCount: w.skipCount,
         );
       }
       return w;
