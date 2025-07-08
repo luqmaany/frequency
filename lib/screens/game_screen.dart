@@ -96,7 +96,32 @@ class _GameScreenState extends ConsumerState<GameScreen>
     if (currentWords.isEmpty) {
       return const Scaffold(
         body: Center(
-          child: CircularProgressIndicator(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.sentiment_dissatisfied,
+                size: 64,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No more words available!',
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'All words in this category have been used.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -142,10 +167,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 skipsLeft: skipsLeft,
                 onWordGuessed: (word) {
                   handleWordGuessed(word);
-                  // Find the word object and increment usage
-                  final wordObj =
-                      currentWords.firstWhere((w) => w.text == word);
-                  incrementWordUsage(wordObj);
                 },
                 onWordSkipped: (word) {
                   handleWordSkipped(word);

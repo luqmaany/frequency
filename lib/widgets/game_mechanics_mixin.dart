@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../screens/word_lists_manager_screen.dart';
+import '../services/game_state_provider.dart';
 
 mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   late int _timeLeft;
@@ -84,21 +85,14 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     }
   }
 
-  // Increment word usage count
-  void incrementWordUsage(Word word) {
-    final words = ref.read(wordsProvider);
-    final updatedWords = words.map((w) {
-      if (w.text == word.text) {
-        return Word(
-          text: w.text,
-          category: w.category,
-          usageCount: w.usageCount + 1,
-          skipCount: w.skipCount,
-        );
-      }
-      return w;
-    }).toList();
-    ref.read(wordsProvider.notifier).updateWords(updatedWords);
+  // Increment word appearance count
+  void incrementWordAppearance(Word word) {
+    ref.read(wordsProvider.notifier).incrementWordAppearance(word.text);
+  }
+
+  // Increment word guessed count
+  void incrementWordGuessed(Word word) {
+    ref.read(wordsProvider.notifier).incrementWordGuessed(word.text);
   }
 
   // Load initial words for the game
@@ -111,29 +105,52 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
 
-    // Get two random words from the category
-    categoryWords.shuffle();
-    _currentWords = categoryWords.take(2).toList();
+    // Get two random words from the category that haven't been used in this game
+    final gameUsedWords = ref.read(gameStateProvider.notifier).gameUsedWords;
+    final unusedCategoryWords = categoryWords
+        .where((word) => !gameUsedWords.contains(word.text))
+        .toList();
+
+    if (unusedCategoryWords.isEmpty) {
+      // If no unused words available, end the turn immediately
+      Future.microtask(() {
+        _endTurn();
+      });
+      return;
+    }
+
+    // Get two random words from the unused category words
+    unusedCategoryWords.shuffle();
+    _currentWords = unusedCategoryWords.take(2).toList();
     _usedWords.addAll(_currentWords.map((w) => w.text));
+
+    // Add to global game used words
+    ref
+        .read(gameStateProvider.notifier)
+        .addUsedWords(_currentWords.map((w) => w.text).toList());
+
+    // Defer appearance count updates until after build
+    Future.microtask(() {
+      for (final word in _currentWords) {
+        incrementWordAppearance(word);
+      }
+    });
   }
 
   // Get next word for a category
   Word? getNextWord(WordCategory category) {
     final words = ref.read(wordsProvider);
+    final gameUsedWords = ref.read(gameStateProvider.notifier).gameUsedWords;
+
+    // Get words that haven't been used in this game yet
     final categoryWords = words
         .where((word) =>
-            word.category == category && !_usedWords.contains(word.text))
+            word.category == category && !gameUsedWords.contains(word.text))
         .toList();
 
     if (categoryWords.isEmpty) {
-      // If we've used all words, reset the used words set
-      _usedWords.clear();
-      final availableWords =
-          words.where((word) => word.category == category).toList();
-      if (availableWords.isNotEmpty) {
-        availableWords.shuffle(); // Shuffle before taking first word
-        return availableWords.first;
-      }
+      // If we've used all words in this category for this game, return null
+      // This will prevent the game from continuing with repeated words
       return null;
     }
 
@@ -149,6 +166,17 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         _currentWords[index] = newWord;
         _usedWords.add(newWord.text);
       });
+
+      // Add to global game used words
+      ref.read(gameStateProvider.notifier).addUsedWords([newWord.text]);
+
+      // Defer appearance count update until after build
+      Future.microtask(() {
+        incrementWordAppearance(newWord);
+      });
+    } else {
+      // No more words available - end the turn
+      _endTurn();
     }
   }
 
