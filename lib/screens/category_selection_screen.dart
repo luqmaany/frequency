@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:async';
 import 'word_lists_manager_screen.dart';
 import '../services/game_navigation_service.dart';
+import '../services/game_state_provider.dart';
 import '../utils/category_utils.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
@@ -136,6 +137,20 @@ class _CategorySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Get the team color for the current team
+    final gameState = ref.watch(gameStateProvider);
+    TeamColor teamColor;
+    if (gameState != null) {
+      final colorIndex =
+          (gameState.config.teamColorIndices.length > widget.teamIndex)
+              ? gameState.config.teamColorIndices[widget.teamIndex]
+              : widget.teamIndex % teamColors.length;
+      teamColor = teamColors[colorIndex];
+    } else {
+      // Fallback to first team color if game state is not available
+      teamColor = teamColors[0];
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -167,7 +182,11 @@ class _CategorySelectionScreenState
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.grey,
+                                  color: _currentCategory.isNotEmpty
+                                      ? CategoryUtils.getCategoryColor(
+                                          _getCategoryFromName(
+                                              _currentCategory))
+                                      : teamColor.text,
                                   width: 2,
                                 ),
                               ),
@@ -183,9 +202,10 @@ class _CategorySelectionScreenState
                                   },
                                   child: Text(
                                     _currentCategory.isEmpty
-                                        ? 'Tap to Spin'
+                                        ? 'TAP TO SPIN\nFOR CATEGORY'
                                         : _currentCategory,
                                     key: ValueKey<String>(_currentCategory),
+                                    textAlign: TextAlign.center,
                                     style: Theme.of(context)
                                         .textTheme
                                         .displayLarge
@@ -194,9 +214,10 @@ class _CategorySelectionScreenState
                                               ? CategoryUtils.getCategoryColor(
                                                   _getCategoryFromName(
                                                       _currentCategory))
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .primary,
+                                              : teamColor.text,
+                                          fontSize: _currentCategory.isEmpty
+                                              ? 32
+                                              : null,
                                         ),
                                   ),
                                 ),

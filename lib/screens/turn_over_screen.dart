@@ -153,6 +153,24 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
 
       ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
 
+      // Update word statistics
+      final wordsNotifier = ref.read(wordsProvider.notifier);
+
+      // Increment appearance count for all words that appeared in this turn
+      for (final word in widget.wordsGuessed) {
+        wordsNotifier.incrementWordAppearance(word);
+      }
+      for (final word in widget.wordsSkipped) {
+        wordsNotifier.incrementWordAppearance(word);
+      }
+
+      // Increment guessed count only for words that were not disputed
+      for (final word in widget.wordsGuessed) {
+        if (!_disputedWords.contains(word)) {
+          wordsNotifier.incrementWordGuessed(word);
+        }
+      }
+
       // Use navigation service to navigate to next screen
       GameNavigationService.navigateToNextScreen(context, ref,
           teamIndex: widget.teamIndex);

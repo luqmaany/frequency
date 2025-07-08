@@ -67,10 +67,6 @@ class ScoreboardScreen extends ConsumerWidget {
       ..sort((a, b) => totalScoresCurr[b].compareTo(totalScoresCurr[a]));
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(''),
-        automaticallyImplyLeading: false,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(27.0),
         child: Column(

@@ -13,14 +13,16 @@ enum WordCategory {
 class Word {
   final String text;
   final WordCategory category;
-  int usageCount;
+  int appearanceCount;
   int skipCount;
+  int guessedCount;
 
   Word({
     required this.text,
     required this.category,
-    this.usageCount = 0,
+    this.appearanceCount = 0,
     this.skipCount = 0,
+    this.guessedCount = 0,
   });
 }
 
@@ -58,8 +60,9 @@ class WordsNotifier extends StateNotifier<List<Word>> {
         uniqueWords[word.text] = Word(
           text: existing.text,
           category: existing.category,
-          usageCount: existing.usageCount + word.usageCount,
+          appearanceCount: existing.appearanceCount + word.appearanceCount,
           skipCount: existing.skipCount + word.skipCount,
+          guessedCount: existing.guessedCount + word.guessedCount,
         );
       }
     }
@@ -77,8 +80,9 @@ class WordsNotifier extends StateNotifier<List<Word>> {
           return Word(
             text: w.text,
             category: word.category, // Use the new category if different
-            usageCount: w.usageCount,
+            appearanceCount: w.appearanceCount,
             skipCount: w.skipCount,
+            guessedCount: w.guessedCount,
           );
         }
         return w;
@@ -92,13 +96,14 @@ class WordsNotifier extends StateNotifier<List<Word>> {
     state = state.where((w) => w.text != word.text).toList();
   }
 
-  void resetUsageCounts() {
+  void resetAppearanceCounts() {
     state = state
         .map((word) => Word(
               text: word.text,
               category: word.category,
-              usageCount: 0,
+              appearanceCount: 0,
               skipCount: word.skipCount,
+              guessedCount: word.guessedCount,
             ))
         .toList();
   }
@@ -108,8 +113,21 @@ class WordsNotifier extends StateNotifier<List<Word>> {
         .map((word) => Word(
               text: word.text,
               category: word.category,
-              usageCount: word.usageCount,
+              appearanceCount: word.appearanceCount,
               skipCount: 0,
+              guessedCount: word.guessedCount,
+            ))
+        .toList();
+  }
+
+  void resetGuessedCounts() {
+    state = state
+        .map((word) => Word(
+              text: word.text,
+              category: word.category,
+              appearanceCount: word.appearanceCount,
+              skipCount: word.skipCount,
+              guessedCount: 0,
             ))
         .toList();
   }
@@ -119,8 +137,9 @@ class WordsNotifier extends StateNotifier<List<Word>> {
         .map((word) => Word(
               text: word.text,
               category: word.category,
-              usageCount: 0,
+              appearanceCount: 0,
               skipCount: 0,
+              guessedCount: 0,
             ))
         .toList();
   }
@@ -131,8 +150,39 @@ class WordsNotifier extends StateNotifier<List<Word>> {
         return Word(
           text: word.text,
           category: word.category,
-          usageCount: word.usageCount,
+          appearanceCount: word.appearanceCount,
           skipCount: word.skipCount + 1,
+          guessedCount: word.guessedCount,
+        );
+      }
+      return word;
+    }).toList();
+  }
+
+  void incrementWordAppearance(String wordText) {
+    state = state.map((word) {
+      if (word.text == wordText) {
+        return Word(
+          text: word.text,
+          category: word.category,
+          appearanceCount: word.appearanceCount + 1,
+          skipCount: word.skipCount,
+          guessedCount: word.guessedCount,
+        );
+      }
+      return word;
+    }).toList();
+  }
+
+  void incrementWordGuessed(String wordText) {
+    state = state.map((word) {
+      if (word.text == wordText) {
+        return Word(
+          text: word.text,
+          category: word.category,
+          appearanceCount: word.appearanceCount,
+          skipCount: word.skipCount,
+          guessedCount: word.guessedCount + 1,
         );
       }
       return word;
@@ -140,32 +190,11 @@ class WordsNotifier extends StateNotifier<List<Word>> {
   }
 
   void purgeLowFrequencyWords(int threshold) {
-    state = state.where((word) => word.usageCount >= threshold).toList();
+    state = state.where((word) => word.appearanceCount >= threshold).toList();
   }
 
   void updateWords(List<Word> updatedWords) {
     state = updatedWords;
-  }
-
-  int removeDuplicates() {
-    final originalCount = state.length;
-    final uniqueWords = <String, Word>{};
-    for (final word in state) {
-      if (!uniqueWords.containsKey(word.text)) {
-        uniqueWords[word.text] = word;
-      } else {
-        // If duplicate found, merge the counts
-        final existing = uniqueWords[word.text]!;
-        uniqueWords[word.text] = Word(
-          text: existing.text,
-          category: existing.category,
-          usageCount: existing.usageCount + word.usageCount,
-          skipCount: existing.skipCount + word.skipCount,
-        );
-      }
-    }
-    state = uniqueWords.values.toList();
-    return originalCount - state.length;
   }
 
   List<Word> getWordsSortedBySkipCount() {
@@ -174,19 +203,31 @@ class WordsNotifier extends StateNotifier<List<Word>> {
     return sortedWords;
   }
 
+  List<Word> getWordsSortedByAppearanceCount() {
+    final sortedWords = List<Word>.from(state);
+    sortedWords.sort((a, b) => b.appearanceCount.compareTo(a.appearanceCount));
+    return sortedWords;
+  }
+
+  List<Word> getWordsSortedByGuessedCount() {
+    final sortedWords = List<Word>.from(state);
+    sortedWords.sort((a, b) => b.guessedCount.compareTo(a.guessedCount));
+    return sortedWords;
+  }
+
   List<Word> getWordsSortedByDifficulty() {
     final sortedWords = List<Word>.from(state);
     sortedWords.sort((a, b) {
-      // Calculate difficulty score: skip rate (skips / total uses)
-      final aTotalUses = a.usageCount + a.skipCount;
-      final bTotalUses = b.usageCount + b.skipCount;
+      // Calculate difficulty score: skip rate (skips / total appearances)
+      final aTotalAppearances = a.appearanceCount;
+      final bTotalAppearances = b.appearanceCount;
 
-      if (aTotalUses == 0 && bTotalUses == 0) return 0;
-      if (aTotalUses == 0) return -1;
-      if (bTotalUses == 0) return 1;
+      if (aTotalAppearances == 0 && bTotalAppearances == 0) return 0;
+      if (aTotalAppearances == 0) return -1;
+      if (bTotalAppearances == 0) return 1;
 
-      final aSkipRate = a.skipCount / aTotalUses;
-      final bSkipRate = b.skipCount / bTotalUses;
+      final aSkipRate = a.skipCount / aTotalAppearances;
+      final bSkipRate = b.skipCount / bTotalAppearances;
 
       return bSkipRate
           .compareTo(aSkipRate); // Higher skip rate = more difficult
@@ -207,7 +248,8 @@ class _WordListsManagerScreenState
     extends ConsumerState<WordListsManagerScreen> {
   WordCategory _selectedCategory = WordCategory.person;
   String _searchQuery = '';
-  String _sortBy = 'name'; // 'name', 'usage', 'skips', 'difficulty'
+  String _sortBy =
+      'name'; // 'name', 'appearances', 'guessed', 'skips', 'difficulty'
 
   @override
   Widget build(BuildContext context) {
@@ -221,25 +263,49 @@ class _WordListsManagerScreenState
 
     // Apply sorting
     switch (_sortBy) {
-      case 'usage':
-        filteredWords.sort((a, b) => b.usageCount.compareTo(a.usageCount));
+      case 'appearances':
+        filteredWords.sort((a, b) {
+          final appearanceComparison =
+              b.appearanceCount.compareTo(a.appearanceCount);
+          return appearanceComparison != 0
+              ? appearanceComparison
+              : a.text.compareTo(b.text);
+        });
+        break;
+      case 'guessed':
+        filteredWords.sort((a, b) {
+          final guessedComparison = b.guessedCount.compareTo(a.guessedCount);
+          return guessedComparison != 0
+              ? guessedComparison
+              : a.text.compareTo(b.text);
+        });
         break;
       case 'skips':
-        filteredWords.sort((a, b) => b.skipCount.compareTo(a.skipCount));
+        filteredWords.sort((a, b) {
+          final skipComparison = b.skipCount.compareTo(a.skipCount);
+          return skipComparison != 0
+              ? skipComparison
+              : a.text.compareTo(b.text);
+        });
         break;
       case 'difficulty':
         filteredWords.sort((a, b) {
-          final aTotalUses = a.usageCount + a.skipCount;
-          final bTotalUses = b.usageCount + b.skipCount;
+          final aTotalAppearances = a.appearanceCount;
+          final bTotalAppearances = b.appearanceCount;
 
-          if (aTotalUses == 0 && bTotalUses == 0) return 0;
-          if (aTotalUses == 0) return -1;
-          if (bTotalUses == 0) return 1;
+          if (aTotalAppearances == 0 && bTotalAppearances == 0) {
+            return a.text.compareTo(b.text);
+          }
+          if (aTotalAppearances == 0) return -1;
+          if (bTotalAppearances == 0) return 1;
 
-          final aSkipRate = a.skipCount / aTotalUses;
-          final bSkipRate = b.skipCount / bTotalUses;
+          final aSkipRate = a.skipCount / aTotalAppearances;
+          final bSkipRate = b.skipCount / bTotalAppearances;
 
-          return bSkipRate.compareTo(aSkipRate);
+          final difficultyComparison = bSkipRate.compareTo(aSkipRate);
+          return difficultyComparison != 0
+              ? difficultyComparison
+              : a.text.compareTo(b.text);
         });
         break;
       default: // 'name'
@@ -251,25 +317,80 @@ class _WordListsManagerScreenState
       appBar: AppBar(
         title: const Text('Word Lists Manager'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.cleaning_services),
-            tooltip: 'Remove Duplicates',
-            onPressed: () => _showRemoveDuplicatesDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_sweep),
-            tooltip: 'Purge Low Frequency Words',
-            onPressed: () => _showPurgeDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reset Usage Counts',
-            onPressed: () => _showResetDialog(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.skip_next),
-            tooltip: 'Reset Skip Counts',
-            onPressed: () => _showResetSkipDialog(context),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            tooltip: 'Word Management Options',
+            onSelected: (value) {
+              switch (value) {
+                case 'purge':
+                  _showPurgeDialog(context);
+                  break;
+                case 'reset_appearances':
+                  _showResetAppearanceDialog(context);
+                  break;
+                case 'reset_skips':
+                  _showResetSkipDialog(context);
+                  break;
+                case 'reset_guessed':
+                  _showResetGuessedDialog(context);
+                  break;
+                case 'reset_all':
+                  _showResetAllDialog(context);
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'purge',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_sweep),
+                    SizedBox(width: 8),
+                    Text('Purge Low Frequency Words'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'reset_appearances',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh),
+                    SizedBox(width: 8),
+                    Text('Reset Appearance Counts'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'reset_skips',
+                child: Row(
+                  children: [
+                    Icon(Icons.skip_next),
+                    SizedBox(width: 8),
+                    Text('Reset Skip Counts'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'reset_guessed',
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle),
+                    SizedBox(width: 8),
+                    Text('Reset Guessed Counts'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'reset_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.clear_all),
+                    SizedBox(width: 8),
+                    Text('Reset All Counts'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -331,7 +452,10 @@ class _WordListsManagerScreenState
                   ),
                   items: const [
                     DropdownMenuItem(value: 'name', child: Text('Name')),
-                    DropdownMenuItem(value: 'usage', child: Text('Most Used')),
+                    DropdownMenuItem(
+                        value: 'appearances', child: Text('Most Appeared')),
+                    DropdownMenuItem(
+                        value: 'guessed', child: Text('Most Guessed')),
                     DropdownMenuItem(
                         value: 'skips', child: Text('Most Skipped')),
                     DropdownMenuItem(
@@ -357,7 +481,7 @@ class _WordListsManagerScreenState
                 return ListTile(
                   title: Text(word.text),
                   subtitle: Text(
-                      'Used ${word.usageCount} times, Skipped ${word.skipCount} times'),
+                      'Appeared: ${word.appearanceCount}, Guessed: ${word.guessedCount}, Skipped: ${word.skipCount}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () => _showDeleteDialog(context, word),
@@ -471,7 +595,7 @@ class _WordListsManagerScreenState
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Enter minimum usage count threshold:'),
+            const Text('Enter minimum appearance count threshold:'),
             const SizedBox(height: 16),
             TextField(
               controller: thresholdController,
@@ -502,13 +626,13 @@ class _WordListsManagerScreenState
     );
   }
 
-  void _showResetDialog(BuildContext context) {
+  void _showResetAppearanceDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Usage Counts'),
+        title: const Text('Reset Appearance Counts'),
         content: const Text(
-            'Are you sure you want to reset all word usage counts to zero?'),
+            'Are you sure you want to reset all word appearance counts to zero?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -516,7 +640,7 @@ class _WordListsManagerScreenState
           ),
           TextButton(
             onPressed: () {
-              ref.read(wordsProvider.notifier).resetUsageCounts();
+              ref.read(wordsProvider.notifier).resetAppearanceCounts();
               Navigator.pop(context);
             },
             child: const Text('Reset'),
@@ -550,13 +674,13 @@ class _WordListsManagerScreenState
     );
   }
 
-  void _showRemoveDuplicatesDialog(BuildContext context) {
+  void _showResetGuessedDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Remove Duplicates'),
-        content:
-            const Text('Are you sure you want to remove all duplicate words?'),
+        title: const Text('Reset Guessed Counts'),
+        content: const Text(
+            'Are you sure you want to reset all word guessed counts to zero?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -564,15 +688,34 @@ class _WordListsManagerScreenState
           ),
           TextButton(
             onPressed: () {
-              final duplicatesRemoved =
-                  ref.read(wordsProvider.notifier).removeDuplicates();
+              ref.read(wordsProvider.notifier).resetGuessedCounts();
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text('${duplicatesRemoved} duplicates removed')),
-              );
             },
-            child: const Text('Remove'),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showResetAllDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset All Counts'),
+        content: const Text(
+            'Are you sure you want to reset all word counts (appearances, guessed, and skips) to zero?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              ref.read(wordsProvider.notifier).resetAllCounts();
+              Navigator.pop(context);
+            },
+            child: const Text('Reset'),
           ),
         ],
       ),
@@ -580,10 +723,10 @@ class _WordListsManagerScreenState
   }
 
   Color _getDifficultyColor(Word word) {
-    final totalUses = word.usageCount + word.skipCount;
-    if (totalUses == 0) return Colors.transparent;
+    final totalAppearances = word.appearanceCount;
+    if (totalAppearances == 0) return Colors.transparent;
 
-    final skipRate = word.skipCount / totalUses;
+    final skipRate = word.skipCount / totalAppearances;
     if (skipRate < 0.25) return Colors.green.withOpacity(0.1);
     if (skipRate < 0.5) return Colors.yellow.withOpacity(0.1);
     if (skipRate < 0.75) return Colors.orange.withOpacity(0.1);

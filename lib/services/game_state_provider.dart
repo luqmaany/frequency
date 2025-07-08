@@ -4,10 +4,22 @@ import '../models/game_config.dart';
 import '../screens/word_lists_manager_screen.dart';
 
 class GameStateNotifier extends StateNotifier<GameState?> {
+  // Track used words across the entire game
+  final Set<String> _gameUsedWords = {};
+
   GameStateNotifier() : super(null);
 
   void initializeGame(GameConfig config) {
+    _gameUsedWords.clear(); // Clear used words for new game
     state = GameState.initial(config);
+  }
+
+  // Get used words for the current game
+  Set<String> get gameUsedWords => Set.from(_gameUsedWords);
+
+  // Add words to the used words set
+  void addUsedWords(List<String> words) {
+    _gameUsedWords.addAll(words);
   }
 
   void recordTurn(TurnRecord turnRecord) {
