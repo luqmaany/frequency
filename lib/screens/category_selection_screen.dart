@@ -202,7 +202,7 @@ class _CategorySelectionScreenState
                                   },
                                   child: Text(
                                     _currentCategory.isEmpty
-                                        ? 'TAP TO SPIN\nFOR CATEGORY'
+                                        ? 'TAP TO SPIN\nFOR CATEGORY!'
                                         : _currentCategory,
                                     key: ValueKey<String>(_currentCategory),
                                     textAlign: TextAlign.center,
