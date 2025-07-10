@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../services/game_state_provider.dart';
 import '../widgets/team_color_button.dart';
-import '../models/game_state.dart';
 
 class GameInsightsScreen extends ConsumerWidget {
   const GameInsightsScreen({super.key});
