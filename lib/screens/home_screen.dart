@@ -59,9 +59,7 @@ class HomeScreen extends ConsumerWidget {
                 context,
                 'Settings',
                 Icons.settings_rounded,
-                () {
-                  // TODO: Implement settings
-                },
+                () => GameNavigationService.navigateToSettings(context),
                 buttonColors[2],
               ),
               const SizedBox(height: 16),
