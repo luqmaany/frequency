@@ -197,10 +197,16 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                           scale: 1.0 + (_animation.value * 0.03),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: teamColor.background,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? teamColor.border.withOpacity(0.4)
+                                  : teamColor.background,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: teamColor.border,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? teamColor.background.withOpacity(0.3)
+                                    : teamColor.border,
                                 width: 2,
                               ),
                             ),
@@ -212,7 +218,12 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     style: Theme.of(context)
                                         .textTheme
                                         .headlineMedium
-                                        ?.copyWith(color: Colors.black),
+                                        ?.copyWith(
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white.withOpacity(0.95)
+                                              : Colors.black,
+                                        ),
                                   ),
                                 ),
                                 Positioned(
@@ -224,7 +235,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                       'Conveyor',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: teamColor.text,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white.withOpacity(0.95)
+                                            : teamColor.text,
                                         fontSize: 22,
                                       ),
                                     ),
@@ -244,7 +258,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                     icon: Icon(
                       Icons.swap_vert,
                       size: 32,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? teamColor.border.withOpacity(0.8)
+                          : teamColor.border,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -257,10 +273,16 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                           scale: 1.0 + (_animation.value * 0.03),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: teamColor.background,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? teamColor.border.withOpacity(0.4)
+                                  : teamColor.background,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: teamColor.border,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? teamColor.background.withOpacity(0.3)
+                                    : teamColor.border,
                                 width: 2,
                               ),
                             ),
@@ -272,7 +294,12 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     style: Theme.of(context)
                                         .textTheme
                                         .headlineMedium
-                                        ?.copyWith(color: Colors.black),
+                                        ?.copyWith(
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white.withOpacity(0.95)
+                                              : Colors.black,
+                                        ),
                                   ),
                                 ),
                                 Positioned(
@@ -284,7 +311,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                       'Guesser',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: teamColor.text,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white.withOpacity(0.95)
+                                            : teamColor.text,
                                         fontSize: 22,
                                       ),
                                     ),

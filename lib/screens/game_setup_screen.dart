@@ -5,6 +5,7 @@ import '../services/game_navigation_service.dart';
 import '../models/game_config.dart';
 import '../widgets/player_input.dart';
 import 'package:convey/widgets/team_color_button.dart';
+import '../widgets/team_display_box.dart';
 
 class GameSetupScreen extends ConsumerStatefulWidget {
   const GameSetupScreen({super.key});
@@ -208,106 +209,68 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                               child: child,
                             );
                           },
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(8.0),
-                            decoration: BoxDecoration(
-                              color: color.background,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: color.border,
-                                width: 2,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Center(
-                                  child: Text(
-                                    '${color.name} Team',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: color.text,
-                                      fontSize: 18,
+                          child: TeamDisplayBox(
+                            teamName: '${color.name} Team',
+                            color: color,
+                            children: team
+                                .where((player) => player.isNotEmpty)
+                                .map((player) {
+                              return DragTarget<String>(
+                                builder:
+                                    (context, candidateData, rejectedData) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      color: candidateData.isNotEmpty
+                                          ? color.background.withOpacity(0.3)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: candidateData.isNotEmpty
+                                          ? Border.all(
+                                              color: color.border, width: 2)
+                                          : null,
                                     ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Center(
-                                  child: Wrap(
-                                    spacing: 8,
-                                    alignment: WrapAlignment.center,
-                                    children: team
-                                        .where((player) => player.isNotEmpty)
-                                        .map((player) {
-                                      return DragTarget<String>(
-                                        builder: (context, candidateData,
-                                            rejectedData) {
-                                          return Container(
-                                            decoration: BoxDecoration(
-                                              color: candidateData.isNotEmpty
-                                                  ? color.background
-                                                      .withOpacity(0.3)
-                                                  : Colors.transparent,
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
-                                              border: candidateData.isNotEmpty
-                                                  ? Border.all(
-                                                      color: color.border,
-                                                      width: 2)
-                                                  : null,
-                                            ),
-                                            child: Draggable<String>(
-                                              data: player,
-                                              feedback: Material(
-                                                color: Colors.transparent,
-                                                child: Chip(
-                                                  label: Text(player),
-                                                  backgroundColor:
-                                                      color.background,
-                                                  side: BorderSide(
-                                                      color: color.border),
-                                                ),
-                                              ),
-                                              childWhenDragging: Opacity(
-                                                opacity: 0.5,
-                                                child:
-                                                    Chip(label: Text(player)),
-                                              ),
-                                              child: Chip(
-                                                label: Text(player),
-                                              ),
-                                              onDragStarted: () {
-                                                _dropAcceptedByTeam = false;
-                                              },
-                                              onDragEnd: (details) {
-                                                if (!_dropAcceptedByTeam) {
-                                                  // If the drop wasn't accepted by any team, remove the player
-                                                  ref
-                                                      .read(gameSetupProvider
-                                                          .notifier)
-                                                      .removePlayer(player);
-                                                }
-                                                _dropAcceptedByTeam = false;
-                                              },
-                                            ),
-                                          );
-                                        },
-                                        onWillAccept: (draggedPlayer) =>
-                                            draggedPlayer != player,
-                                        onAccept: (draggedPlayer) {
-                                          _dropAcceptedByTeam = true;
+                                    child: Draggable<String>(
+                                      data: player,
+                                      feedback: Material(
+                                        color: Colors.transparent,
+                                        child: Chip(
+                                          label: Text(player),
+                                          backgroundColor: color.background,
+                                          side: BorderSide(color: color.border),
+                                        ),
+                                      ),
+                                      childWhenDragging: Opacity(
+                                        opacity: 0.5,
+                                        child: Chip(label: Text(player)),
+                                      ),
+                                      child: Chip(
+                                        label: Text(player),
+                                      ),
+                                      onDragStarted: () {
+                                        _dropAcceptedByTeam = false;
+                                      },
+                                      onDragEnd: (details) {
+                                        if (!_dropAcceptedByTeam) {
+                                          // If the drop wasn't accepted by any team, remove the player
                                           ref
                                               .read(gameSetupProvider.notifier)
-                                              .swapPlayers(
-                                                  draggedPlayer, player);
-                                        },
-                                      );
-                                    }).toList(),
-                                  ),
-                                ),
-                              ],
-                            ),
+                                              .removePlayer(player);
+                                        }
+                                        _dropAcceptedByTeam = false;
+                                      },
+                                    ),
+                                  );
+                                },
+                                onWillAccept: (draggedPlayer) =>
+                                    draggedPlayer != player,
+                                onAccept: (draggedPlayer) {
+                                  _dropAcceptedByTeam = true;
+                                  ref
+                                      .read(gameSetupProvider.notifier)
+                                      .swapPlayers(draggedPlayer, player);
+                                },
+                              );
+                            }).toList(),
                           ),
                         );
                       }),

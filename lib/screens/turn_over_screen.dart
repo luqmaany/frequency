@@ -190,18 +190,26 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 decoration: BoxDecoration(
-                  color: CategoryUtils.getCategoryColor(widget.category)
-                      .withOpacity(0.2),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? CategoryUtils.getCategoryColor(widget.category)
+                          .withOpacity(0.3)
+                      : CategoryUtils.getCategoryColor(widget.category)
+                          .withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: CategoryUtils.getCategoryColor(widget.category),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? CategoryUtils.getCategoryColor(widget.category)
+                            .withOpacity(0.8)
+                        : CategoryUtils.getCategoryColor(widget.category),
                     width: 2,
                   ),
                 ),
                 child: Text(
                   CategoryUtils.getCategoryName(widget.category),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.black,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.95)
+                            : Colors.black,
                         fontWeight: FontWeight.w600,
                       ),
                 ),
@@ -212,12 +220,18 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: CategoryUtils.getCategoryColor(widget.category),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? CategoryUtils.getCategoryColor(widget.category)
+                          .withOpacity(0.9)
+                      : CategoryUtils.getCategoryColor(widget.category),
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
-                      color: CategoryUtils.getCategoryColor(widget.category)
-                          .withOpacity(0.3),
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? CategoryUtils.getCategoryColor(widget.category)
+                              .withOpacity(0.4)
+                          : CategoryUtils.getCategoryColor(widget.category)
+                              .withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -261,19 +275,36 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                         decoration: BoxDecoration(
                                           color: _disputedWords.contains(
                                                   widget.wordsGuessed[i])
-                                              ? Colors.red.withOpacity(0.1)
-                                              : CategoryUtils.getCategoryColor(
-                                                      widget.category)
-                                                  .withOpacity(0.1),
+                                              ? Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.red.withOpacity(0.2)
+                                                  : Colors.red.withOpacity(0.1)
+                                              : Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? CategoryUtils
+                                                          .getCategoryColor(
+                                                              widget.category)
+                                                      .withOpacity(0.2)
+                                                  : CategoryUtils
+                                                          .getCategoryColor(
+                                                              widget.category)
+                                                      .withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(8),
                                           border: Border.all(
                                             color: _disputedWords.contains(
                                                     widget.wordsGuessed[i])
                                                 ? Colors.red
-                                                : CategoryUtils
-                                                    .getCategoryColor(
-                                                        widget.category),
+                                                : Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? CategoryUtils
+                                                            .getCategoryColor(
+                                                                widget.category)
+                                                        .withOpacity(0.8)
+                                                    : CategoryUtils
+                                                        .getCategoryColor(
+                                                            widget.category),
                                             width: 2,
                                           ),
                                         ),
@@ -286,7 +317,15 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                 widget.wordsGuessed[i],
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .titleMedium,
+                                                    .titleMedium
+                                                    ?.copyWith(
+                                                      color: Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.dark
+                                                          ? Colors.white
+                                                              .withOpacity(0.95)
+                                                          : Colors.black,
+                                                    ),
                                                 textAlign: TextAlign.center,
                                               ),
                                             ),
@@ -317,12 +356,22 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                 color: _disputedWords.contains(
                                                         widget.wordsGuessed[
                                                             i + 1])
-                                                    ? Colors.red
-                                                        .withOpacity(0.1)
-                                                    : CategoryUtils
-                                                            .getCategoryColor(
+                                                    ? Theme.of(context)
+                                                                .brightness ==
+                                                            Brightness.dark
+                                                        ? Colors.red
+                                                            .withOpacity(0.2)
+                                                        : Colors.red
+                                                            .withOpacity(0.1)
+                                                    : Theme.of(context)
+                                                                .brightness ==
+                                                            Brightness.dark
+                                                        ? CategoryUtils.getCategoryColor(
                                                                 widget.category)
-                                                        .withOpacity(0.1),
+                                                            .withOpacity(0.2)
+                                                        : CategoryUtils.getCategoryColor(
+                                                                widget.category)
+                                                            .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
                                                 border: Border.all(
@@ -331,9 +380,18 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                                   .wordsGuessed[
                                                               i + 1])
                                                       ? Colors.red
-                                                      : CategoryUtils
-                                                          .getCategoryColor(
-                                                              widget.category),
+                                                      : Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.dark
+                                                          ? CategoryUtils
+                                                                  .getCategoryColor(
+                                                                      widget
+                                                                          .category)
+                                                              .withOpacity(0.8)
+                                                          : CategoryUtils
+                                                              .getCategoryColor(
+                                                                  widget
+                                                                      .category),
                                                   width: 2,
                                                 ),
                                               ),
@@ -348,7 +406,17 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                           .wordsGuessed[i + 1],
                                                       style: Theme.of(context)
                                                           .textTheme
-                                                          .titleMedium,
+                                                          .titleMedium
+                                                          ?.copyWith(
+                                                            color: Theme.of(context)
+                                                                        .brightness ==
+                                                                    Brightness
+                                                                        .dark
+                                                                ? Colors.white
+                                                                    .withOpacity(
+                                                                        0.95)
+                                                                : Colors.black,
+                                                          ),
                                                       textAlign:
                                                           TextAlign.center,
                                                     ),
@@ -387,13 +455,23 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 12, horizontal: 16),
                             decoration: BoxDecoration(
-                              color: CategoryUtils.getCategoryColor(
-                                      widget.category)
-                                  .withOpacity(0.1),
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? CategoryUtils.getCategoryColor(
+                                          widget.category)
+                                      .withOpacity(0.2)
+                                  : CategoryUtils.getCategoryColor(
+                                          widget.category)
+                                      .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: CategoryUtils.getCategoryColor(
-                                    widget.category),
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? CategoryUtils.getCategoryColor(
+                                            widget.category)
+                                        .withOpacity(0.8)
+                                    : CategoryUtils.getCategoryColor(
+                                        widget.category),
                                 width: 1,
                               ),
                             ),
@@ -403,7 +481,10 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                   .textTheme
                                   .titleMedium
                                   ?.copyWith(
-                                    color: Colors.black,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white.withOpacity(0.95)
+                                        : Colors.black,
                                   ),
                               textAlign: TextAlign.center,
                             ),
@@ -414,10 +495,16 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 16, horizontal: 20),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.1),
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.red.withOpacity(0.2)
+                                  : Colors.red.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: Colors.red,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.red.withOpacity(0.8)
+                                    : Colors.red,
                                 width: 1,
                               ),
                             ),
@@ -427,7 +514,10 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                   .textTheme
                                   .titleMedium
                                   ?.copyWith(
-                                    color: Colors.black,
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? Colors.white.withOpacity(0.95)
+                                        : Colors.black,
                                   ),
                               textAlign: TextAlign.center,
                             ),
@@ -448,14 +538,24 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8, horizontal: 12),
                                 decoration: BoxDecoration(
-                                  color: CategoryUtils.getCategoryColor(
-                                          widget.category)
-                                      .withOpacity(0.05),
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? CategoryUtils.getCategoryColor(
+                                              widget.category)
+                                          .withOpacity(0.1)
+                                      : CategoryUtils.getCategoryColor(
+                                              widget.category)
+                                          .withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
-                                    color: CategoryUtils.getCategoryColor(
-                                            widget.category)
-                                        .withOpacity(0.3),
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? CategoryUtils.getCategoryColor(
+                                                widget.category)
+                                            .withOpacity(0.5)
+                                        : CategoryUtils.getCategoryColor(
+                                                widget.category)
+                                            .withOpacity(0.3),
                                     width: 1,
                                   ),
                                 ),
@@ -465,7 +565,10 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                       .textTheme
                                       .titleMedium
                                       ?.copyWith(
-                                        color: Colors.black,
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.white.withOpacity(0.95)
+                                            : Colors.black,
                                       ),
                                   textAlign: TextAlign.center,
                                 ),

@@ -31,6 +31,7 @@ class TeamColorButton extends StatefulWidget {
   final String text;
   final IconData icon;
   final TeamColor color;
+  final Color? customColor;
   final VoidCallback? onPressed;
   final EdgeInsetsGeometry padding;
   final double iconSize;
@@ -40,6 +41,7 @@ class TeamColorButton extends StatefulWidget {
     required this.text,
     required this.icon,
     required this.color,
+    this.customColor,
     required this.onPressed,
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
     this.iconSize = 24,
@@ -73,6 +75,20 @@ class _TeamColorButtonState extends State<TeamColorButton> {
   @override
   Widget build(BuildContext context) {
     final bool enabled = widget.onPressed != null;
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Use custom color if provided, otherwise use TeamColor
+    final Color primaryColor = widget.customColor ?? widget.color.border;
+    final Color backgroundColor = widget.customColor ?? widget.color.background;
+    final Color textColor = widget.customColor ?? widget.color.text;
+
+    // Adjust colors for dark mode
+    final Color background =
+        isDark ? primaryColor.withOpacity(0.4) : backgroundColor;
+    final Color border =
+        isDark ? backgroundColor.withOpacity(0.3) : primaryColor;
+    final Color text = isDark ? Colors.white.withOpacity(0.92) : textColor;
+    final Color iconColor = enabled ? border : Colors.grey.shade400;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
@@ -81,9 +97,7 @@ class _TeamColorButtonState extends State<TeamColorButton> {
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOut,
         child: Material(
-          color: enabled
-              ? widget.color.background
-              : widget.color.background.withOpacity(0.5),
+          color: enabled ? background : background.withOpacity(0.5),
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -96,14 +110,13 @@ class _TeamColorButtonState extends State<TeamColorButton> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: enabled ? widget.color.border : Colors.grey.shade300,
+                  color: enabled ? border : Colors.grey.shade300,
                   width: 1.5,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color:
-                        (enabled ? widget.color.border : Colors.grey.shade300)
-                            .withOpacity(0.08),
+                    color: (enabled ? border : Colors.grey.shade300)
+                        .withOpacity(0.08),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -112,17 +125,12 @@ class _TeamColorButtonState extends State<TeamColorButton> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(widget.icon,
-                      size: widget.iconSize,
-                      color:
-                          enabled ? widget.color.border : Colors.grey.shade400),
+                  Icon(widget.icon, size: widget.iconSize, color: iconColor),
                   const SizedBox(width: 12),
                   Text(
                     widget.text,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: enabled
-                              ? widget.color.text
-                              : Colors.grey.shade400,
+                          color: enabled ? text : Colors.grey.shade400,
                           fontWeight: FontWeight.w600,
                           fontSize: 18,
                         ),

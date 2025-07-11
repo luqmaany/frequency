@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/storage_service.dart';
+import '../services/theme_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -12,7 +13,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _soundEnabled = true;
   bool _vibrationEnabled = true;
-  bool _darkMode = false;
   bool _isLoading = true;
 
   @override
@@ -27,7 +27,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       setState(() {
         _soundEnabled = preferences['soundEnabled'] ?? true;
         _vibrationEnabled = preferences['vibrationEnabled'] ?? true;
-        _darkMode = preferences['darkMode'] ?? false;
         _isLoading = false;
       });
     } catch (e) {
@@ -42,7 +41,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await StorageService.saveAppPreferences(
         soundEnabled: _soundEnabled,
         vibrationEnabled: _vibrationEnabled,
-        darkMode: _darkMode,
       );
     } catch (e) {
       if (mounted) {
@@ -71,10 +69,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _updateDarkMode(bool value) {
-    setState(() {
-      _darkMode = value;
-    });
-    _saveSettings();
+    ref.read(themeProvider.notifier).setTheme(value);
   }
 
   @override
@@ -143,7 +138,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           'Dark Mode',
                           Icons.dark_mode_rounded,
                           'Switch to dark theme',
-                          _darkMode,
+                          ref.watch(themeProvider),
                           _updateDarkMode,
                           Colors.purple,
                         ),
@@ -234,7 +229,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFFE0E0E0)
+                                    : Colors.black,
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
                           ),
@@ -244,7 +242,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFB0B0B0)
+                            : Colors.grey[600],
                       ),
                     ),
                   ],
@@ -306,7 +306,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.black,
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFFE0E0E0)
+                                    : Colors.black,
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
                           ),
@@ -316,7 +319,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       subtitle,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? const Color(0xFFB0B0B0)
+                            : Colors.grey[600],
                       ),
                     ),
                   ],
@@ -422,12 +427,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await StorageService.saveAppPreferences(
         soundEnabled: true,
         vibrationEnabled: true,
-        darkMode: false,
       );
+      ref.read(themeProvider.notifier).setTheme(false);
       setState(() {
         _soundEnabled = true;
         _vibrationEnabled = true;
-        _darkMode = false;
       });
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

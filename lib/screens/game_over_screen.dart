@@ -40,7 +40,9 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                     'Game Over!',
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.deepPurple.withOpacity(0.8)
+                              : Colors.deepPurple,
                         ),
                     textAlign: TextAlign.center,
                   ),
@@ -81,10 +83,16 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                             padding: const EdgeInsets.symmetric(
                                 vertical: 12.0, horizontal: 10.0),
                             decoration: BoxDecoration(
-                              color: backgroundColor,
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? borderColor.withOpacity(0.4)
+                                  : backgroundColor,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: borderColor,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? backgroundColor.withOpacity(0.3)
+                                    : borderColor,
                                 width: 2,
                               ),
                             ),
@@ -99,11 +107,19 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                                         ?.copyWith(
                                             fontSize: 22,
                                             fontWeight: FontWeight.bold,
-                                            color: textColor),
+                                            color: Theme.of(context)
+                                                        .brightness ==
+                                                    Brightness.dark
+                                                ? Colors.white.withOpacity(0.95)
+                                                : textColor),
                                   ),
                                 ),
                                 CircleAvatar(
-                                  backgroundColor: borderColor,
+                                  backgroundColor:
+                                      Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? borderColor.withOpacity(0.8)
+                                          : borderColor,
                                   radius: 18,
                                   child: Text(
                                     totalScore.toString(),
@@ -133,10 +149,14 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
           Container(
             padding: const EdgeInsets.all(27.0),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? const Color(0xFF3A3A3A)
+                  : Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.black.withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.1),
                   spreadRadius: 1,
                   blurRadius: 3,
                   offset: const Offset(0, -2),

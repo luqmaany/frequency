@@ -211,16 +211,22 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.red.withOpacity(0.2)
+                    : Colors.red.withOpacity(0.1),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.red,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.red.withOpacity(0.8)
+                      : Colors.red,
                   width: 2,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.block,
-                color: Colors.red,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.red.withOpacity(0.9)
+                    : Colors.red,
                 size: 24,
               ),
             ),
@@ -235,16 +241,22 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.green.withOpacity(0.2)
+                    : Colors.green.withOpacity(0.1),
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: Colors.green,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.green.withOpacity(0.8)
+                      : Colors.green,
                   width: 2,
                 ),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.check,
-                color: Colors.green,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.green.withOpacity(0.9)
+                    : Colors.green,
                 size: 24,
               ),
             ),
