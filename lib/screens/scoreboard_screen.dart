@@ -76,7 +76,10 @@ class ScoreboardScreen extends ConsumerWidget {
               Text(
                 'Tiebreaker! Teams in a tie are highlighted.',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.deepOrange, fontWeight: FontWeight.bold),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.deepOrange.withOpacity(0.8)
+                        : Colors.deepOrange,
+                    fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
@@ -129,10 +132,14 @@ class ScoreboardScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(
                           vertical: 12.0, horizontal: 10.0),
                       decoration: BoxDecoration(
-                        color: backgroundColor,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? borderColor.withOpacity(0.4)
+                            : backgroundColor,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: borderColor,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? backgroundColor.withOpacity(0.3)
+                              : borderColor,
                           width: 2,
                         ),
                       ),
@@ -147,11 +154,17 @@ class ScoreboardScreen extends ConsumerWidget {
                                   ?.copyWith(
                                       fontSize: 22,
                                       fontWeight: FontWeight.bold,
-                                      color: textColor),
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.white.withOpacity(0.95)
+                                          : textColor),
                             ),
                           ),
                           CircleAvatar(
-                            backgroundColor: borderColor,
+                            backgroundColor:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? borderColor.withOpacity(0.8)
+                                    : borderColor,
                             radius: 18,
                             child: Text(
                               totalScore.toString(),
@@ -182,10 +195,16 @@ class ScoreboardScreen extends ConsumerWidget {
                               color: roundNumber == 1
                                   ? Colors.transparent
                                   : currRanks[teamIndex] < prevRanks[teamIndex]
-                                      ? Colors.green
+                                      ? Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.green.withOpacity(0.8)
+                                          : Colors.green
                                       : currRanks[teamIndex] >
                                               prevRanks[teamIndex]
-                                          ? Colors.red
+                                          ? Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.red.withOpacity(0.8)
+                                              : Colors.red
                                           : Colors.transparent,
                             ),
                           ),

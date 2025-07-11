@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_navigation_service.dart';
+import '../widgets/team_color_button.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -37,100 +38,51 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 48),
-              _buildMenuButton(
-                context,
-                'Start Game',
-                Icons.play_arrow_rounded,
-                () => GameNavigationService.navigateToGameSetup(context),
-                buttonColors[0],
+              TeamColorButton(
+                text: 'Start Game',
+                icon: Icons.play_arrow_rounded,
+                color: uiColors[0],
+                customColor: buttonColors[0],
+                onPressed: () =>
+                    GameNavigationService.navigateToGameSetup(context),
               ),
               const SizedBox(height: 16),
-              _buildMenuButton(
-                context,
-                'Last Game Recap',
-                Icons.history_rounded,
-                () {
+              TeamColorButton(
+                text: 'Last Game Recap',
+                icon: Icons.history_rounded,
+                color: uiColors[0],
+                customColor: buttonColors[1],
+                onPressed: () {
                   // TODO: Implement last game recap
                 },
-                buttonColors[1],
               ),
               const SizedBox(height: 16),
-              _buildMenuButton(
-                context,
-                'Settings',
-                Icons.settings_rounded,
-                () => GameNavigationService.navigateToSettings(context),
-                buttonColors[2],
+              TeamColorButton(
+                text: 'Settings',
+                icon: Icons.settings_rounded,
+                color: uiColors[0],
+                customColor: buttonColors[2],
+                onPressed: () =>
+                    GameNavigationService.navigateToSettings(context),
               ),
               const SizedBox(height: 16),
-              _buildMenuButton(
-                context,
-                'Word Lists Manager',
-                Icons.list_alt_rounded,
-                () => GameNavigationService.navigateToWordListsManager(context),
-                buttonColors[3],
+              TeamColorButton(
+                text: 'Word Lists Manager',
+                icon: Icons.list_alt_rounded,
+                color: uiColors[0],
+                customColor: buttonColors[3],
+                onPressed: () =>
+                    GameNavigationService.navigateToWordListsManager(context),
               ),
               const SizedBox(height: 16),
-              _buildMenuButton(
-                context,
-                'Stats & History',
-                Icons.bar_chart_rounded,
-                () {
+              TeamColorButton(
+                text: 'Stats & History',
+                icon: Icons.bar_chart_rounded,
+                color: uiColors[0],
+                customColor: buttonColors[4],
+                onPressed: () {
                   // TODO: Implement stats & history
                 },
-                buttonColors[4],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuButton(
-    BuildContext context,
-    String text,
-    IconData icon,
-    VoidCallback onPressed,
-    Color color,
-  ) {
-    // Use a style similar to the category box in game_screen.dart
-    final Color buttonColor = color.withOpacity(0.2);
-    final Color borderColor = color;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-          decoration: BoxDecoration(
-            color: buttonColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: borderColor,
-              width: 1.5,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: borderColor.withOpacity(0.08),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 24, color: borderColor),
-              const SizedBox(width: 12),
-              Text(
-                text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    ),
               ),
             ],
           ),
