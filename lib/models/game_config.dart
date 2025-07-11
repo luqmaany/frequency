@@ -32,4 +32,14 @@ class GameConfig {
       allowedSkips: allowedSkips ?? this.allowedSkips,
     );
   }
+
+  // Check if there are empty slots in teams
+  bool hasEmptySlotsInTeams() {
+    for (final team in teams) {
+      for (final player in team) {
+        if (player == "") return true;
+      }
+    }
+    return false;
+  }
 }

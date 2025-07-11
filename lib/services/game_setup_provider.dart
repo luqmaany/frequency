@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../models/game_config.dart';
 import 'package:convey/widgets/team_color_button.dart';
+import 'storage_service.dart';
 
 class GameSetupNotifier extends StateNotifier<GameConfig> {
   GameSetupNotifier()
@@ -38,8 +39,13 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
       }
     }
     if (!filled) {
-      // Add to a new or existing team (2 per team)
+      // Check if we can add to an existing team or create a new one
       if (newTeams.isEmpty || newTeams.last.length == 2) {
+        // Check if we've reached the maximum number of players (12)
+        if (updatedPlayers.length >= 12) {
+          // Don't add the player if we've reached the maximum players
+          return;
+        }
         newTeams.add([name]);
         // Assign a random unused color index
         final usedIndices = newColorIndices.toSet();
@@ -61,6 +67,9 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
         playerNames: updatedPlayers,
         teams: newTeams,
         teamColorIndices: newColorIndices);
+
+    // Save to storage
+    _saveToStorage(updatedPlayers, newTeams, newColorIndices);
   }
 
   void removePlayerAndReassignTeams(String name) {
@@ -90,6 +99,9 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
         playerNames: updatedPlayers,
         teams: filteredTeams,
         teamColorIndices: filteredColorIndices);
+
+    // Save to storage
+    _saveToStorage(updatedPlayers, filteredTeams, filteredColorIndices);
   }
 
   void setRoundTime(int seconds) {
@@ -107,6 +119,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
   void createTeams(List<List<String>> teams) {
     final colorIndices = _generateRandomColorIndices(teams.length);
     state = state.copyWith(teams: teams, teamColorIndices: colorIndices);
+    _saveToStorage(state.playerNames, teams, colorIndices);
   }
 
   void randomizeTeams() {
@@ -120,6 +133,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     }
     final colorIndices = _generateRandomColorIndices(teams.length);
     state = state.copyWith(teams: teams, teamColorIndices: colorIndices);
+    _saveToStorage(state.playerNames, teams, colorIndices);
   }
 
   void shuffleTeams() {
@@ -135,6 +149,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     }
     final colorIndices = _generateRandomColorIndices(newTeams.length);
     state = state.copyWith(teams: newTeams, teamColorIndices: colorIndices);
+    _saveToStorage(state.playerNames, newTeams, colorIndices);
   }
 
   void addPlayer(String name) {
@@ -170,6 +185,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
       teams[team1Idx][player1Idx] = teams[team2Idx][player2Idx];
       teams[team2Idx][player2Idx] = temp;
       state = state.copyWith(teams: teams);
+      _saveToStorage(state.playerNames, teams, state.teamColorIndices);
     }
   }
 
@@ -181,6 +197,40 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
       }
     }
     return false;
+  }
+
+  // Save data to storage
+  Future<void> _saveToStorage(List<String> playerNames,
+      List<List<String>> teams, List<int> teamColorIndices) async {
+    await StorageService.savePlayerNames(playerNames);
+    await StorageService.saveTeams(teams);
+    await StorageService.saveTeamColorIndices(teamColorIndices);
+  }
+
+  // Load data from storage
+  Future<void> loadFromStorage() async {
+    final playerNames = await StorageService.loadPlayerNames();
+    final teams = await StorageService.loadTeams();
+    final teamColorIndices = await StorageService.loadTeamColorIndices();
+
+    state = state.copyWith(
+      playerNames: playerNames,
+      teams: teams,
+      teamColorIndices: teamColorIndices,
+    );
+  }
+
+  // Clear all stored data
+  Future<void> clearStoredData() async {
+    await StorageService.clearAllData();
+    state = GameConfig(
+      playerNames: [],
+      teams: [],
+      teamColorIndices: [],
+      roundTimeSeconds: 2,
+      targetScore: 2,
+      allowedSkips: 3,
+    );
   }
 }
 

@@ -26,6 +26,11 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
     final gameConfig = ref.read(gameSetupProvider);
     _initControllers(gameConfig.teams);
     _prevTeams = gameConfig.teams.map((t) => List<String>.from(t)).toList();
+
+    // Load saved data from storage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(gameSetupProvider.notifier).loadFromStorage();
+    });
   }
 
   @override
@@ -167,10 +172,14 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
-                      'Tap a name to add to a team.',
+                    Text(
+                      gameConfig.playerNames.length >= 12
+                          ? 'Maximum 12 players reached. Remove players to add more.'
+                          : 'Tap a name to add to a team.',
                       style: TextStyle(
-                        color: Colors.grey,
+                        color: gameConfig.playerNames.length >= 12
+                            ? Colors.orange
+                            : Colors.grey,
                         fontSize: 12,
                       ),
                     ),
