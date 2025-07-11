@@ -1,0 +1,272 @@
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
+class StorageService {
+  // Game setup keys
+  static const String _playerNamesKey = 'player_names';
+  static const String _teamsKey = 'teams';
+  static const String _teamColorIndicesKey = 'team_color_indices';
+
+  // Game settings keys
+  static const String _roundTimeSecondsKey = 'round_time_seconds';
+  static const String _targetScoreKey = 'target_score';
+  static const String _allowedSkipsKey = 'allowed_skips';
+
+  // Game statistics keys
+  static const String _gameHistoryKey = 'game_history';
+  static const String _playerStatsKey = 'player_stats';
+  static const String _teamStatsKey = 'team_stats';
+
+  // App preferences keys
+  static const String _soundEnabledKey = 'sound_enabled';
+  static const String _vibrationEnabledKey = 'vibration_enabled';
+  static const String _darkModeKey = 'dark_mode';
+  static const String _lastPlayedDateKey = 'last_played_date';
+
+  // ===== GAME SETUP METHODS =====
+
+  // Save player names to local storage
+  static Future<void> savePlayerNames(List<String> playerNames) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_playerNamesKey, playerNames);
+  }
+
+  // Load player names from local storage
+  static Future<List<String>> loadPlayerNames() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_playerNamesKey) ?? [];
+  }
+
+  // Save teams to local storage
+  static Future<void> saveTeams(List<List<String>> teams) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Convert teams to a format that can be stored (list of strings)
+    final teamsAsStrings = teams.map((team) => team.join(',')).toList();
+    await prefs.setStringList(_teamsKey, teamsAsStrings);
+  }
+
+  // Load teams from local storage
+  static Future<List<List<String>>> loadTeams() async {
+    final prefs = await SharedPreferences.getInstance();
+    final teamsAsStrings = prefs.getStringList(_teamsKey) ?? [];
+    return teamsAsStrings.map((teamString) => teamString.split(',')).toList();
+  }
+
+  // Save team color indices to local storage
+  static Future<void> saveTeamColorIndices(List<int> teamColorIndices) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_teamColorIndicesKey,
+        teamColorIndices.map((index) => index.toString()).toList());
+  }
+
+  // Load team color indices from local storage
+  static Future<List<int>> loadTeamColorIndices() async {
+    final prefs = await SharedPreferences.getInstance();
+    final indicesAsStrings = prefs.getStringList(_teamColorIndicesKey) ?? [];
+    return indicesAsStrings
+        .map((indexString) => int.parse(indexString))
+        .toList();
+  }
+
+  // ===== GAME SETTINGS METHODS =====
+
+  // Save game settings
+  static Future<void> saveGameSettings({
+    int? roundTimeSeconds,
+    int? targetScore,
+    int? allowedSkips,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (roundTimeSeconds != null) {
+      await prefs.setInt(_roundTimeSecondsKey, roundTimeSeconds);
+    }
+    if (targetScore != null) {
+      await prefs.setInt(_targetScoreKey, targetScore);
+    }
+    if (allowedSkips != null) {
+      await prefs.setInt(_allowedSkipsKey, allowedSkips);
+    }
+  }
+
+  // Load game settings
+  static Future<Map<String, int>> loadGameSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'roundTimeSeconds': prefs.getInt(_roundTimeSecondsKey) ?? 2,
+      'targetScore': prefs.getInt(_targetScoreKey) ?? 2,
+      'allowedSkips': prefs.getInt(_allowedSkipsKey) ?? 3,
+    };
+  }
+
+  // ===== APP PREFERENCES METHODS =====
+
+  // Save app preferences
+  static Future<void> saveAppPreferences({
+    bool? soundEnabled,
+    bool? vibrationEnabled,
+    bool? darkMode,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (soundEnabled != null) {
+      await prefs.setBool(_soundEnabledKey, soundEnabled);
+    }
+    if (vibrationEnabled != null) {
+      await prefs.setBool(_vibrationEnabledKey, vibrationEnabled);
+    }
+    if (darkMode != null) {
+      await prefs.setBool(_darkModeKey, darkMode);
+    }
+  }
+
+  // Load app preferences
+  static Future<Map<String, bool>> loadAppPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    return {
+      'soundEnabled': prefs.getBool(_soundEnabledKey) ?? true,
+      'vibrationEnabled': prefs.getBool(_vibrationEnabledKey) ?? true,
+      'darkMode': prefs.getBool(_darkModeKey) ?? false,
+    };
+  }
+
+  // ===== GAME STATISTICS METHODS =====
+
+  // Save game history (list of completed games)
+  static Future<void> saveGameHistory(
+      List<Map<String, dynamic>> gameHistory) async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = gameHistory.map((game) => jsonEncode(game)).toList();
+    await prefs.setStringList(_gameHistoryKey, historyJson);
+  }
+
+  // Load game history
+  static Future<List<Map<String, dynamic>>> loadGameHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final historyJson = prefs.getStringList(_gameHistoryKey) ?? [];
+    return historyJson
+        .map((gameJson) => jsonDecode(gameJson) as Map<String, dynamic>)
+        .toList();
+  }
+
+  // Save player statistics
+  static Future<void> savePlayerStats(
+      Map<String, Map<String, dynamic>> playerStats) async {
+    final prefs = await SharedPreferences.getInstance();
+    final statsJson =
+        playerStats.map((player, stats) => MapEntry(player, jsonEncode(stats)));
+    final statsString = jsonEncode(statsJson);
+    await prefs.setString(_playerStatsKey, statsString);
+  }
+
+  // Load player statistics
+  static Future<Map<String, Map<String, dynamic>>> loadPlayerStats() async {
+    final prefs = await SharedPreferences.getInstance();
+    final statsString = prefs.getString(_playerStatsKey);
+    if (statsString == null) return {};
+
+    final statsJson = jsonDecode(statsString) as Map<String, dynamic>;
+    return statsJson.map((player, statsJson) =>
+        MapEntry(player, jsonDecode(statsJson) as Map<String, dynamic>));
+  }
+
+  // ===== UTILITY METHODS =====
+
+  // Save any string data with a custom key
+  static Future<void> saveString(String key, String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, value);
+  }
+
+  // Load any string data with a custom key
+  static Future<String?> loadString(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(key);
+  }
+
+  // Save any boolean data with a custom key
+  static Future<void> saveBool(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
+  // Load any boolean data with a custom key
+  static Future<bool?> loadBool(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(key);
+  }
+
+  // Save any integer data with a custom key
+  static Future<void> saveInt(String key, int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(key, value);
+  }
+
+  // Load any integer data with a custom key
+  static Future<int?> loadInt(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(key);
+  }
+
+  // Save any double data with a custom key
+  static Future<void> saveDouble(String key, double value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(key, value);
+  }
+
+  // Load any double data with a custom key
+  static Future<double?> loadDouble(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getDouble(key);
+  }
+
+  // Save any list of strings with a custom key
+  static Future<void> saveStringList(String key, List<String> value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(key, value);
+  }
+
+  // Load any list of strings with a custom key
+  static Future<List<String>> loadStringList(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(key) ?? [];
+  }
+
+  // Save any JSON-serializable object
+  static Future<void> saveObject(
+      String key, Map<String, dynamic> object) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(key, jsonEncode(object));
+  }
+
+  // Load any JSON-serializable object
+  static Future<Map<String, dynamic>?> loadObject(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    final jsonString = prefs.getString(key);
+    if (jsonString == null) return null;
+    return jsonDecode(jsonString) as Map<String, dynamic>;
+  }
+
+  // Remove a specific key
+  static Future<void> removeKey(String key) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(key);
+  }
+
+  // Clear all stored data
+  static Future<void> clearAllData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
+  // Clear only game data (keep preferences)
+  static Future<void> clearGameData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_playerNamesKey);
+    await prefs.remove(_teamsKey);
+    await prefs.remove(_teamColorIndicesKey);
+    await prefs.remove(_gameHistoryKey);
+    await prefs.remove(_playerStatsKey);
+    await prefs.remove(_teamStatsKey);
+  }
+}

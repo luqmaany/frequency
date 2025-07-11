@@ -39,6 +39,16 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     final name = _controller.text.trim();
     if (name.isEmpty) return;
     final gameConfig = ref.read(gameSetupProvider);
+
+    // Check if we've reached the maximum number of players (12)
+    if (gameConfig.playerNames.length >= 12) {
+      setState(() {
+        _errorMessage =
+            'Maximum 12 players reached. Remove players to add more.';
+      });
+      return;
+    }
+
     final exists = gameConfig.playerNames
         .any((n) => n.toLowerCase() == name.toLowerCase());
     final suggested = _suggestedNames.firstWhere(
@@ -91,16 +101,21 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       children: [
         TextField(
           controller: _controller,
+          enabled: gameConfig.playerNames.length < 12,
           decoration: InputDecoration(
-            labelText: 'Player Name',
+            labelText: gameConfig.playerNames.length >= 12
+                ? 'Maximum players reached'
+                : 'Player Name',
             errorText: _errorMessage,
             suffixIcon: IconButton(
               icon: const Icon(Icons.add),
-              onPressed: _addPlayer,
+              onPressed:
+                  gameConfig.playerNames.length >= 12 ? null : _addPlayer,
             ),
             border: const OutlineInputBorder(),
           ),
-          onSubmitted: (_) => _addPlayer(),
+          onSubmitted:
+              gameConfig.playerNames.length >= 12 ? null : (_) => _addPlayer(),
           onChanged: (_) {
             if (_errorMessage != null) {
               setState(() {
@@ -149,9 +164,11 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
         final chips = itemsToShow.map((suggestion) {
           return ActionChip(
             label: Text(suggestion),
-            onPressed: () {
-              ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
-            },
+            onPressed: gameConfig.playerNames.length >= 12
+                ? null
+                : () {
+                    ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
+                  },
           );
         }).toList();
 
