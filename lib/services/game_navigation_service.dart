@@ -10,6 +10,7 @@ import '../screens/game_screen.dart';
 import '../screens/turn_over_screen.dart';
 import '../screens/game_setup_screen.dart';
 import '../screens/word_lists_manager_screen.dart';
+import '../screens/settings_screen.dart';
 import '../services/game_state_provider.dart';
 
 class GameNavigationService {
@@ -56,6 +57,15 @@ class GameNavigationService {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const WordListsManagerScreen(),
+      ),
+    );
+  }
+
+  /// Navigate from home screen to settings
+  static void navigateToSettings(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const SettingsScreen(),
       ),
     );
   }
