@@ -16,7 +16,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   final FocusNode _focusNode = FocusNode();
   List<String> _suggestedNames = [];
   String? _errorMessage;
-  int _currentPage = 0;
+  bool _showAllNames = false; // Replace _currentPage with this boolean
 
   @override
   void initState() {
@@ -164,16 +164,12 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
             ((constraints.maxWidth + spacing) / (chipWidth + spacing)).floor();
         final maxItemsForTwoRows = itemsPerRow * 2;
 
-        // Calculate how many items to show (leaving space for "Show More" if needed)
-        final totalPages = (suggestedNames.length / maxItemsForTwoRows).ceil();
-        final isLastPage = _currentPage >= totalPages - 1;
-        final itemsToShow = isLastPage
-            ? suggestedNames.sublist(_currentPage * maxItemsForTwoRows)
-            : suggestedNames.sublist(
-                _currentPage * maxItemsForTwoRows,
-                (_currentPage + 1) * maxItemsForTwoRows -
-                    1 // Leave space for "Show More"
-                );
+        // Show all names if _showAllNames is true, otherwise show limited names
+        final itemsToShow = _showAllNames
+            ? suggestedNames
+            : suggestedNames
+                .take(maxItemsForTwoRows - 1)
+                .toList(); // Leave space for "Show More"
 
         final chips = itemsToShow.map((suggestion) {
           return ActionChip(
@@ -191,22 +187,25 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
           );
         }).toList();
 
-        // Add navigation chips
-        if (!isLastPage) {
+        // Add navigation buttons
+        if (!_showAllNames && suggestedNames.length > maxItemsForTwoRows - 1) {
+          // Show "Show More" button (>)
           chips.add(ActionChip(
-            label: const Icon(Icons.arrow_forward, size: 20),
+            label: const Icon(Icons.keyboard_arrow_right, size: 20),
             onPressed: () {
               setState(() {
-                _currentPage++;
+                _showAllNames = true;
               });
             },
           ));
-        } else if (_currentPage > 0) {
+        } else if (_showAllNames &&
+            suggestedNames.length > maxItemsForTwoRows - 1) {
+          // Show "Show Less" button (<)
           chips.add(ActionChip(
-            label: const Icon(Icons.arrow_back, size: 20),
+            label: const Icon(Icons.keyboard_arrow_left, size: 20),
             onPressed: () {
               setState(() {
-                _currentPage--;
+                _showAllNames = false;
               });
             },
           ));
