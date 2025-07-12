@@ -206,10 +206,10 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
 
   // Load only player names from storage
   Future<void> loadFromStorage() async {
-    final playerNames = await StorageService.loadPlayerNames();
-
+    // Don't load player names into state - they should only be used as suggestions
+    // The state should remain empty so users can add players fresh
     state = state.copyWith(
-      playerNames: playerNames,
+      playerNames: [],
       // Teams and team color indices are not loaded from storage
       teams: [],
       teamColorIndices: [],
@@ -219,16 +219,27 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
   // Clear all stored data
   Future<void> clearStoredData() async {
     await StorageService.clearAllData();
-    // Reload the default names that were just reset
-    final playerNames = await StorageService.loadPlayerNames();
+    // Reset state to empty - the default names are in storage but not loaded into state
     state = GameConfig(
-      playerNames: playerNames,
+      playerNames: [],
       teams: [],
       teamColorIndices: [],
       roundTimeSeconds: 2,
       targetScore: 2,
       allowedSkips: 3,
     );
+  }
+
+  // Add current player names to suggestion queue
+  Future<void> addCurrentPlayersToQueue() async {
+    if (state.playerNames.isNotEmpty) {
+      await StorageService.addNamesToQueue(state.playerNames);
+    }
+  }
+
+  // Move a name to the front of the suggestion queue
+  Future<void> moveNameToQueueFront(String name) async {
+    await StorageService.moveNameToFront(name);
   }
 }
 

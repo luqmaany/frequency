@@ -13,6 +13,7 @@ class PlayerInput extends ConsumerStatefulWidget {
 
 class _PlayerInputState extends ConsumerState<PlayerInput> {
   final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   List<String> _suggestedNames = [];
   String? _errorMessage;
   int _currentPage = 0;
@@ -26,11 +27,12 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
   Future<void> _loadSuggestedNames() async {
-    final names = await StorageService.loadPlayerNames();
+    final names = await StorageService.loadSuggestedNames();
     setState(() {
       _suggestedNames = names;
     });
@@ -61,6 +63,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
         // If it's in suggestions and already in a team, just add from suggestions (shouldn't happen, but for safety)
         ref.read(gameSetupProvider.notifier).addPlayer(suggested);
         _controller.clear();
+        _focusNode.requestFocus(); // Auto-focus after adding
         setState(() {
           _errorMessage = null;
         });
@@ -75,6 +78,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     if (suggested.isNotEmpty) {
       ref.read(gameSetupProvider.notifier).addPlayer(suggested);
       _controller.clear();
+      _focusNode.requestFocus(); // Auto-focus after adding
       setState(() {
         _errorMessage = null;
       });
@@ -83,6 +87,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     try {
       ref.read(gameSetupProvider.notifier).addPlayer(name);
       _controller.clear();
+      _focusNode.requestFocus(); // Auto-focus after adding
       setState(() {
         _errorMessage = null;
       });
@@ -97,11 +102,19 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
 
+    // Reload suggested names when game config changes (e.g., after clearing data)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_suggestedNames.isEmpty) {
+        _loadSuggestedNames();
+      }
+    });
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
           controller: _controller,
+          focusNode: _focusNode,
           enabled: gameConfig.playerNames.length < 12,
           decoration: InputDecoration(
             labelText: gameConfig.playerNames.length >= 12
@@ -167,7 +180,12 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
             label: Text(suggestion),
             onPressed: gameConfig.playerNames.length >= 12
                 ? null
-                : () {
+                : () async {
+                    // Move the name to the front of the queue
+                    await ref
+                        .read(gameSetupProvider.notifier)
+                        .moveNameToQueueFront(suggestion);
+                    // Add the player
                     ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
                   },
           );

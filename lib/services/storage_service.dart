@@ -4,6 +4,7 @@ import 'dart:convert';
 class StorageService {
   // Game setup keys
   static const String _playerNamesKey = 'player_names';
+  static const String _suggestedNamesKey = 'suggested_names';
   // Removed: _teamsKey and _teamColorIndicesKey
 
   // App initialization key
@@ -24,6 +25,9 @@ class StorageService {
   static const String _vibrationEnabledKey = 'vibration_enabled';
   static const String _darkModeKey = 'dark_mode';
   static const String _lastPlayedDateKey = 'last_played_date';
+
+  // Queue constants
+  static const int _maxQueueSize = 20;
 
   // ===== APP INITIALIZATION METHODS =====
 
@@ -57,23 +61,79 @@ class StorageService {
         'Arun',
         'Malaika'
       ];
-      await savePlayerNames(defaultNames);
+      await saveSuggestedNames(defaultNames);
       await markAsInitialized();
     }
   }
 
   // ===== GAME SETUP METHODS =====
 
-  // Save player names to local storage
+  // Save player names to local storage (added players)
   static Future<void> savePlayerNames(List<String> playerNames) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(_playerNamesKey, playerNames);
   }
 
-  // Load player names from local storage
+  // Load player names from local storage (added players)
   static Future<List<String>> loadPlayerNames() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getStringList(_playerNamesKey) ?? [];
+  }
+
+  // Save suggested names to local storage
+  static Future<void> saveSuggestedNames(List<String> suggestedNames) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_suggestedNamesKey, suggestedNames);
+  }
+
+  // Load suggested names from local storage
+  static Future<List<String>> loadSuggestedNames() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_suggestedNamesKey) ?? [];
+  }
+
+  // Add names to the suggestion queue
+  static Future<void> addNamesToQueue(List<String> newNames) async {
+    final currentQueue = await loadSuggestedNames();
+    final updatedQueue = <String>[];
+
+    // Add current queue names first
+    updatedQueue.addAll(currentQueue);
+
+    // Process new names
+    for (final name in newNames) {
+      final trimmedName = name.trim();
+      if (trimmedName.isEmpty) continue;
+
+      // Remove existing occurrence if it exists
+      updatedQueue.remove(trimmedName);
+
+      // Add to front of queue
+      updatedQueue.insert(0, trimmedName);
+    }
+
+    // Limit queue size to maximum
+    if (updatedQueue.length > _maxQueueSize) {
+      updatedQueue.removeRange(_maxQueueSize, updatedQueue.length);
+    }
+
+    await saveSuggestedNames(updatedQueue);
+  }
+
+  // Move a name to the front of the queue (if it exists)
+  static Future<void> moveNameToFront(String name) async {
+    final currentQueue = await loadSuggestedNames();
+    final trimmedName = name.trim();
+
+    if (trimmedName.isEmpty) return;
+
+    // Remove existing occurrence
+    currentQueue.remove(trimmedName);
+
+    // Add to front
+    currentQueue.insert(0, trimmedName);
+
+    await saveSuggestedNames(currentQueue);
   }
 
   // Removed: saveTeams, loadTeams, saveTeamColorIndices, loadTeamColorIndices methods
@@ -278,7 +338,7 @@ class StorageService {
     await prefs.remove(_playerStatsKey);
     await prefs.remove(_teamStatsKey);
 
-    // Reset player names to default list
+    // Reset suggested names to default list
     final defaultNames = [
       'Aline',
       'Nazime',
@@ -293,6 +353,6 @@ class StorageService {
       'Arun',
       'Malaika'
     ];
-    await savePlayerNames(defaultNames);
+    await saveSuggestedNames(defaultNames);
   }
 }
