@@ -321,7 +321,11 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                         .where((player) => player.isNotEmpty)
                                         .length ==
                                     2)
-                            ? () {
+                            ? () async {
+                                // Add current players to suggestion queue
+                                await ref
+                                    .read(gameSetupProvider.notifier)
+                                    .addCurrentPlayersToQueue();
                                 // Use navigation service to navigate to game settings
                                 GameNavigationService.navigateToGameSettings(
                                     context);
