@@ -68,8 +68,8 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
         teams: newTeams,
         teamColorIndices: newColorIndices);
 
-    // Save to storage
-    _saveToStorage(updatedPlayers, newTeams, newColorIndices);
+    // Save only player names to storage
+    _savePlayerNamesToStorage(updatedPlayers);
   }
 
   void removePlayerAndReassignTeams(String name) {
@@ -100,8 +100,8 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
         teams: filteredTeams,
         teamColorIndices: filteredColorIndices);
 
-    // Save to storage
-    _saveToStorage(updatedPlayers, filteredTeams, filteredColorIndices);
+    // Save only player names to storage
+    _savePlayerNamesToStorage(updatedPlayers);
   }
 
   void setRoundTime(int seconds) {
@@ -119,7 +119,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
   void createTeams(List<List<String>> teams) {
     final colorIndices = _generateRandomColorIndices(teams.length);
     state = state.copyWith(teams: teams, teamColorIndices: colorIndices);
-    _saveToStorage(state.playerNames, teams, colorIndices);
+    // Teams are not saved to storage
   }
 
   void randomizeTeams() {
@@ -133,7 +133,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     }
     final colorIndices = _generateRandomColorIndices(teams.length);
     state = state.copyWith(teams: teams, teamColorIndices: colorIndices);
-    _saveToStorage(state.playerNames, teams, colorIndices);
+    // Teams are not saved to storage
   }
 
   void shuffleTeams() {
@@ -149,7 +149,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     }
     final colorIndices = _generateRandomColorIndices(newTeams.length);
     state = state.copyWith(teams: newTeams, teamColorIndices: colorIndices);
-    _saveToStorage(state.playerNames, newTeams, colorIndices);
+    // Teams are not saved to storage
   }
 
   void addPlayer(String name) {
@@ -185,7 +185,7 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
       teams[team1Idx][player1Idx] = teams[team2Idx][player2Idx];
       teams[team2Idx][player2Idx] = temp;
       state = state.copyWith(teams: teams);
-      _saveToStorage(state.playerNames, teams, state.teamColorIndices);
+      // Teams are not saved to storage
     }
   }
 
@@ -199,24 +199,20 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     return false;
   }
 
-  // Save data to storage
-  Future<void> _saveToStorage(List<String> playerNames,
-      List<List<String>> teams, List<int> teamColorIndices) async {
+  // Save only player names to storage
+  Future<void> _savePlayerNamesToStorage(List<String> playerNames) async {
     await StorageService.savePlayerNames(playerNames);
-    await StorageService.saveTeams(teams);
-    await StorageService.saveTeamColorIndices(teamColorIndices);
   }
 
-  // Load data from storage
+  // Load only player names from storage
   Future<void> loadFromStorage() async {
     final playerNames = await StorageService.loadPlayerNames();
-    final teams = await StorageService.loadTeams();
-    final teamColorIndices = await StorageService.loadTeamColorIndices();
 
     state = state.copyWith(
       playerNames: playerNames,
-      teams: teams,
-      teamColorIndices: teamColorIndices,
+      // Teams and team color indices are not loaded from storage
+      teams: [],
+      teamColorIndices: [],
     );
   }
 
