@@ -219,8 +219,10 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
   // Clear all stored data
   Future<void> clearStoredData() async {
     await StorageService.clearAllData();
+    // Reload the default names that were just reset
+    final playerNames = await StorageService.loadPlayerNames();
     state = GameConfig(
-      playerNames: [],
+      playerNames: playerNames,
       teams: [],
       teamColorIndices: [],
       roundTimeSeconds: 2,
