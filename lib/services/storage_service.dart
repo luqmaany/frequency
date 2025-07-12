@@ -277,5 +277,22 @@ class StorageService {
     await prefs.remove(_gameHistoryKey);
     await prefs.remove(_playerStatsKey);
     await prefs.remove(_teamStatsKey);
+
+    // Reset player names to default list
+    final defaultNames = [
+      'Aline',
+      'Nazime',
+      'Arash',
+      'Cameron',
+      'Jhud',
+      'Huzaifah',
+      'Mayy',
+      'Siawosh',
+      'Nadine',
+      'Luqmaan',
+      'Arun',
+      'Malaika'
+    ];
+    await savePlayerNames(defaultNames);
   }
 }
