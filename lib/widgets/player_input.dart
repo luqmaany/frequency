@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
+import '../services/storage_service.dart';
 import '../models/game_config.dart';
 
 class PlayerInput extends ConsumerStatefulWidget {
@@ -12,27 +13,27 @@ class PlayerInput extends ConsumerStatefulWidget {
 
 class _PlayerInputState extends ConsumerState<PlayerInput> {
   final TextEditingController _controller = TextEditingController();
-  final List<String> _suggestedNames = [
-    'Aline',
-    'Nazime',
-    'Arash',
-    'Cameron',
-    'Jhud',
-    'Huzaifah',
-    'Mayy',
-    'Siawosh',
-    'Nadine',
-    'Luqmaan',
-    'Arun',
-    'Malaika'
-  ];
+  List<String> _suggestedNames = [];
   String? _errorMessage;
   int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSuggestedNames();
+  }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadSuggestedNames() async {
+    final names = await StorageService.loadPlayerNames();
+    setState(() {
+      _suggestedNames = names;
+    });
   }
 
   void _addPlayer() {

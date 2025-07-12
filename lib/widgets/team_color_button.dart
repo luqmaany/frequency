@@ -31,7 +31,6 @@ class TeamColorButton extends StatefulWidget {
   final String text;
   final IconData icon;
   final TeamColor color;
-  final Color? customColor;
   final VoidCallback? onPressed;
   final EdgeInsetsGeometry padding;
   final double iconSize;
@@ -41,7 +40,6 @@ class TeamColorButton extends StatefulWidget {
     required this.text,
     required this.icon,
     required this.color,
-    this.customColor,
     required this.onPressed,
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
     this.iconSize = 24,
@@ -77,17 +75,13 @@ class _TeamColorButtonState extends State<TeamColorButton> {
     final bool enabled = widget.onPressed != null;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Use custom color if provided, otherwise use TeamColor
-    final Color primaryColor = widget.customColor ?? widget.color.border;
-    final Color backgroundColor = widget.customColor ?? widget.color.background;
-    final Color textColor = widget.customColor ?? widget.color.text;
-
     // Adjust colors for dark mode
     final Color background =
-        isDark ? primaryColor.withOpacity(0.4) : backgroundColor;
+        isDark ? widget.color.border.withOpacity(0.4) : widget.color.background;
     final Color border =
-        isDark ? backgroundColor.withOpacity(0.3) : primaryColor;
-    final Color text = isDark ? Colors.white.withOpacity(0.92) : textColor;
+        isDark ? widget.color.background.withOpacity(0.3) : widget.color.border;
+    final Color text =
+        isDark ? Colors.white.withOpacity(0.92) : widget.color.text;
     final Color iconColor = enabled ? border : Colors.grey.shade400;
 
     return Padding(

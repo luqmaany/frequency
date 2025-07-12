@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'screens/home_screen.dart';
 import 'services/theme_provider.dart';
+import 'services/storage_service.dart';
 
 void main() {
   debugPrint('=== App Starting ===');
@@ -23,6 +24,10 @@ class _MyAppState extends ConsumerState<MyApp> {
   @override
   void initState() {
     super.initState();
+    // Initialize default names on first run
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      StorageService.initializeDefaultNames();
+    });
   }
 
   @override

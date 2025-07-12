@@ -4,8 +4,10 @@ import 'dart:convert';
 class StorageService {
   // Game setup keys
   static const String _playerNamesKey = 'player_names';
-  static const String _teamsKey = 'teams';
-  static const String _teamColorIndicesKey = 'team_color_indices';
+  // Removed: _teamsKey and _teamColorIndicesKey
+
+  // App initialization key
+  static const String _firstRunKey = 'first_run';
 
   // Game settings keys
   static const String _roundTimeSecondsKey = 'round_time_seconds';
@@ -23,6 +25,43 @@ class StorageService {
   static const String _darkModeKey = 'dark_mode';
   static const String _lastPlayedDateKey = 'last_played_date';
 
+  // ===== APP INITIALIZATION METHODS =====
+
+  // Check if this is the first run of the app
+  static Future<bool> isFirstRun() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_firstRunKey) != true;
+  }
+
+  // Mark the app as initialized (not first run)
+  static Future<void> markAsInitialized() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_firstRunKey, true);
+  }
+
+  // Initialize default player names on first run
+  static Future<void> initializeDefaultNames() async {
+    final isFirst = await isFirstRun();
+    if (isFirst) {
+      final defaultNames = [
+        'Aline',
+        'Nazime',
+        'Arash',
+        'Cameron',
+        'Jhud',
+        'Huzaifah',
+        'Mayy',
+        'Siawosh',
+        'Nadine',
+        'Luqmaan',
+        'Arun',
+        'Malaika'
+      ];
+      await savePlayerNames(defaultNames);
+      await markAsInitialized();
+    }
+  }
+
   // ===== GAME SETUP METHODS =====
 
   // Save player names to local storage
@@ -37,36 +76,7 @@ class StorageService {
     return prefs.getStringList(_playerNamesKey) ?? [];
   }
 
-  // Save teams to local storage
-  static Future<void> saveTeams(List<List<String>> teams) async {
-    final prefs = await SharedPreferences.getInstance();
-    // Convert teams to a format that can be stored (list of strings)
-    final teamsAsStrings = teams.map((team) => team.join(',')).toList();
-    await prefs.setStringList(_teamsKey, teamsAsStrings);
-  }
-
-  // Load teams from local storage
-  static Future<List<List<String>>> loadTeams() async {
-    final prefs = await SharedPreferences.getInstance();
-    final teamsAsStrings = prefs.getStringList(_teamsKey) ?? [];
-    return teamsAsStrings.map((teamString) => teamString.split(',')).toList();
-  }
-
-  // Save team color indices to local storage
-  static Future<void> saveTeamColorIndices(List<int> teamColorIndices) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_teamColorIndicesKey,
-        teamColorIndices.map((index) => index.toString()).toList());
-  }
-
-  // Load team color indices from local storage
-  static Future<List<int>> loadTeamColorIndices() async {
-    final prefs = await SharedPreferences.getInstance();
-    final indicesAsStrings = prefs.getStringList(_teamColorIndicesKey) ?? [];
-    return indicesAsStrings
-        .map((indexString) => int.parse(indexString))
-        .toList();
-  }
+  // Removed: saveTeams, loadTeams, saveTeamColorIndices, loadTeamColorIndices methods
 
   // ===== GAME SETTINGS METHODS =====
 
@@ -263,8 +273,7 @@ class StorageService {
   static Future<void> clearGameData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_playerNamesKey);
-    await prefs.remove(_teamsKey);
-    await prefs.remove(_teamColorIndicesKey);
+    // Removed: _teamsKey and _teamColorIndicesKey removal
     await prefs.remove(_gameHistoryKey);
     await prefs.remove(_playerStatsKey);
     await prefs.remove(_teamStatsKey);
