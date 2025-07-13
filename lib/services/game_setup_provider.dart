@@ -241,6 +241,18 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
   Future<void> moveNameToQueueFront(String name) async {
     await StorageService.moveNameToFront(name);
   }
+
+  // Clear all players from teams but keep player names available
+  void clearAllPlayers() {
+    // Remove all players from playerNames list
+    final updatedPlayerNames = <String>[];
+    state = state.copyWith(
+      playerNames: updatedPlayerNames,
+      teams: [],
+      teamColorIndices: [],
+    );
+    // Teams are not saved to storage
+  }
 }
 
 final gameSetupProvider =

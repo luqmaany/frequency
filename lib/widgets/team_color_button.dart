@@ -10,7 +10,9 @@ class TeamColor {
 
 final List<TeamColor> uiColors = [
   TeamColor('Blue', Colors.blue.shade100, Colors.blue, Colors.blue.shade900),
-  TeamColor('Green', Colors.green.shade100, Colors.green, Colors.green.shade900)
+  TeamColor(
+      'Green', Colors.green.shade100, Colors.green, Colors.green.shade900),
+  TeamColor('Red', Colors.red.shade100, Colors.red, Colors.red.shade900),
 ];
 
 final List<TeamColor> teamColors = [
