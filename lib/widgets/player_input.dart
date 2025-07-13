@@ -153,29 +153,34 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       return const SizedBox.shrink();
     }
 
-    return Center(
-      // Added Center widget to center horizontally
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        alignment: WrapAlignment.center,
-        children: suggestedNames.map((s) => _buildChip(s, gameConfig)).toList(),
+    return SizedBox(
+      height: 50, // Fixed height for single row
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children:
+              suggestedNames.map((s) => _buildChip(s, gameConfig)).toList(),
+        ),
       ),
     );
   }
 
   Widget _buildChip(String suggestion, GameConfig gameConfig) {
-    return ActionChip(
-      backgroundColor: Colors.white, // Add white background
-      label: Text(suggestion),
-      onPressed: gameConfig.playerNames.length >= 12
-          ? null
-          : () async {
-              await ref
-                  .read(gameSetupProvider.notifier)
-                  .moveNameToQueueFront(suggestion);
-              ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
-            },
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ActionChip(
+        backgroundColor: Colors.white,
+        label: Text(suggestion),
+        onPressed: gameConfig.playerNames.length >= 12
+            ? null
+            : () async {
+                await ref
+                    .read(gameSetupProvider.notifier)
+                    .moveNameToQueueFront(suggestion);
+                ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
+              },
+      ),
     );
   }
 }
