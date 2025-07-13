@@ -48,9 +48,8 @@ class TeamDisplayBox extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Center(
-            child: Wrap(
-              spacing: 8,
-              alignment: WrapAlignment.center,
+            child: Column(
+              // Changed from Wrap to Column
               children: children,
             ),
           ),

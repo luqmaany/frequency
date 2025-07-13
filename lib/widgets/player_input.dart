@@ -16,7 +16,6 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   final FocusNode _focusNode = FocusNode();
   List<String> _suggestedNames = [];
   String? _errorMessage;
-  bool _showAllNames = false; // Replace _currentPage with this boolean
 
   @override
   void initState() {
@@ -43,7 +42,6 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     if (name.isEmpty) return;
     final gameConfig = ref.read(gameSetupProvider);
 
-    // Check if we've reached the maximum number of players (12)
     if (gameConfig.playerNames.length >= 12) {
       setState(() {
         _errorMessage =
@@ -58,36 +56,37 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       (s) => s.toLowerCase() == name.toLowerCase(),
       orElse: () => '',
     );
+
     if (exists) {
       if (suggested.isNotEmpty) {
-        // If it's in suggestions and already in a team, just add from suggestions (shouldn't happen, but for safety)
         ref.read(gameSetupProvider.notifier).addPlayer(suggested);
         _controller.clear();
-        _focusNode.requestFocus(); // Auto-focus after adding
+        _focusNode.requestFocus();
         setState(() {
           _errorMessage = null;
         });
       } else {
         setState(() {
-          _errorMessage = '${name} is already in a team';
+          _errorMessage = '$name is already in a team';
         });
       }
       return;
     }
-    // If it's in suggestions, add from suggestions
+
     if (suggested.isNotEmpty) {
       ref.read(gameSetupProvider.notifier).addPlayer(suggested);
       _controller.clear();
-      _focusNode.requestFocus(); // Auto-focus after adding
+      _focusNode.requestFocus();
       setState(() {
         _errorMessage = null;
       });
       return;
     }
+
     try {
       ref.read(gameSetupProvider.notifier).addPlayer(name);
       _controller.clear();
-      _focusNode.requestFocus(); // Auto-focus after adding
+      _focusNode.requestFocus();
       setState(() {
         _errorMessage = null;
       });
@@ -102,7 +101,6 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
 
-    // Reload suggested names when game config changes (e.g., after clearing data)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_suggestedNames.isEmpty) {
         _loadSuggestedNames();
@@ -155,69 +153,29 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       return const SizedBox.shrink();
     }
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Estimate items per row based on average chip width
-        const chipWidth = 80.0; // Approximate width of a chip
-        const spacing = 8.0;
-        final itemsPerRow =
-            ((constraints.maxWidth + spacing) / (chipWidth + spacing)).floor();
-        final maxItemsForTwoRows = itemsPerRow * 2;
+    return Center(
+      // Added Center widget to center horizontally
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: suggestedNames.map((s) => _buildChip(s, gameConfig)).toList(),
+      ),
+    );
+  }
 
-        // Show all names if _showAllNames is true, otherwise show limited names
-        final itemsToShow = _showAllNames
-            ? suggestedNames
-            : suggestedNames
-                .take(maxItemsForTwoRows - 1)
-                .toList(); // Leave space for "Show More"
-
-        final chips = itemsToShow.map((suggestion) {
-          return ActionChip(
-            label: Text(suggestion),
-            onPressed: gameConfig.playerNames.length >= 12
-                ? null
-                : () async {
-                    // Move the name to the front of the queue
-                    await ref
-                        .read(gameSetupProvider.notifier)
-                        .moveNameToQueueFront(suggestion);
-                    // Add the player
-                    ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
-                  },
-          );
-        }).toList();
-
-        // Add navigation buttons
-        if (!_showAllNames && suggestedNames.length > maxItemsForTwoRows - 1) {
-          // Show "Show More" button (>)
-          chips.add(ActionChip(
-            label: const Icon(Icons.keyboard_arrow_right, size: 20),
-            onPressed: () {
-              setState(() {
-                _showAllNames = true;
-              });
+  Widget _buildChip(String suggestion, GameConfig gameConfig) {
+    return ActionChip(
+      backgroundColor: Colors.white, // Add white background
+      label: Text(suggestion),
+      onPressed: gameConfig.playerNames.length >= 12
+          ? null
+          : () async {
+              await ref
+                  .read(gameSetupProvider.notifier)
+                  .moveNameToQueueFront(suggestion);
+              ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
             },
-          ));
-        } else if (_showAllNames &&
-            suggestedNames.length > maxItemsForTwoRows - 1) {
-          // Show "Show Less" button (<)
-          chips.add(ActionChip(
-            label: const Icon(Icons.keyboard_arrow_left, size: 20),
-            onPressed: () {
-              setState(() {
-                _showAllNames = false;
-              });
-            },
-          ));
-        }
-
-        return Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          alignment: WrapAlignment.start,
-          children: chips,
-        );
-      },
     );
   }
 }
