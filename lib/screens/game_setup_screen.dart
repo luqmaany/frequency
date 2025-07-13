@@ -284,20 +284,37 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                     if (gameConfig.teams.expand((t) => t).isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        child: Center(
-                          child: SizedBox(
-                            width: 200,
-                            child: TeamColorButton(
-                              text: 'Shuffle Teams',
-                              icon: Icons.shuffle,
-                              color: uiColors[0],
-                              onPressed: () {
-                                ref
-                                    .read(gameSetupProvider.notifier)
-                                    .shuffleTeams();
-                              },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 150,
+                              child: TeamColorButton(
+                                text: 'Clear',
+                                icon: Icons.clear,
+                                color: uiColors[2],
+                                onPressed: () {
+                                  ref
+                                      .read(gameSetupProvider.notifier)
+                                      .clearAllPlayers();
+                                },
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 16),
+                            SizedBox(
+                              width: 150,
+                              child: TeamColorButton(
+                                text: 'Shuffle',
+                                icon: Icons.shuffle,
+                                color: uiColors[0],
+                                onPressed: () {
+                                  ref
+                                      .read(gameSetupProvider.notifier)
+                                      .shuffleTeams();
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                   ],
