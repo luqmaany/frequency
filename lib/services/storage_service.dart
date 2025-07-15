@@ -24,7 +24,6 @@ class StorageService {
   static const String _soundEnabledKey = 'sound_enabled';
   static const String _vibrationEnabledKey = 'vibration_enabled';
   static const String _darkModeKey = 'dark_mode';
-  static const String _lastPlayedDateKey = 'last_played_date';
 
   // Queue constants
   static const int _maxQueueSize = 20;

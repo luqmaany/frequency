@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_navigation_service.dart';
+import 'online_lobby_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -50,6 +51,23 @@ class HomeScreen extends ConsumerWidget {
                 Icons.play_arrow_rounded,
                 () => GameNavigationService.navigateToGameSetup(context),
                 buttonColors[0],
+              ),
+              const SizedBox(height: 16),
+              // --- Online Button ---
+              _buildMenuButton(
+                context,
+                'Online',
+                Icons.public_rounded,
+                () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const OnlineLobbyScreen(),
+                    ),
+                  );
+                },
+                buttonColors.length > 5
+                    ? buttonColors[5 % buttonColors.length]
+                    : buttonColors[1],
               ),
               const SizedBox(height: 16),
               _buildMenuButton(
