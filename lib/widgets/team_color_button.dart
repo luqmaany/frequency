@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../services/storage_service.dart';
 
 class TeamColor {
   final String name;
@@ -72,6 +74,17 @@ class _TeamColorButtonState extends State<TeamColorButton> {
     });
   }
 
+  Future<void> _handleTap() async {
+    // Check vibration setting
+    final prefs = await StorageService.loadAppPreferences();
+    if (prefs['vibrationEnabled'] == true) {
+      HapticFeedback.lightImpact();
+    }
+    if (widget.onPressed != null) {
+      widget.onPressed!();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool enabled = widget.onPressed != null;
@@ -97,7 +110,7 @@ class _TeamColorButtonState extends State<TeamColorButton> {
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: enabled ? widget.onPressed : null,
+            onTap: enabled ? _handleTap : null,
             onTapDown: enabled ? _onTapDown : null,
             onTapUp: enabled ? _onTapUp : null,
             onTapCancel: enabled ? _onTapCancel : null,

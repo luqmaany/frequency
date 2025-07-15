@@ -110,30 +110,55 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextField(
-          controller: _controller,
-          focusNode: _focusNode,
-          enabled: gameConfig.playerNames.length < 12,
-          decoration: InputDecoration(
-            labelText: gameConfig.playerNames.length >= 12
-                ? 'Maximum players reached'
-                : 'Player Name',
-            errorText: _errorMessage,
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.add),
-              onPressed:
-                  gameConfig.playerNames.length >= 12 ? null : _addPlayer,
-            ),
-            border: const OutlineInputBorder(),
-          ),
-          onSubmitted:
-              gameConfig.playerNames.length >= 12 ? null : (_) => _addPlayer(),
-          onChanged: (_) {
-            if (_errorMessage != null) {
-              setState(() {
-                _errorMessage = null;
-              });
-            }
+        Builder(
+          builder: (context) {
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            final fillColor =
+                isDark ? Colors.blueGrey.shade900 : Colors.blue.shade50;
+            final borderColor =
+                isDark ? Colors.blueGrey.shade700 : Colors.blue.shade300;
+            final focusedBorderColor =
+                isDark ? Colors.blue.shade200 : Colors.blue;
+            return TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              enabled: gameConfig.playerNames.length < 12,
+              decoration: InputDecoration(
+                labelText: gameConfig.playerNames.length >= 12
+                    ? 'Maximum players reached'
+                    : 'Player Name',
+                errorText: _errorMessage,
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.add),
+                  onPressed:
+                      gameConfig.playerNames.length >= 12 ? null : _addPlayer,
+                ),
+                filled: true,
+                fillColor: fillColor,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderColor, width: 2),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: borderColor, width: 2),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: focusedBorderColor, width: 2),
+                ),
+              ),
+              onSubmitted: gameConfig.playerNames.length >= 12
+                  ? null
+                  : (_) => _addPlayer(),
+              onChanged: (_) {
+                if (_errorMessage != null) {
+                  setState(() {
+                    _errorMessage = null;
+                  });
+                }
+              },
+            );
           },
         ),
         const SizedBox(height: 8),
@@ -167,10 +192,11 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   }
 
   Widget _buildChip(String suggestion, GameConfig gameConfig) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ActionChip(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? Colors.grey[850] : Colors.white,
         label: Text(suggestion),
         onPressed: gameConfig.playerNames.length >= 12
             ? null
