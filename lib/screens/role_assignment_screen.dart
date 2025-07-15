@@ -4,6 +4,7 @@ import '../services/game_setup_provider.dart';
 import '../services/game_navigation_service.dart';
 import 'word_lists_manager_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
+import 'package:convey/utils/category_utils.dart';
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -171,18 +172,46 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     }
 
     return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: Text("${_selectedConveyor!} & ${_selectedGuesser!}'s Turn"),
-      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            const SizedBox(height: 24),
+            // Category display (like TurnOverScreen)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? CategoryUtils.getCategoryColor(widget.category)
+                        .withOpacity(0.3)
+                    : CategoryUtils.getCategoryColor(widget.category)
+                        .withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? CategoryUtils.getCategoryColor(widget.category)
+                          .withOpacity(0.8)
+                      : CategoryUtils.getCategoryColor(widget.category),
+                  width: 2,
+                ),
+              ),
+              child: Text(
+                CategoryUtils.getCategoryName(widget.category),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white.withOpacity(0.95)
+                          : Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 24),
             Text(
               'Choose Roles',
               style: Theme.of(context).textTheme.headlineMedium,
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
             Expanded(
@@ -219,6 +248,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                         .textTheme
                                         .headlineMedium
                                         ?.copyWith(
+                                          fontSize: 32,
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
                                               ? Colors.white.withOpacity(0.95)
@@ -253,14 +283,29 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   ),
                   const SizedBox(height: 16),
                   // Switch Button
-                  IconButton(
-                    onPressed: _switchRoles,
-                    icon: Icon(
-                      Icons.swap_vert,
-                      size: 32,
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? teamColor.border.withOpacity(0.8)
-                          : teamColor.border,
+                          ? teamColor.border.withOpacity(0.2)
+                          : teamColor.border.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? teamColor.border.withOpacity(0.8)
+                            : teamColor.border,
+                        width: 2,
+                      ),
+                    ),
+                    child: IconButton(
+                      onPressed: _switchRoles,
+                      icon: Icon(
+                        Icons.swap_vert,
+                        size: 32,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? teamColor.border.withOpacity(0.9)
+                            : teamColor.border,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -295,6 +340,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                         .textTheme
                                         .headlineMedium
                                         ?.copyWith(
+                                          fontSize: 32,
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
                                               ? Colors.white.withOpacity(0.95)
@@ -335,7 +381,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               child: SizedBox(
                 width: 200,
                 child: TeamColorButton(
-                  text: 'Random',
+                  text: 'Pick For Us',
                   icon: Icons.shuffle,
                   color: uiColors[0], // Blue
                   onPressed: () {
