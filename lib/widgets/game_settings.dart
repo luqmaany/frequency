@@ -102,7 +102,20 @@ class GameSettingsState extends ConsumerState<GameSettings> {
           controller: _roundTimeController,
           decoration: InputDecoration(
             labelText: 'Round Time (seconds)',
-            border: const OutlineInputBorder(),
+            filled: true,
+            fillColor: Colors.blue.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.blue, width: 2),
+            ),
             errorText: validationState.isRoundTimeValid
                 ? null
                 : 'Must be between 10 and 120 seconds',
@@ -119,7 +132,20 @@ class GameSettingsState extends ConsumerState<GameSettings> {
           controller: _targetScoreController,
           decoration: InputDecoration(
             labelText: 'Target Score',
-            border: const OutlineInputBorder(),
+            filled: true,
+            fillColor: Colors.green.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.green.shade300, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.green.shade300, width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.green, width: 2),
+            ),
             errorText: validationState.isTargetScoreValid
                 ? null
                 : 'Must be between 10 and 100',
@@ -136,7 +162,20 @@ class GameSettingsState extends ConsumerState<GameSettings> {
           controller: _allowedSkipsController,
           decoration: InputDecoration(
             labelText: 'Allowed Skips',
-            border: const OutlineInputBorder(),
+            filled: true,
+            fillColor: Colors.red.shade50,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade300, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.shade300, width: 2),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red, width: 2),
+            ),
             errorText: validationState.isAllowedSkipsValid
                 ? null
                 : 'Must be between 0 and 5',

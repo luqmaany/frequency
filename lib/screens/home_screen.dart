@@ -16,24 +16,31 @@ class HomeScreen extends ConsumerWidget {
       Colors.red,
     ];
     return Scaffold(
+      backgroundColor: Colors.white, // Default background
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'Welcome back!',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
+              // Color picker removed
+              const SizedBox(height: 24),
+              const Center(
+                child: Text(
+                  'Welcome back!',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              const Text(
-                'Ready to get roasted?',
-                style: TextStyle(
-                  fontSize: 24,
-                  color: Colors.grey,
+              const Center(
+                child: Text(
+                  'Ready to get roasted?',
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
               const SizedBox(height: 48),
@@ -95,8 +102,7 @@ class HomeScreen extends ConsumerWidget {
     Color color,
   ) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color buttonColor =
-        isDark ? color.withOpacity(0.18) : color.withOpacity(0.2);
+    final Color buttonColor = color.withOpacity(0.35);
     final Color borderColor = isDark ? color.withOpacity(0.7) : color;
     final Color iconColor = borderColor;
     final Color textColor = isDark ? const Color(0xFFE0E0E0) : Colors.black;

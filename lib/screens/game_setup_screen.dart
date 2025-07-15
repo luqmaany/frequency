@@ -109,9 +109,6 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
     final gameConfig = ref.watch(gameSetupProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Team Setup'),
-      ),
       body: Stack(
         children: [
           // Global DragTarget for removing players (background)
@@ -165,6 +162,17 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
+                    const SizedBox(height: 48),
+                    const Center(
+                      child: Text(
+                        'Team Setup',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       gameConfig.playerNames.length >= 12
                           ? 'Maximum 12 players reached. Remove players to add more.'
@@ -179,7 +187,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                     ),
                     const SizedBox(height: 16),
                     const PlayerInput(),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 0),
                     if (gameConfig.teams.isNotEmpty)
                       GridView.builder(
                         shrinkWrap: true,
@@ -251,6 +259,13 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                         ),
                                         child: Chip(
                                           label: Text(player),
+                                          backgroundColor:
+                                              Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? color.background
+                                                      .withOpacity(0.2)
+                                                  : color.background,
+                                          side: BorderSide(color: color.border),
                                         ),
                                         onDragStarted: () {
                                           _dropAcceptedByTeam = false;
@@ -334,6 +349,18 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                 ),
                 child: Row(
                   children: [
+                    Expanded(
+                      child: TeamColorButton(
+                        text: 'Home',
+                        icon: Icons.home,
+                        color: uiColors[0],
+                        onPressed: () {
+                          Navigator.of(context)
+                              .popUntil((route) => route.isFirst);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 16),
                     Expanded(
                       child: TeamColorButton(
                         text: 'Next',

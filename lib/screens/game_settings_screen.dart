@@ -15,28 +15,30 @@ class GameSettingsScreen extends ConsumerWidget {
     final validationState = ref.watch(settingsValidationProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Game Settings'),
-      ),
       body: Column(
         children: [
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Text(
-                  'Game Settings',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(height: 48),
+                const Center(
+                  child: Text(
+                    'Game Settings',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Configure your game settings',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.secondary,
-                    fontSize: 12,
+                Center(
+                  child: Text(
+                    'Configure your game settings',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.secondary,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
