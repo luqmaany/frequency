@@ -1,100 +1,367 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/team_color_button.dart';
+import '../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class OnlineTeamLobbyScreen extends StatefulWidget {
+// StreamProvider to listen to session changes
+final sessionStreamProvider =
+    StreamProvider.family<DocumentSnapshot<Map<String, dynamic>>?, String>(
+        (ref, sessionId) {
+  return FirestoreService.sessionStream(sessionId);
+});
+
+class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
   final String sessionId;
-  const OnlineTeamLobbyScreen({Key? key, required this.sessionId})
+  final String teamName;
+  final int colorIndex;
+  const OnlineTeamLobbyScreen(
+      {Key? key,
+      required this.sessionId,
+      required this.teamName,
+      required this.colorIndex})
       : super(key: key);
 
   @override
-  State<OnlineTeamLobbyScreen> createState() => _OnlineTeamLobbyScreenState();
+  ConsumerState<OnlineTeamLobbyScreen> createState() =>
+      _OnlineTeamLobbyScreenState();
 }
 
-class _OnlineTeamLobbyScreenState extends State<OnlineTeamLobbyScreen> {
-  final TextEditingController _teamNameController = TextEditingController();
-  int _selectedColorIndex = 0;
+class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
+  late final TextEditingController _teamNameController =
+      TextEditingController(text: widget.teamName);
+  late final TextEditingController _player1Controller = TextEditingController();
+  late final TextEditingController _player2Controller = TextEditingController();
+  late int? _selectedColorIndex = null;
   bool _ready = false;
+  bool _updating = false;
 
-  void _selectColor(int index) {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  bool get _canPickColor =>
+      _player1Controller.text.trim().isNotEmpty &&
+      _player2Controller.text.trim().isNotEmpty;
+
+  Future<void> _updateTeamInfo() async {
+    if (_updating) return;
+    setState(() => _updating = true);
+    try {
+      await FirestoreService.updateTeam(
+        widget.sessionId,
+        _teamNameController.text.trim(),
+        {
+          'teamName': _teamNameController.text.trim(),
+          'colorIndex': _selectedColorIndex,
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update team info: $e')),
+      );
+    } finally {
+      setState(() => _updating = false);
+    }
+  }
+
+  Future<void> _selectColor(int index) async {
     setState(() {
       _selectedColorIndex = index;
     });
+    await _updateTeamInfo();
   }
 
-  void _onReady() {
+  Future<void> _onReady() async {
+    if (_updating) return;
+    setState(() => _updating = true);
+    try {
+      await FirestoreService.updateTeam(
+        widget.sessionId,
+        _teamNameController.text.trim(),
+        {'ready': true},
+      );
+      setState(() => _ready = true);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to mark as ready: $e')),
+      );
+    } finally {
+      setState(() => _updating = false);
+    }
+  }
+
+  List<int> _getUsedColors(List<dynamic> teams) {
+    return teams
+        .where((team) => team['teamName'] != _teamNameController.text.trim())
+        .map((team) => team['colorIndex'] as int)
+        .toList();
+  }
+
+  // Helper to build team data
+  Map<String, dynamic> get _myTeamData => {
+        'teamName': _teamNameController.text.trim(),
+        'colorIndex': _selectedColorIndex,
+        'ready': true,
+        'players': [
+          _player1Controller.text.trim(),
+          _player2Controller.text.trim(),
+        ],
+      };
+
+  // Add or update team in Firestore
+  Future<void> _syncTeamToFirestore() async {
+    if (_canPickColor && _selectedColorIndex != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('sessions')
+          .doc(widget.sessionId)
+          .get();
+      if (!doc.exists) return;
+      final data = doc.data() as Map<String, dynamic>;
+      final teams = (data['teams'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          [];
+      // Remove any previous entry for this color or these players
+      teams.removeWhere((t) =>
+          t['colorIndex'] == _selectedColorIndex ||
+          (t['players'] is List &&
+              (t['players'] as List).join(',') ==
+                  [
+                    _player1Controller.text.trim(),
+                    _player2Controller.text.trim()
+                  ].join(',')));
+      teams.add(_myTeamData);
+      await FirebaseFirestore.instance
+          .collection('sessions')
+          .doc(widget.sessionId)
+          .update({'teams': teams});
+    }
+  }
+
+  // Remove team from Firestore
+  Future<void> _removeTeamFromFirestore() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('sessions')
+        .doc(widget.sessionId)
+        .get();
+    if (!doc.exists) return;
+    final data = doc.data() as Map<String, dynamic>;
+    final teams = (data['teams'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e))
+            .toList() ??
+        [];
+    teams.removeWhere((t) =>
+        (t['players'] is List &&
+            (t['players'] as List).join(',') ==
+                [_player1Controller.text.trim(), _player2Controller.text.trim()]
+                    .join(',')) ||
+        t['colorIndex'] == _selectedColorIndex);
+    await FirebaseFirestore.instance
+        .collection('sessions')
+        .doc(widget.sessionId)
+        .update({'teams': teams});
+  }
+
+  // Watch for changes to player names or color and sync
+  void _onPlayerOrColorChanged() {
+    if (_ready) {
+      // If ready, but player names or color become invalid, remove from Firestore and reset ready
+      if (!_canPickColor || _selectedColorIndex == null) {
+        _removeTeamFromFirestore();
+        setState(() {
+          _ready = false;
+        });
+      }
+    }
+    setState(() {});
+  }
+
+  Future<void> _onReadyPressed() async {
+    await _syncTeamToFirestore();
     setState(() {
       _ready = true;
     });
-    // TODO: Firestore logic to mark team as ready
   }
 
   @override
   Widget build(BuildContext context) {
+    final sessionAsync = ref.watch(sessionStreamProvider(widget.sessionId));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Team Lobby'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(
+      body: sessionAsync.when(
+        data: (sessionSnap) {
+          final sessionData = sessionSnap?.data();
+          if (sessionData == null) {
+            return const Center(child: Text('Session not found'));
+          }
+
+          final teams = (sessionData['teams'] as List?) ?? [];
+          final usedColors = _getUsedColors(teams);
+          final myTeam = teams.firstWhere(
+            (team) => team['teamName'] == _teamNameController.text.trim(),
+            orElse: () => {'ready': false},
+          );
+          final isReady = myTeam['ready'] ?? false;
+
+          return Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: SingleChildScrollView(
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Session Code',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                  SelectableText(
-                    widget.sessionId,
-                    style: const TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2),
+                  Center(
+                    child: Column(
+                      children: [
+                        const Text('Session Code',
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w500)),
+                        SelectableText(
+                          widget.sessionId,
+                          style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 2),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 32),
+                  TextField(
+                    controller: _player1Controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Player 1 Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 16,
+                    enabled: !_updating,
+                    onChanged: (_) => _onPlayerOrColorChanged(),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _player2Controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Player 2 Name',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 16,
+                    enabled: !_updating,
+                    onChanged: (_) => _onPlayerOrColorChanged(),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _teamNameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Team Name (optional)',
+                      border: OutlineInputBorder(),
+                    ),
+                    maxLength: 16,
+                    enabled: !_updating,
+                    onChanged: (_) => _onPlayerOrColorChanged(),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text('Pick a Team Color:',
+                      style: TextStyle(fontSize: 16)),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 180,
+                    child: GridView.builder(
+                      scrollDirection: Axis.vertical,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: 3.2,
+                      ),
+                      itemCount: teamColors.length,
+                      itemBuilder: (context, i) => TeamColorButton(
+                        text: teamColors[i].name,
+                        icon: Icons.circle,
+                        color: teamColors[i],
+                        onPressed: (_canPickColor &&
+                                !_ready &&
+                                !_updating &&
+                                !usedColors.contains(i))
+                            ? () {
+                                setState(() {
+                                  _selectedColorIndex = i;
+                                });
+                                _onPlayerOrColorChanged();
+                              }
+                            : null,
+                        iconSize: 20,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  if (teams.isNotEmpty) ...[
+                    const Text('Teams in Session:',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    ...teams.map((team) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: teamColors[team['colorIndex'] ?? 0]
+                                      .background,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                      color: teamColors[team['colorIndex'] ?? 0]
+                                          .border),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(team['teamName'] ?? 'Unknown'),
+                              const Spacer(),
+                              if (team['ready'] == true)
+                                const Icon(Icons.check_circle,
+                                    color: Colors.green, size: 20)
+                              else
+                                const Icon(Icons.schedule,
+                                    color: Colors.grey, size: 20),
+                            ],
+                          ),
+                        )),
+                  ],
+                  const SizedBox(height: 32),
+                  if (_updating)
+                    const Center(child: CircularProgressIndicator()),
+                  if (!_updating)
+                    TeamColorButton(
+                      text: _ready ? 'Waiting for Others...' : 'Ready',
+                      icon: _ready ? Icons.hourglass_top : Icons.check,
+                      color: _selectedColorIndex != null
+                          ? teamColors[_selectedColorIndex!]
+                          : teamColors[0],
+                      onPressed: (!_ready &&
+                              _canPickColor &&
+                              _selectedColorIndex != null &&
+                              !_updating)
+                          ? _onReadyPressed
+                          : null,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      iconSize: 28,
+                    ),
                 ],
               ),
             ),
-            const SizedBox(height: 32),
-            TextField(
-              controller: _teamNameController,
-              decoration: const InputDecoration(
-                labelText: 'Team Name',
-                border: OutlineInputBorder(),
-              ),
-              maxLength: 16,
-              enabled: !_ready,
-            ),
-            const SizedBox(height: 24),
-            const Text('Pick a Team Color:', style: TextStyle(fontSize: 16)),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                for (int i = 0; i < teamColors.length; i++)
-                  TeamColorButton(
-                    text: teamColors[i].name,
-                    icon: Icons.circle,
-                    color: teamColors[i],
-                    onPressed: !_ready ? () => _selectColor(i) : null,
-                    iconSize: 20,
-                    padding:
-                        const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            TeamColorButton(
-              text: _ready ? 'Waiting for Others...' : 'Ready',
-              icon: _ready ? Icons.hourglass_top : Icons.check,
-              color: teamColors[_selectedColorIndex],
-              onPressed: _ready ? null : _onReady,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              iconSize: 28,
-            ),
-          ],
-        ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
       ),
     );
   }
