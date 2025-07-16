@@ -1,5 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:uuid/uuid.dart';
 
 class StorageService {
   // Game setup keys
@@ -27,6 +28,8 @@ class StorageService {
 
   // Queue constants
   static const int _maxQueueSize = 20;
+
+  static const _deviceIdKey = 'device_id';
 
   // ===== APP INITIALIZATION METHODS =====
 
@@ -353,5 +356,15 @@ class StorageService {
       'Malaika'
     ];
     await saveSuggestedNames(defaultNames);
+  }
+
+  static Future<String> getDeviceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? id = prefs.getString(_deviceIdKey);
+    if (id == null) {
+      id = const Uuid().v4();
+      await prefs.setString(_deviceIdKey, id);
+    }
+    return id;
   }
 }
