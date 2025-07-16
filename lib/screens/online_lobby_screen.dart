@@ -4,6 +4,7 @@ import 'online_team_lobby_screen.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import '../services/storage_service.dart';
 
 class OnlineLobbyScreen extends StatefulWidget {
   const OnlineLobbyScreen({Key? key}) : super(key: key);
@@ -82,9 +83,11 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       return;
     }
     try {
+      final hostId = await StorageService.getDeviceId();
       // Actually create the session document in Firestore!
       await FirebaseFirestore.instance.collection('sessions').doc(newCode).set({
         'sessionId': newCode,
+        'hostId': hostId,
         'status': 'lobby',
         'settings': {
           'roundTimeSeconds': 60,
