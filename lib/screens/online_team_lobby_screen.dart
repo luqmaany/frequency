@@ -15,12 +15,14 @@ final sessionStreamProvider =
 class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
   final String sessionId;
   final String teamName;
-  final int colorIndex;
+  final String player1Name;
+  final String player2Name;
   const OnlineTeamLobbyScreen(
       {Key? key,
       required this.sessionId,
       required this.teamName,
-      required this.colorIndex})
+      required this.player1Name,
+      required this.player2Name})
       : super(key: key);
 
   @override
@@ -41,8 +43,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
   void initState() {
     super.initState();
     _teamNameController = TextEditingController(text: widget.teamName);
-    _player1Controller = TextEditingController();
-    _player2Controller = TextEditingController();
+    _player1Controller = TextEditingController(text: widget.player1Name);
+    _player2Controller = TextEditingController(text: widget.player2Name);
     _selectedColorIndex = null;
     _deviceIdFuture = StorageService.getDeviceId();
   }
@@ -57,8 +59,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
   }
 
   bool get _canPickColor =>
-      _player1Controller.text.trim().isNotEmpty &&
-      _player2Controller.text.trim().isNotEmpty;
+      widget.player1Name.trim().isNotEmpty &&
+      widget.player2Name.trim().isNotEmpty;
 
   Future<void> _updateTeamInfo() async {
     if (_updating) return;
@@ -109,8 +111,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
 
   List<int> _getUsedColors(List<dynamic> teams) {
     final myPlayers = [
-      _player1Controller.text.trim(),
-      _player2Controller.text.trim(),
+      widget.player1Name.trim(),
+      widget.player2Name.trim(),
     ];
     return teams
         .where((team) => !(team['players'] is List &&
@@ -124,7 +126,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
     for (final t in teams) {
       if (t['players'] is List &&
           (t['players'] as List).join(',') ==
-              [_player1Controller.text.trim(), _player2Controller.text.trim()]
+              [widget.player1Name.trim(), widget.player2Name.trim()]
                   .join(',')) {
         return t['colorIndex'] as int?;
       }
@@ -134,12 +136,12 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
 
   // Helper to build team data
   Map<String, dynamic> get _myTeamData => {
-        'teamName': _teamNameController.text.trim(),
+        'teamName': widget.teamName.trim(),
         'colorIndex': _selectedColorIndex,
         'ready': true,
         'players': [
-          _player1Controller.text.trim(),
-          _player2Controller.text.trim(),
+          widget.player1Name.trim(),
+          widget.player2Name.trim(),
         ],
       };
 
@@ -161,10 +163,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
           t['colorIndex'] == _selectedColorIndex ||
           (t['players'] is List &&
               (t['players'] as List).join(',') ==
-                  [
-                    _player1Controller.text.trim(),
-                    _player2Controller.text.trim()
-                  ].join(',')));
+                  [widget.player1Name.trim(), widget.player2Name.trim()]
+                      .join(',')));
       teams.add(_myTeamData);
       await FirebaseFirestore.instance
           .collection('sessions')
@@ -188,7 +188,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
     teams.removeWhere((t) =>
         (t['players'] is List &&
             (t['players'] as List).join(',') ==
-                [_player1Controller.text.trim(), _player2Controller.text.trim()]
+                [widget.player1Name.trim(), widget.player2Name.trim()]
                     .join(',')) ||
         t['colorIndex'] == _selectedColorIndex);
     await FirebaseFirestore.instance
@@ -197,11 +197,11 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
         .update({'teams': teams});
   }
 
-  // Watch for changes to player names or color and sync
-  void _onPlayerOrColorChanged() {
+  // Watch for changes to color and sync
+  void _onColorChanged() {
     if (_ready) {
-      // If ready, but player names or color become invalid, remove from Firestore and reset ready
-      if (!_canPickColor || _selectedColorIndex == null) {
+      // If ready, but color becomes invalid, remove from Firestore and reset ready
+      if (_selectedColorIndex == null) {
         _removeTeamFromFirestore();
         setState(() {
           _ready = false;
@@ -284,37 +284,32 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        TextField(
-                          controller: _player1Controller,
-                          decoration: const InputDecoration(
-                            labelText: 'Player 1 Name',
-                            border: OutlineInputBorder(),
+                        // Team info display (read-only)
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border:
+                                Border.all(color: Colors.grey.withOpacity(0.3)),
                           ),
-                          maxLength: 16,
-                          enabled: !_updating,
-                          onChanged: (_) => _onPlayerOrColorChanged(),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _player2Controller,
-                          decoration: const InputDecoration(
-                            labelText: 'Player 2 Name',
-                            border: OutlineInputBorder(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Your Team:',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text('Player 1: ${widget.player1Name}'),
+                              Text('Player 2: ${widget.player2Name}'),
+                              if (widget.teamName.isNotEmpty)
+                                Text('Team: ${widget.teamName}'),
+                            ],
                           ),
-                          maxLength: 16,
-                          enabled: !_updating,
-                          onChanged: (_) => _onPlayerOrColorChanged(),
-                        ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: _teamNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Team Name (optional)',
-                            border: OutlineInputBorder(),
-                          ),
-                          maxLength: 16,
-                          enabled: !_updating,
-                          onChanged: (_) => _onPlayerOrColorChanged(),
                         ),
                         const SizedBox(height: 24),
                         const Text('Pick a Team Color:',
@@ -351,7 +346,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
                                           // If already ready, update Firestore with new color
                                           await _syncTeamToFirestore();
                                         } else {
-                                          _onPlayerOrColorChanged();
+                                          _onColorChanged();
                                         }
                                       },
                                 iconSize: 20,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/team_color_button.dart';
-import 'online_team_lobby_screen.dart';
+import 'online_team_setup_screen.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
@@ -31,13 +31,12 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       _error = null;
     });
     try {
-      // Navigate to team lobby for team setup (team name/color)
+      // Navigate to team setup screen
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => OnlineTeamLobbyScreen(
+          builder: (context) => OnlineTeamSetupScreen(
             sessionId: code,
-            teamName: '',
-            colorIndex: 0,
+            isHost: false,
           ),
         ),
       );
@@ -100,10 +99,9 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
 
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => OnlineTeamLobbyScreen(
+          builder: (context) => OnlineTeamSetupScreen(
             sessionId: newCode,
-            teamName: '',
-            colorIndex: 0,
+            isHost: true,
           ),
         ),
       );
