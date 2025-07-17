@@ -30,7 +30,8 @@ class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
       _OnlineTeamLobbyScreenState();
 }
 
-class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
+class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
+    with TickerProviderStateMixin {
   late TextEditingController _teamNameController;
   late TextEditingController _player1Controller;
   late TextEditingController _player2Controller;
@@ -38,6 +39,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
   bool _ready = false;
   bool _updating = false;
   late Future<String> _deviceIdFuture;
+  late AnimationController _animationController;
+  late Animation<double> _animation;
 
   @override
   void initState() {
@@ -47,6 +50,16 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
     _player2Controller = TextEditingController(text: widget.player2Name);
     _selectedColorIndex = null;
     _deviceIdFuture = StorageService.getDeviceId();
+    
+    // Initialize animation controller
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _animationController.forward();
   }
 
   @override
@@ -54,6 +67,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
     _teamNameController.dispose();
     _player1Controller.dispose();
     _player2Controller.dispose();
+    _animationController.dispose();
     _removeTeamFromFirestore();
     super.dispose();
   }
@@ -87,6 +101,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
     setState(() {
       _selectedColorIndex = index;
     });
+    // Trigger animation when color changes
+    _animationController.forward(from: 0);
     await _updateTeamInfo();
   }
 
@@ -285,76 +301,144 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen> {
                         ),
                         const SizedBox(height: 32),
                         // Team info display (read-only)
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                            border:
-                                Border.all(color: Colors.grey.withOpacity(0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Your Team:',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
+                        AnimatedBuilder(
+                          animation: _animation,
+                          builder: (context, child) {
+                            final scale = 1.0 + (_animation.value * 0.03);
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: _selectedColorIndex != null
+                                      ? teamColors[_selectedColorIndex!].background
+                                      : Theme.of(context).colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: _selectedColorIndex != null
+                                      ? Border.all(
+                                          color: teamColors[_selectedColorIndex!].border,
+                                          width: 2,
+                                        )
+                                      : null,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _selectedColorIndex != null
+                                          ? teamColors[_selectedColorIndex!].border.withOpacity(0.2)
+                                          : Colors.black.withOpacity(0.05),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      widget.teamName.isNotEmpty 
+                                          ? widget.teamName 
+                                          : '${widget.player1Name} & ${widget.player2Name}',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: _selectedColorIndex != null
+                                            ? teamColors[_selectedColorIndex!].text
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.person, 
+                                          size: 16, 
+                                          color: _selectedColorIndex != null
+                                              ? teamColors[_selectedColorIndex!].text.withOpacity(0.8)
+                                              : Colors.grey[600],
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          widget.player1Name,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: _selectedColorIndex != null
+                                                ? teamColors[_selectedColorIndex!].text
+                                                : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.person, 
+                                          size: 16, 
+                                          color: _selectedColorIndex != null
+                                              ? teamColors[_selectedColorIndex!].text.withOpacity(0.8)
+                                              : Colors.grey[600],
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          widget.player2Name,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: _selectedColorIndex != null
+                                                ? teamColors[_selectedColorIndex!].text
+                                                : null,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                              const SizedBox(height: 8),
-                              Text('Player 1: ${widget.player1Name}'),
-                              Text('Player 2: ${widget.player2Name}'),
-                              if (widget.teamName.isNotEmpty)
-                                Text('Team: ${widget.teamName}'),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 24),
                         const Text('Pick a Team Color:',
                             style: TextStyle(fontSize: 16)),
                         const SizedBox(height: 8),
-                        SizedBox(
-                          height: 180,
-                          child: GridView.builder(
-                            scrollDirection: Axis.vertical,
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 8,
-                              childAspectRatio: 3.2,
-                            ),
-                            itemCount: teamColors.length,
-                            itemBuilder: (context, i) {
-                              final myColorIndex = _getMyTeamColorIndex(teams);
-                              final takenByOther =
-                                  usedColors.contains(i) && i != myColorIndex;
-                              return TeamColorButton(
-                                text: teamColors[i].name,
-                                icon: Icons.circle,
-                                color: teamColors[i],
-                                onPressed: (takenByOther || _updating)
-                                    ? null
-                                    : () async {
-                                        setState(() {
-                                          _selectedColorIndex = i;
-                                        });
-                                        if (_ready) {
-                                          // If already ready, update Firestore with new color
-                                          await _syncTeamToFirestore();
-                                        } else {
-                                          _onColorChanged();
-                                        }
-                                      },
-                                iconSize: 20,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 10),
-                              );
-                            },
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 1,
+                            crossAxisSpacing: 0,
+                            mainAxisSpacing: 8,
+                            childAspectRatio: 6.0,
                           ),
+                          itemCount: teamColors.length,
+                          itemBuilder: (context, i) {
+                            final myColorIndex = _getMyTeamColorIndex(teams);
+                            final takenByOther =
+                                usedColors.contains(i) && i != myColorIndex;
+                            return TeamColorButton(
+                              text: teamColors[i].name,
+                              icon: Icons.circle,
+                              color: teamColors[i],
+                              onPressed: (takenByOther || _updating)
+                                  ? null
+                                  : () async {
+                                      setState(() {
+                                        _selectedColorIndex = i;
+                                      });
+                                      if (_ready) {
+                                        // If already ready, update Firestore with new color
+                                        await _syncTeamToFirestore();
+                                      } else {
+                                        _onColorChanged();
+                                      }
+                                    },
+                              iconSize: 20,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 8, horizontal: 10),
+                            );
+                          },
                         ),
                         const SizedBox(height: 24),
                         if (teams.isNotEmpty) ...[
