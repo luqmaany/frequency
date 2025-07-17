@@ -50,7 +50,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     _player2Controller = TextEditingController(text: widget.player2Name);
     _selectedColorIndex = null;
     _deviceIdFuture = StorageService.getDeviceId();
-    
+
     // Initialize animation controller
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
@@ -60,6 +60,9 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
+
+    // Initialize color index from existing team data
+    _initializeColorIndex();
   }
 
   @override
@@ -70,6 +73,39 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     _animationController.dispose();
     _removeTeamFromFirestore();
     super.dispose();
+  }
+
+  Future<void> _initializeColorIndex() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('sessions')
+          .doc(widget.sessionId)
+          .get();
+      if (!doc.exists) return;
+
+      final data = doc.data() as Map<String, dynamic>;
+      final teams = (data['teams'] as List?) ?? [];
+
+      // Find our team and set the color index
+      for (final team in teams) {
+        if (team['players'] is List &&
+            (team['players'] as List).join(',') ==
+                [widget.player1Name.trim(), widget.player2Name.trim()]
+                    .join(',')) {
+          final colorIndex = team['colorIndex'] as int?;
+          if (colorIndex != null) {
+            setState(() {
+              _selectedColorIndex = colorIndex;
+            });
+            // Trigger animation for initial display
+            _animationController.forward(from: 0);
+          }
+          break;
+        }
+      }
+    } catch (e) {
+      print('Error initializing color index: $e');
+    }
   }
 
   bool get _canPickColor =>
@@ -300,198 +336,227 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                           ),
                         ),
                         const SizedBox(height: 32),
-                        // Team info display (read-only)
-                        AnimatedBuilder(
-                          animation: _animation,
-                          builder: (context, child) {
-                            final scale = 1.0 + (_animation.value * 0.03);
-                            return Transform.scale(
-                              scale: scale,
-                              child: Container(
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: _selectedColorIndex != null
-                                      ? teamColors[_selectedColorIndex!].background
-                                      : Theme.of(context).colorScheme.surface,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: _selectedColorIndex != null
-                                      ? Border.all(
-                                          color: teamColors[_selectedColorIndex!].border,
-                                          width: 2,
-                                        )
-                                      : null,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: _selectedColorIndex != null
-                                          ? teamColors[_selectedColorIndex!].border.withOpacity(0.2)
-                                          : Colors.black.withOpacity(0.05),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      widget.teamName.isNotEmpty 
-                                          ? widget.teamName 
-                                          : '${widget.player1Name} & ${widget.player2Name}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                        color: _selectedColorIndex != null
-                                            ? teamColors[_selectedColorIndex!].text
-                                            : Theme.of(context).colorScheme.onSurface,
+                        // Team info display with animation
+                        if (_selectedColorIndex != null) ...[
+                          Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            child: AnimatedBuilder(
+                              animation: _animation,
+                              builder: (context, child) {
+                                final teamColor =
+                                    teamColors[_selectedColorIndex!];
+                                final teamName =
+                                    _teamNameController.text.trim();
+                                final displayTitle = teamName.isNotEmpty
+                                    ? teamName
+                                    : '${teamColor.name} Team';
+
+                                return Transform.scale(
+                                  scale: 0.9 + (_animation.value * 0.1),
+                                  child: Container(
+                                    height: 80,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? teamColor.border.withOpacity(0.4)
+                                          : teamColor.background,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? teamColor.background
+                                                .withOpacity(0.3)
+                                            : teamColor.border,
+                                        width: 2,
                                       ),
-                                      textAlign: TextAlign.center,
                                     ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                    child: Stack(
                                       children: [
-                                        Icon(
-                                          Icons.person, 
-                                          size: 16, 
-                                          color: _selectedColorIndex != null
-                                              ? teamColors[_selectedColorIndex!].text.withOpacity(0.8)
-                                              : Colors.grey[600],
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          widget.player1Name,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: _selectedColorIndex != null
-                                                ? teamColors[_selectedColorIndex!].text
-                                                : null,
+                                        Center(
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                displayTitle,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .headlineMedium
+                                                    ?.copyWith(
+                                                      fontSize: 20,
+                                                      color: Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.dark
+                                                          ? Colors.white
+                                                              .withOpacity(0.95)
+                                                          : Colors.black,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${widget.player1Name} & ${widget.player2Name}',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .bodyLarge
+                                                    ?.copyWith(
+                                                      color: Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.dark
+                                                          ? Colors.white
+                                                              .withOpacity(0.8)
+                                                          : Colors.black87,
+                                                    ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.person, 
-                                          size: 16, 
-                                          color: _selectedColorIndex != null
-                                              ? teamColors[_selectedColorIndex!].text.withOpacity(0.8)
-                                              : Colors.grey[600],
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          widget.player2Name,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            color: _selectedColorIndex != null
-                                                ? teamColors[_selectedColorIndex!].text
-                                                : null,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 24),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
                         const Text('Pick a Team Color:',
                             style: TextStyle(fontSize: 16)),
                         const SizedBox(height: 8),
-                        GridView.builder(
+                        ListView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 1,
-                            crossAxisSpacing: 0,
-                            mainAxisSpacing: 8,
-                            childAspectRatio: 6.0,
-                          ),
                           itemCount: teamColors.length,
                           itemBuilder: (context, i) {
                             final myColorIndex = _getMyTeamColorIndex(teams);
-                            final takenByOther =
-                                usedColors.contains(i) && i != myColorIndex;
-                            return TeamColorButton(
-                              text: teamColors[i].name,
-                              icon: Icons.circle,
-                              color: teamColors[i],
-                              onPressed: (takenByOther || _updating)
-                                  ? null
-                                  : () async {
-                                      setState(() {
-                                        _selectedColorIndex = i;
-                                      });
-                                      if (_ready) {
-                                        // If already ready, update Firestore with new color
-                                        await _syncTeamToFirestore();
-                                      } else {
-                                        _onColorChanged();
-                                      }
-                                    },
-                              iconSize: 20,
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 8, horizontal: 10),
+                            final isSelected = _selectedColorIndex == i;
+                            final teamColor = teamColors[i];
+                            // Find the team (if any) that owns this color
+                            final teamForColor = teams.firstWhere(
+                              (team) => team['colorIndex'] == i,
+                              orElse: () => null,
+                            );
+                            final colorTaken = teamForColor != null;
+                            final teamIsReady =
+                                colorTaken && (teamForColor['ready'] == true);
+                            String infoText = '';
+                            if (colorTaken) {
+                              final tName =
+                                  (teamForColor['teamName'] as String?)
+                                          ?.trim() ??
+                                      '';
+                              final players = (teamForColor['players'] as List?)
+                                      ?.whereType<String>()
+                                      .toList() ??
+                                  [];
+                              infoText = tName.isNotEmpty
+                                  ? tName
+                                  : (players.length == 2
+                                      ? '${players[0]} & ${players[1]}'
+                                      : players.join(' & '));
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: (colorTaken &&
+                                            (!isSelected ||
+                                                myColorIndex != i) ||
+                                        _updating)
+                                    ? null
+                                    : () async {
+                                        setState(() {
+                                          _selectedColorIndex = i;
+                                        });
+                                        _animationController.forward(from: 0);
+                                        if (_ready) {
+                                          await _syncTeamToFirestore();
+                                        } else {
+                                          _onColorChanged();
+                                        }
+                                      },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    color: teamColor.background,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? teamColor.border
+                                          : teamColor.border.withOpacity(0.5),
+                                      width: isSelected ? 2.5 : 1.5,
+                                    ),
+                                    boxShadow: isSelected
+                                        ? [
+                                            BoxShadow(
+                                              color: teamColor.border
+                                                  .withOpacity(0.18),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ]
+                                        : [],
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        crossAxisAlignment: CrossAxisAlignment
+                                            .center, // ensure vertical centering
+                                        children: [
+                                          Icon(Icons.circle,
+                                              color: teamColor.border,
+                                              size: 22),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              teamColor.name,
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 18,
+                                                color: teamColor.text,
+                                              ),
+                                            ),
+                                          ),
+                                          if (teamIsReady) ...[
+                                            const SizedBox(width: 8),
+                                            Icon(Icons.check_circle,
+                                                color: Colors.green, size: 22),
+                                          ],
+                                        ],
+                                      ),
+                                      if (colorTaken &&
+                                          infoText.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          infoText,
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            color:
+                                                teamColor.text.withOpacity(0.9),
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ),
                             );
                           },
                         ),
                         const SizedBox(height: 24),
-                        if (teams.isNotEmpty) ...[
-                          const Text('Teams in Session:',
-                              style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w600)),
-                          const SizedBox(height: 8),
-                          ...teams.map((team) {
-                            final hasTeamName = (team['teamName'] as String?)
-                                    ?.trim()
-                                    .isNotEmpty ==
-                                true;
-                            final players = (team['players'] as List?)
-                                    ?.whereType<String>()
-                                    .toList() ??
-                                [];
-                            final displayName = hasTeamName
-                                ? team['teamName']
-                                : (players.length == 2
-                                    ? '${players[0]} & ${players[1]}'
-                                    : players.join(' & '));
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: teamColors[team['colorIndex'] ?? 0]
-                                          .background,
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                          color: teamColors[
-                                                  team['colorIndex'] ?? 0]
-                                              .border),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(displayName ?? 'Unknown'),
-                                  const Spacer(),
-                                  if (team['ready'] == true)
-                                    const Icon(Icons.check_circle,
-                                        color: Colors.green, size: 20)
-                                  else
-                                    const Icon(Icons.schedule,
-                                        color: Colors.grey, size: 20),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                        const SizedBox(height: 32),
                         if (_updating)
                           const Center(child: CircularProgressIndicator()),
                         // Ready/Waiting/Start Game button logic
