@@ -70,7 +70,7 @@ final lightThemeProvider = Provider<ThemeData>((ref) {
       ),
     ),
     // Card theme for consistent styling
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: Colors.white,
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -123,7 +123,7 @@ final darkThemeProvider = Provider<ThemeData>((ref) {
       ),
     ),
     // Card theme for consistent styling
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: const Color(0xFF3A3A3A), // Lighter card background
       elevation: 2,
       shape: RoundedRectangleBorder(
