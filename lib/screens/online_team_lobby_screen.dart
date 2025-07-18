@@ -4,13 +4,8 @@ import '../widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/storage_service.dart';
-
-// StreamProvider to listen to session changes
-final sessionStreamProvider =
-    StreamProvider.family<DocumentSnapshot<Map<String, dynamic>>?, String>(
-        (ref, sessionId) {
-  return FirestoreService.sessionStream(sessionId);
-});
+import '../providers/session_providers.dart';
+import '../services/online_game_navigation_service.dart';
 
 class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
   final String sessionId;
@@ -274,10 +269,19 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   Widget build(BuildContext context) {
     final sessionAsync = ref.watch(sessionStreamProvider(widget.sessionId));
 
-    return WillPopScope(
-      onWillPop: () async {
-        await _removeTeamFromFirestore();
-        return true;
+    // Centralized navigation for online play
+    OnlineGameNavigationService.handleNavigation(
+      context: context,
+      ref: ref,
+      sessionId: widget.sessionId,
+    );
+
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) {
+          await _removeTeamFromFirestore();
+        }
       },
       child: Scaffold(
         appBar: AppBar(
@@ -571,7 +575,9 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                               await FirebaseFirestore.instance
                                   .collection('sessions')
                                   .doc(widget.sessionId)
-                                  .update({'status': 'in-progress'});
+                                  .update({
+                                'status': 'settings'
+                              }); // <-- update to 'settings'
                             },
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             iconSize: 28,
