@@ -7,7 +7,9 @@ import '../widgets/game_settings.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
 class GameSettingsScreen extends ConsumerWidget {
-  const GameSettingsScreen({super.key});
+  final bool isHost;
+  final String? sessionId;
+  const GameSettingsScreen({super.key, this.isHost = true, this.sessionId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -42,7 +44,7 @@ class GameSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const GameSettings(),
+                GameSettings(readOnly: !isHost, sessionId: sessionId),
               ],
             ),
           ),
@@ -62,7 +64,7 @@ class GameSettingsScreen extends ConsumerWidget {
               children: [
                 Expanded(
                   child: TeamColorButton(
-                    text: 'Back to Teams',
+                    text: 'Teams',
                     icon: Icons.arrow_back,
                     color: uiColors[0], // Blue
                     onPressed: () {
@@ -76,7 +78,7 @@ class GameSettingsScreen extends ConsumerWidget {
                     text: 'Start Game',
                     icon: Icons.play_arrow_rounded,
                     color: uiColors[1], // Green
-                    onPressed: validationState.areAllSettingsValid
+                    onPressed: isHost && validationState.areAllSettingsValid
                         ? () async {
                             FocusScope.of(context).unfocus();
                             await Future.delayed(
