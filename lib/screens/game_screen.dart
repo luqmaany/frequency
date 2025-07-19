@@ -69,9 +69,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
         gameConfig.roundTimeSeconds, gameConfig.allowedSkips);
     loadInitialWords();
 
-    // Disable countdown for testing
-    _isCountdownActive = false;
-    startTimer();
+    // Pause timer during countdown
+    pauseTimer();
   }
 
   @override
@@ -80,15 +79,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
     super.dispose();
   }
 
-  void _startGame() {
+  void _onCountdownComplete() {
     setState(() {
       _isCountdownActive = false;
     });
-    startTimer();
-  }
-
-  void _onCountdownComplete() {
-    _startGame();
+    // Resume timer when countdown completes
+    resumeTimer();
   }
 
   @override
@@ -126,57 +122,65 @@ class _GameScreenState extends ConsumerState<GameScreen>
       );
     }
 
-    // Show countdown overlay
-    if (_isCountdownActive) {
-      final currentTeamPlayers = ref.read(currentTeamPlayersProvider);
-      return GameCountdown(
-        player1Name: currentTeamPlayers[0],
-        player2Name: currentTeamPlayers[1],
-        category: category,
-        onCountdownComplete: _onCountdownComplete,
-      );
-    }
-
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Title showing current players
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
-                style: Theme.of(context).textTheme.headlineMedium,
-                textAlign: TextAlign.center,
-              ),
-            ),
+            Column(
+              children: [
+                // Title showing current players
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                ),
 
-            // Game header with timer, category, and skips
-            GameHeader(
-              timeLeft: timeLeft,
-              category: category,
-              skipsLeft: skipsLeft,
-              isTiebreaker: false,
-            ),
+                // Game header with timer, category, and skips
+                GameHeader(
+                  timeLeft: timeLeft,
+                  category: category,
+                  skipsLeft: skipsLeft,
+                  isTiebreaker: false,
+                ),
 
-            // Word cards with swiping mechanics
-            Expanded(
-              child: GameCards(
-                currentWords: currentWords,
+                // Word cards with swiping mechanics
+                Expanded(
+                  child: GameCards(
+                    currentWords: currentWords,
+                    category: category,
+                    skipsLeft: skipsLeft,
+                    showBlankCards: _isCountdownActive,
+                    onWordGuessed: (word) {
+                      if (!_isCountdownActive) {
+                        handleWordGuessed(word);
+                      }
+                    },
+                    onWordSkipped: (word) {
+                      if (!_isCountdownActive) {
+                        handleWordSkipped(word);
+                      }
+                    },
+                    onLoadNewWord: (index) {
+                      if (!_isCountdownActive) {
+                        // Load new word for the specific card that was swiped
+                        loadNewWord(index);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+            // Countdown overlay
+            if (_isCountdownActive)
+              GameCountdown(
+                player1Name: ref.read(currentTeamPlayersProvider)[0],
+                player2Name: ref.read(currentTeamPlayersProvider)[1],
                 category: category,
-                skipsLeft: skipsLeft,
-                onWordGuessed: (word) {
-                  handleWordGuessed(word);
-                },
-                onWordSkipped: (word) {
-                  handleWordSkipped(word);
-                },
-                onLoadNewWord: (index) {
-                  // Load new word for the specific card that was swiped
-                  loadNewWord(index);
-                },
+                onCountdownComplete: _onCountdownComplete,
               ),
-            ),
           ],
         ),
       ),
