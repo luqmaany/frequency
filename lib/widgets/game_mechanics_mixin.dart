@@ -55,6 +55,18 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     });
   }
 
+  // Pause the game timer
+  void pauseTimer() {
+    _timer?.cancel();
+  }
+
+  // Resume the game timer
+  void resumeTimer() {
+    if (_timer == null || !_timer!.isActive) {
+      startTimer();
+    }
+  }
+
   // End the current turn
   void _endTurn() {
     _timer?.cancel();

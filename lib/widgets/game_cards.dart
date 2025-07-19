@@ -10,6 +10,7 @@ class GameCards extends StatefulWidget {
   final Function(String) onWordGuessed;
   final Function(String) onWordSkipped;
   final Function(int) onLoadNewWord;
+  final bool showBlankCards;
 
   const GameCards({
     super.key,
@@ -19,6 +20,7 @@ class GameCards extends StatefulWidget {
     required this.onWordGuessed,
     required this.onWordSkipped,
     required this.onLoadNewWord,
+    this.showBlankCards = false,
   });
 
   @override
@@ -121,6 +123,25 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                           index,
                           horizontalThresholdPercentage,
                           verticalThresholdPercentage) {
+                        if (widget.showBlankCards) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.question_mark,
+                                size: 64,
+                                color: Colors.grey.withOpacity(0.5),
+                              ),
+                            ),
+                          );
+                        }
                         return WordCard(
                           word: widget.currentWords[0],
                           category: widget.category,
@@ -168,6 +189,25 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                           index,
                           horizontalThresholdPercentage,
                           verticalThresholdPercentage) {
+                        if (widget.showBlankCards) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.grey.withOpacity(0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                Icons.question_mark,
+                                size: 64,
+                                color: Colors.grey.withOpacity(0.5),
+                              ),
+                            ),
+                          );
+                        }
                         return WordCard(
                           word: widget.currentWords[1],
                           category: widget.category,
