@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:ui';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
@@ -173,6 +174,107 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 ),
               ],
             ),
+
+            // Left side top red glow effect (for top card)
+            Positioned(
+              top: 180,
+              left: 0,
+              child: Container(
+                width: 20,
+                height: MediaQuery.of(context).size.height * 0.32,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(50),
+                    bottomRight: Radius.circular(50),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.red.withOpacity(0.4),
+                      Colors.red.withOpacity(0.1),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Left side bottom red glow effect (for bottom card)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              child: Container(
+                width: 30,
+                height: MediaQuery.of(context).size.height * 0.35,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(50),
+                    bottomRight: Radius.circular(50),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      Colors.red.withOpacity(0.4),
+                      Colors.red.withOpacity(0.1),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Right side top green glow effect (for top card)
+            Positioned(
+              top: 180,
+              right: 0,
+              child: Container(
+                width: 30,
+                height: MediaQuery.of(context).size.height * 0.30,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(50),
+                    bottomLeft: Radius.circular(50),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [
+                      Colors.green.withOpacity(0.4),
+                      Colors.green.withOpacity(0.1),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Right side bottom green glow effect (for bottom card)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                width: 30,
+                height: MediaQuery.of(context).size.height * 0.35,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(50),
+                    bottomLeft: Radius.circular(50),
+                  ),
+                  gradient: LinearGradient(
+                    begin: Alignment.centerRight,
+                    end: Alignment.centerLeft,
+                    colors: [
+                      Colors.green.withOpacity(0.4),
+                      Colors.green.withOpacity(0.1),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             // Countdown overlay
             if (_isCountdownActive)
               GameCountdown(
