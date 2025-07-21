@@ -183,17 +183,14 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 width: 20,
                 height: MediaQuery.of(context).size.height * 0.32,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(50),
-                    bottomRight: Radius.circular(50),
-                  ),
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      Colors.red.withOpacity(0.4),
-                      Colors.red.withOpacity(0.1),
-                      Colors.transparent,
+                      Colors.red.withOpacity(0.5),
+                      Colors.red.withOpacity(0.2),
+                      Colors.white.withOpacity(0.1),
+                      Colors.white.withOpacity(0.0),
                     ],
                   ),
                 ),
@@ -205,20 +202,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
               bottom: 0,
               left: 0,
               child: Container(
-                width: 30,
+                width: 20,
                 height: MediaQuery.of(context).size.height * 0.35,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(50),
-                    bottomRight: Radius.circular(50),
-                  ),
                   gradient: LinearGradient(
                     begin: Alignment.centerLeft,
                     end: Alignment.centerRight,
                     colors: [
-                      Colors.red.withOpacity(0.4),
-                      Colors.red.withOpacity(0.1),
-                      Colors.transparent,
+                      Colors.red.withOpacity(0.5),
+                      Colors.red.withOpacity(0.2),
+                      Colors.white.withOpacity(0.1),
+                      Colors.white.withOpacity(0.0),
                     ],
                   ),
                 ),
@@ -230,20 +224,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
               top: 180,
               right: 0,
               child: Container(
-                width: 30,
+                width: 20,
                 height: MediaQuery.of(context).size.height * 0.30,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(50),
-                    bottomLeft: Radius.circular(50),
-                  ),
                   gradient: LinearGradient(
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
                     colors: [
                       Colors.green.withOpacity(0.4),
+                      Colors.green.withOpacity(0.15),
                       Colors.green.withOpacity(0.1),
-                      Colors.transparent,
+                      Colors.white.withOpacity(0.0),
                     ],
                   ),
                 ),
@@ -255,20 +246,17 @@ class _GameScreenState extends ConsumerState<GameScreen>
               bottom: 0,
               right: 0,
               child: Container(
-                width: 30,
+                width: 20,
                 height: MediaQuery.of(context).size.height * 0.35,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(50),
-                    bottomLeft: Radius.circular(50),
-                  ),
                   gradient: LinearGradient(
                     begin: Alignment.centerRight,
                     end: Alignment.centerLeft,
                     colors: [
                       Colors.green.withOpacity(0.4),
+                      Colors.green.withOpacity(0.15),
                       Colors.green.withOpacity(0.1),
-                      Colors.transparent,
+                      Colors.white.withOpacity(0.0),
                     ],
                   ),
                 ),
