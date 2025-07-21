@@ -147,6 +147,22 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   ),
                 ),
               ),
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.arrow_back, color: Colors.grey),
+                  SizedBox(width: 8),
+                  Text('Swipe left to skip',
+                      style: TextStyle(color: Colors.grey)),
+                  SizedBox(width: 24),
+                  Text('Swipe right for correct',
+                      style: TextStyle(color: Colors.grey)),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward, color: Colors.grey),
+                ],
+              ),
+              const SizedBox(height: 32),
               SizedBox(
                 width: 200,
                 child: TeamColorButton(
