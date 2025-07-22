@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/session_providers.dart';
 import '../services/storage_service.dart';
+import '../services/firestore_service.dart';
 import '../screens/game_settings_screen.dart';
+import '../screens/category_selection_screen.dart';
+import '../screens/game_over_screen.dart';
+import '../screens/scoreboard_screen.dart';
+import '../screens/role_assignment_screen.dart';
+import '../screens/game_screen.dart';
+import '../screens/turn_over_screen.dart';
 // Import other screens as needed
 
 class OnlineGameNavigationService {
@@ -36,5 +43,36 @@ class OnlineGameNavigationService {
       }
       // Add more navigation logic for other statuses as needed
     });
+  }
+
+  static Future<void> navigateToNextScreen(
+      BuildContext context, WidgetRef ref, String sessionId) async {
+    // Get the latest session data
+    final sessionSnap = await FirestoreService.sessionStream(sessionId).first;
+    final sessionData = sessionSnap.data();
+    if (sessionData == null) return;
+    final status = sessionData['status'] as String?;
+    final hostId = sessionData['hostId'] as String?;
+    final deviceId = await StorageService.getDeviceId();
+    final isHost = deviceId == hostId;
+
+    // TODO: Use sessionData to determine which screen to navigate to, similar to GameNavigationService
+    if (status == 'playing') {
+      // For now, just navigate to CategorySelectionScreen for the first team
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => CategorySelectionScreen(
+              teamIndex: 0,
+              roundNumber: 1,
+              turnNumber: 1,
+              displayString: '',
+            ),
+          ),
+        );
+      });
+      return;
+    }
+    // TODO: Add more navigation logic for other statuses/screens as needed
   }
 }

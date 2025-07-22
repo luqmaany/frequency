@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
+import '../services/online_game_navigation_service.dart';
 import '../widgets/game_settings.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
@@ -89,11 +90,20 @@ class GameSettingsScreen extends ConsumerWidget {
                                   .read(gameStateProvider.notifier)
                                   .initializeGame(gameConfig);
 
-                              // Use navigation service to navigate to the first screen
-                              GameNavigationService.navigateToNextScreen(
-                                context,
-                                ref,
-                              );
+                              // Use the correct navigation service based on mode
+                              if (sessionId != null) {
+                                OnlineGameNavigationService
+                                    .navigateToNextScreen(
+                                  context,
+                                  ref,
+                                  sessionId!,
+                                );
+                              } else {
+                                GameNavigationService.navigateToNextScreen(
+                                  context,
+                                  ref,
+                                );
+                              }
                             });
                           }
                         : null,
