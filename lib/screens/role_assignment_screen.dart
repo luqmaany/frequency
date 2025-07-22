@@ -295,32 +295,36 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
           children: [
             const SizedBox(height: 24),
             // Category display (like TurnOverScreen)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? CategoryUtils.getCategoryColor(widget.category)
-                        .withOpacity(0.3)
-                    : CategoryUtils.getCategoryColor(widget.category)
-                        .withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? CategoryUtils.getCategoryColor(widget.category)
-                          .withOpacity(0.8)
-                      : CategoryUtils.getCategoryColor(widget.category),
-                  width: 2,
+                          .withOpacity(0.3)
+                      : CategoryUtils.getCategoryColor(widget.category)
+                          .withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? CategoryUtils.getCategoryColor(widget.category)
+                            .withOpacity(0.8)
+                        : CategoryUtils.getCategoryColor(widget.category),
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: Text(
-                CategoryUtils.getCategoryName(widget.category),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white.withOpacity(0.95)
-                          : Colors.black,
-                      fontWeight: FontWeight.w600,
-                    ),
-                textAlign: TextAlign.center,
+                child: Text(
+                  CategoryUtils.getCategoryName(widget.category),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.95)
+                            : Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -339,7 +343,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                       animation: _animation,
                       builder: (context, child) {
                         return Transform.scale(
-                          scale: 1.0 + (_animation.value * 0.03),
+                          scale: 1 + (_animation.value * 0.03),
                           child: Container(
                             decoration: BoxDecoration(
                               color: Theme.of(context).brightness ==
