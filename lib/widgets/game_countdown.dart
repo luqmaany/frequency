@@ -137,24 +137,13 @@ class _GameCountdownState extends State<GameCountdown>
                   width: 1,
                 ),
               ),
-              child: Column(
-                children: [
-                  Text(
-                    'Get Ready!',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Swipe right for a correct guess\nSwipe left to skip',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.black87,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              child: Text(
+                'Get Ready!',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                textAlign: TextAlign.center,
               ),
             ),
           ],

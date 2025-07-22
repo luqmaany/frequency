@@ -189,7 +189,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     colors: [
                       Colors.red.withOpacity(0.5),
                       Colors.red.withOpacity(0.2),
-                      Colors.white.withOpacity(0.1),
+                      Colors.red.withOpacity(0.1),
                       Colors.white.withOpacity(0.0),
                     ],
                   ),
@@ -211,7 +211,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                     colors: [
                       Colors.red.withOpacity(0.5),
                       Colors.red.withOpacity(0.2),
-                      Colors.white.withOpacity(0.1),
+                      Colors.red.withOpacity(0.1),
                       Colors.white.withOpacity(0.0),
                     ],
                   ),
@@ -221,7 +221,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
             // Right side top green glow effect (for top card)
             Positioned(
-              top: 180,
+              top: 185,
               right: 0,
               child: Container(
                 width: 20,

@@ -25,6 +25,21 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
       _RoleAssignmentScreenState();
 }
 
+class _SwipeTutorialStep {
+  final String text;
+  final IconData icon;
+  final Color color;
+  final DismissDirection direction;
+  final String directionText;
+  _SwipeTutorialStep({
+    required this.text,
+    required this.icon,
+    required this.color,
+    required this.direction,
+    required this.directionText,
+  });
+}
+
 class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     with SingleTickerProviderStateMixin {
   String? _selectedGuesser;
@@ -32,6 +47,26 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   bool _isTransitioning = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  int _swipeStep = 0;
+  bool _swipeRightDone = false;
+  bool _swipeLeftDone = false;
+
+  final List<_SwipeTutorialStep> _swipeSteps = [
+    _SwipeTutorialStep(
+      text: 'Swipe right for correct',
+      icon: Icons.arrow_forward,
+      color: Colors.green,
+      direction: DismissDirection.startToEnd, // right swipe
+      directionText: 'right',
+    ),
+    _SwipeTutorialStep(
+      text: 'Swipe left to skip',
+      icon: Icons.arrow_back,
+      color: Colors.red,
+      direction: DismissDirection.endToStart, // left swipe
+      directionText: 'left',
+    ),
+  ];
 
   @override
   void initState() {
@@ -112,6 +147,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         : widget.teamIndex % teamColors.length;
     final teamColor = teamColors[colorIndex];
 
+    final Color categoryColor = CategoryUtils.getCategoryColor(widget.category);
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color cardBackground = isDark
+        ? categoryColor.withOpacity(0.2)
+        : categoryColor.withOpacity(0.1);
+    final Color cardBorder =
+        isDark ? categoryColor.withOpacity(0.8) : categoryColor;
+    final Color cardShadow = isDark
+        ? categoryColor.withOpacity(0.3)
+        : categoryColor.withOpacity(0.2);
+
     if (_isTransitioning) {
       return Scaffold(
         body: Padding(
@@ -122,8 +168,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               Expanded(
                 child: Center(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
+                      const SizedBox(height: 150),
                       Text(
                         'Pass the phone to',
                         style: Theme.of(context).textTheme.headlineMedium,
@@ -133,7 +180,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         _selectedConveyor!,
                         style: Theme.of(context).textTheme.displayLarge,
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 24),
                       Text(
                         'Conveyor',
                         style: Theme.of(context)
@@ -147,20 +194,72 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.arrow_back, color: Colors.grey),
-                  SizedBox(width: 8),
-                  Text('Swipe left to skip',
-                      style: TextStyle(color: Colors.grey)),
-                  SizedBox(width: 24),
-                  Text('Swipe right for correct',
-                      style: TextStyle(color: Colors.grey)),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward, color: Colors.grey),
-                ],
+              // No extra space above the card now
+              Expanded(
+                child: Center(
+                  child: (_swipeRightDone && _swipeLeftDone)
+                      ? SizedBox.shrink()
+                      : Dismissible(
+                          key: ValueKey(_swipeStep),
+                          direction: _swipeSteps[_swipeStep].direction,
+                          onDismissed: (direction) {
+                            setState(() {
+                              if (_swipeStep == 0 &&
+                                  direction == DismissDirection.startToEnd) {
+                                _swipeRightDone = true;
+                                _swipeStep = 1;
+                              } else if (_swipeStep == 1 &&
+                                  direction == DismissDirection.endToStart) {
+                                _swipeLeftDone = true;
+                              }
+                            });
+                          },
+                          child: Container(
+                            width: double.infinity,
+                            height: 120,
+                            margin: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 0),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 24, vertical: 20),
+                            decoration: BoxDecoration(
+                              color: cardBackground,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: cardBorder,
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: cardShadow,
+                                  blurRadius: 8,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_swipeStep == 1)
+                                  Icon(Icons.arrow_back,
+                                      color: Colors.red, size: 32),
+                                if (_swipeStep == 1) SizedBox(width: 12),
+                                Text(
+                                  _swipeSteps[_swipeStep].text,
+                                  style: TextStyle(
+                                    color: _swipeSteps[_swipeStep].color,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (_swipeStep == 0) SizedBox(width: 12),
+                                if (_swipeStep == 0)
+                                  Icon(Icons.arrow_forward,
+                                      color: Colors.green, size: 32),
+                              ],
+                            ),
+                          ),
+                        ),
+                ),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -169,16 +268,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   text: 'Start',
                   icon: Icons.play_arrow,
                   color: uiColors[1], // Green
-                  onPressed: () {
-                    // Use navigation service to navigate to game screen
-                    GameNavigationService.navigateToGameScreen(
-                      context,
-                      widget.teamIndex,
-                      widget.roundNumber,
-                      widget.turnNumber,
-                      widget.category,
-                    );
-                  },
+                  onPressed: (_swipeRightDone && _swipeLeftDone)
+                      ? () {
+                          GameNavigationService.navigateToGameScreen(
+                            context,
+                            widget.teamIndex,
+                            widget.roundNumber,
+                            widget.turnNumber,
+                            widget.category,
+                          );
+                        }
+                      : null,
                 ),
               ),
             ],
