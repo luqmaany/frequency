@@ -9,6 +9,7 @@ import '../widgets/game_mechanics_mixin.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
 import '../widgets/game_countdown.dart';
+import '../widgets/team_color_button.dart'; // Added import for TeamColorButton
 
 class GameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -123,155 +124,226 @@ class _GameScreenState extends ConsumerState<GameScreen>
       );
     }
 
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              children: [
-                // Title showing current players
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
-                    style: Theme.of(context).textTheme.headlineMedium,
+    final gameConfig = ref.watch(gameSetupProvider);
+    final colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
+        ? gameConfig.teamColorIndices[widget.teamIndex]
+        : widget.teamIndex % teamColors.length;
+    final teamColor = teamColors[colorIndex];
+
+    return WillPopScope(
+      onWillPop: () async {
+        final shouldQuit = await showDialog<bool>(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => Dialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Theme.of(context).dialogBackgroundColor,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: teamColor.border, width: 2),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      color: teamColor.border, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Quit Game?',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          color: teamColor.text,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'You sure you want to be a quitter?',
+                    style: Theme.of(context).textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
-                ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Expanded(
+                        child: TeamColorButton(
+                          text: 'Cancel',
+                          icon: Icons.close,
+                          color: teamColor,
+                          onPressed: () => Navigator.of(context).pop(false),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TeamColorButton(
+                          text: 'Quit',
+                          icon: Icons.exit_to_app,
+                          color: teamColor,
+                          onPressed: () => Navigator.of(context).pop(true),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        return shouldQuit == true;
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Column(
+                children: [
+                  // Title showing current players
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
+                      style: Theme.of(context).textTheme.headlineMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
 
-                // Game header with timer, category, and skips
-                GameHeader(
-                  timeLeft: timeLeft,
-                  category: category,
-                  skipsLeft: skipsLeft,
-                  isTiebreaker: false,
-                ),
-
-                // Word cards with swiping mechanics
-                Expanded(
-                  child: GameCards(
-                    currentWords: currentWords,
+                  // Game header with timer, category, and skips
+                  GameHeader(
+                    timeLeft: timeLeft,
                     category: category,
                     skipsLeft: skipsLeft,
-                    showBlankCards: _isCountdownActive,
-                    onWordGuessed: (word) {
-                      if (!_isCountdownActive) {
-                        handleWordGuessed(word);
-                      }
-                    },
-                    onWordSkipped: (word) {
-                      if (!_isCountdownActive) {
-                        handleWordSkipped(word);
-                      }
-                    },
-                    onLoadNewWord: (index) {
-                      if (!_isCountdownActive) {
-                        // Load new word for the specific card that was swiped
-                        loadNewWord(index);
-                      }
-                    },
+                    isTiebreaker: false,
                   ),
-                ),
-              ],
-            ),
 
-            // Left side top red glow effect (for top card)
-            Positioned(
-              top: 180,
-              left: 0,
-              child: Container(
-                width: 20,
-                height: MediaQuery.of(context).size.height * 0.32,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.red.withOpacity(0.5),
-                      Colors.red.withOpacity(0.2),
-                      Colors.red.withOpacity(0.1),
-                      Colors.white.withOpacity(0.0),
-                    ],
+                  // Word cards with swiping mechanics
+                  Expanded(
+                    child: GameCards(
+                      currentWords: currentWords,
+                      category: category,
+                      skipsLeft: skipsLeft,
+                      showBlankCards: _isCountdownActive,
+                      onWordGuessed: (word) {
+                        if (!_isCountdownActive) {
+                          handleWordGuessed(word);
+                        }
+                      },
+                      onWordSkipped: (word) {
+                        if (!_isCountdownActive) {
+                          handleWordSkipped(word);
+                        }
+                      },
+                      onLoadNewWord: (index) {
+                        if (!_isCountdownActive) {
+                          // Load new word for the specific card that was swiped
+                          loadNewWord(index);
+                        }
+                      },
+                    ),
                   ),
-                ),
+                ],
               ),
-            ),
 
-            // Left side bottom red glow effect (for bottom card)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              child: Container(
-                width: 20,
-                height: MediaQuery.of(context).size.height * 0.35,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                    colors: [
-                      Colors.red.withOpacity(0.5),
-                      Colors.red.withOpacity(0.2),
-                      Colors.red.withOpacity(0.1),
-                      Colors.white.withOpacity(0.0),
-                    ],
+              // Left side top red glow effect (for top card)
+              Positioned(
+                top: 180,
+                left: 0,
+                child: Container(
+                  width: 20,
+                  height: MediaQuery.of(context).size.height * 0.32,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.red.withOpacity(0.5),
+                        Colors.red.withOpacity(0.2),
+                        Colors.red.withOpacity(0.1),
+                        Colors.white.withOpacity(0.0),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Right side top green glow effect (for top card)
-            Positioned(
-              top: 185,
-              right: 0,
-              child: Container(
-                width: 20,
-                height: MediaQuery.of(context).size.height * 0.30,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                    colors: [
-                      Colors.green.withOpacity(0.4),
-                      Colors.green.withOpacity(0.15),
-                      Colors.green.withOpacity(0.1),
-                      Colors.white.withOpacity(0.0),
-                    ],
+              // Left side bottom red glow effect (for bottom card)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: Container(
+                  width: 20,
+                  height: MediaQuery.of(context).size.height * 0.35,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.red.withOpacity(0.5),
+                        Colors.red.withOpacity(0.2),
+                        Colors.red.withOpacity(0.1),
+                        Colors.white.withOpacity(0.0),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Right side bottom green glow effect (for bottom card)
-            Positioned(
-              bottom: 0,
-              right: 0,
-              child: Container(
-                width: 20,
-                height: MediaQuery.of(context).size.height * 0.35,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                    colors: [
-                      Colors.green.withOpacity(0.4),
-                      Colors.green.withOpacity(0.15),
-                      Colors.green.withOpacity(0.1),
-                      Colors.white.withOpacity(0.0),
-                    ],
+              // Right side top green glow effect (for top card)
+              Positioned(
+                top: 185,
+                right: 0,
+                child: Container(
+                  width: 20,
+                  height: MediaQuery.of(context).size.height * 0.30,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        Colors.green.withOpacity(0.4),
+                        Colors.green.withOpacity(0.15),
+                        Colors.green.withOpacity(0.1),
+                        Colors.white.withOpacity(0.0),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
 
-            // Countdown overlay
-            if (_isCountdownActive)
-              GameCountdown(
-                player1Name: ref.read(currentTeamPlayersProvider)[0],
-                player2Name: ref.read(currentTeamPlayersProvider)[1],
-                category: category,
-                onCountdownComplete: _onCountdownComplete,
+              // Right side bottom green glow effect (for bottom card)
+              Positioned(
+                bottom: 0,
+                right: 0,
+                child: Container(
+                  width: 20,
+                  height: MediaQuery.of(context).size.height * 0.35,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        Colors.green.withOpacity(0.4),
+                        Colors.green.withOpacity(0.15),
+                        Colors.green.withOpacity(0.1),
+                        Colors.white.withOpacity(0.0),
+                      ],
+                    ),
+                  ),
+                ),
               ),
-          ],
+
+              // Countdown overlay
+              if (_isCountdownActive)
+                GameCountdown(
+                  player1Name: ref.read(currentTeamPlayersProvider)[0],
+                  player2Name: ref.read(currentTeamPlayersProvider)[1],
+                  category: category,
+                  onCountdownComplete: _onCountdownComplete,
+                ),
+            ],
+          ),
         ),
       ),
     );
