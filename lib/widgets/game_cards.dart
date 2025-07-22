@@ -36,6 +36,13 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
   late AnimationController _bottomCardAnimationController;
   late Animation<double> _topCardAnimation;
   late Animation<double> _bottomCardAnimation;
+  double _rightSwipeProgress = 0.0;
+  double _leftSwipeProgress = 0.0;
+  double _bottomRightSwipeProgress = 0.0;
+  double _bottomLeftSwipeProgress = 0.0;
+
+  // Icon size for swipe feedback
+  static const double _swipeIconSize = 22;
 
   @override
   void initState() {
@@ -115,60 +122,105 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                 builder: (context, child) {
                   return Opacity(
                     opacity: _topCardAnimation.value,
-                    child: CardSwiper(
-                      key: ValueKey('top_${widget.currentWords[0].text}'),
-                      controller: _topCardController,
-                      cardsCount: 1,
-                      cardBuilder: (context,
-                          index,
-                          horizontalThresholdPercentage,
-                          verticalThresholdPercentage) {
-                        if (widget.showBlankCards) {
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.grey.withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.question_mark,
-                                size: 64,
-                                color: Colors.grey.withOpacity(0.5),
-                              ),
-                            ),
-                          );
-                        }
-                        return WordCard(
-                          word: widget.currentWords[0],
-                          category: widget.category,
-                        );
-                      },
-                      onSwipe: (previousIndex, currentIndex, direction) {
-                        if (direction == CardSwiperDirection.right) {
-                          // Correct guess
-                          widget.onWordGuessed(widget.currentWords[0].text);
-                          _loadNewWord(0);
-                          return true;
-                        } else if (direction == CardSwiperDirection.left) {
-                          // Skip
-                          if (widget.skipsLeft > 0) {
-                            widget.onWordSkipped(widget.currentWords[0].text);
-                            _loadNewWord(0);
-                            return true;
-                          } else {
-                            // Prevent the swipe and show feedback
+                    child: Stack(
+                      children: [
+                        CardSwiper(
+                          key: ValueKey('top_${widget.currentWords[0].text}'),
+                          controller: _topCardController,
+                          cardsCount: 1,
+                          cardBuilder: (context,
+                              index,
+                              horizontalThresholdPercentage,
+                              verticalThresholdPercentage) {
+                            // Show red icon bubble when swiping left
+                            if (horizontalThresholdPercentage < 0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _leftSwipeProgress =
+                                        (-horizontalThresholdPercentage)
+                                            .clamp(0.0, 1.0) as double;
+                                  });
+                                }
+                              });
+                            } else if (_leftSwipeProgress != 0.0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _leftSwipeProgress = 0.0;
+                                  });
+                                }
+                              });
+                            }
+                            // Show green icon bubble when swiping right
+                            if (horizontalThresholdPercentage > 0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _rightSwipeProgress =
+                                        horizontalThresholdPercentage.clamp(
+                                            0.0, 1.0) as double;
+                                  });
+                                }
+                              });
+                            } else if (_rightSwipeProgress != 0.0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _rightSwipeProgress = 0.0;
+                                  });
+                                }
+                              });
+                            }
+                            if (widget.showBlankCards) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.3),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.question_mark,
+                                    size: 64,
+                                    color: Colors.grey.withOpacity(0.5),
+                                  ),
+                                ),
+                              );
+                            }
+                            return WordCard(
+                              word: widget.currentWords[0],
+                              category: widget.category,
+                            );
+                          },
+                          onSwipe: (previousIndex, currentIndex, direction) {
+                            if (direction == CardSwiperDirection.right) {
+                              // Correct guess
+                              widget.onWordGuessed(widget.currentWords[0].text);
+                              _loadNewWord(0);
+                              return true;
+                            } else if (direction == CardSwiperDirection.left) {
+                              // Skip
+                              if (widget.skipsLeft > 0) {
+                                widget
+                                    .onWordSkipped(widget.currentWords[0].text);
+                                _loadNewWord(0);
+                                return true;
+                              } else {
+                                // Prevent the swipe and show feedback
+                                return false;
+                              }
+                            }
                             return false;
-                          }
-                        }
-                        return false;
-                      },
-                      allowedSwipeDirection: _getAllowedSwipeDirection(),
-                      numberOfCardsDisplayed: 1,
-                      padding: const EdgeInsets.all(24.0),
+                          },
+                          allowedSwipeDirection: _getAllowedSwipeDirection(),
+                          numberOfCardsDisplayed: 1,
+                          padding: const EdgeInsets.all(24.0),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -181,60 +233,106 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                 builder: (context, child) {
                   return Opacity(
                     opacity: _bottomCardAnimation.value,
-                    child: CardSwiper(
-                      key: ValueKey('bottom_${widget.currentWords[1].text}'),
-                      controller: _bottomCardController,
-                      cardsCount: 1,
-                      cardBuilder: (context,
-                          index,
-                          horizontalThresholdPercentage,
-                          verticalThresholdPercentage) {
-                        if (widget.showBlankCards) {
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: Colors.grey.withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                Icons.question_mark,
-                                size: 64,
-                                color: Colors.grey.withOpacity(0.5),
-                              ),
-                            ),
-                          );
-                        }
-                        return WordCard(
-                          word: widget.currentWords[1],
-                          category: widget.category,
-                        );
-                      },
-                      onSwipe: (previousIndex, currentIndex, direction) {
-                        if (direction == CardSwiperDirection.right) {
-                          // Correct guess
-                          widget.onWordGuessed(widget.currentWords[1].text);
-                          _loadNewWord(1);
-                          return true;
-                        } else if (direction == CardSwiperDirection.left) {
-                          // Skip
-                          if (widget.skipsLeft > 0) {
-                            widget.onWordSkipped(widget.currentWords[1].text);
-                            _loadNewWord(1);
-                            return true;
-                          } else {
-                            // Prevent the swipe and show feedback
+                    child: Stack(
+                      children: [
+                        CardSwiper(
+                          key:
+                              ValueKey('bottom_${widget.currentWords[1].text}'),
+                          controller: _bottomCardController,
+                          cardsCount: 1,
+                          cardBuilder: (context,
+                              index,
+                              horizontalThresholdPercentage,
+                              verticalThresholdPercentage) {
+                            // Show red icon bubble when swiping left
+                            if (horizontalThresholdPercentage < 0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _bottomLeftSwipeProgress =
+                                        (-horizontalThresholdPercentage)
+                                            .clamp(0.0, 1.0) as double;
+                                  });
+                                }
+                              });
+                            } else if (_bottomLeftSwipeProgress != 0.0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _bottomLeftSwipeProgress = 0.0;
+                                  });
+                                }
+                              });
+                            }
+                            // Show green icon bubble when swiping right
+                            if (horizontalThresholdPercentage > 0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _bottomRightSwipeProgress =
+                                        horizontalThresholdPercentage.clamp(
+                                            0.0, 1.0) as double;
+                                  });
+                                }
+                              });
+                            } else if (_bottomRightSwipeProgress != 0.0) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() {
+                                    _bottomRightSwipeProgress = 0.0;
+                                  });
+                                }
+                              });
+                            }
+                            if (widget.showBlankCards) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.3),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.question_mark,
+                                    size: 64,
+                                    color: Colors.grey.withOpacity(0.5),
+                                  ),
+                                ),
+                              );
+                            }
+                            return WordCard(
+                              word: widget.currentWords[1],
+                              category: widget.category,
+                            );
+                          },
+                          onSwipe: (previousIndex, currentIndex, direction) {
+                            if (direction == CardSwiperDirection.right) {
+                              // Correct guess
+                              widget.onWordGuessed(widget.currentWords[1].text);
+                              _loadNewWord(1);
+                              return true;
+                            } else if (direction == CardSwiperDirection.left) {
+                              // Skip
+                              if (widget.skipsLeft > 0) {
+                                widget
+                                    .onWordSkipped(widget.currentWords[1].text);
+                                _loadNewWord(1);
+                                return true;
+                              } else {
+                                // Prevent the swipe and show feedback
+                                return false;
+                              }
+                            }
                             return false;
-                          }
-                        }
-                        return false;
-                      },
-                      allowedSwipeDirection: _getAllowedSwipeDirection(),
-                      numberOfCardsDisplayed: 1,
-                      padding: const EdgeInsets.all(24.0),
+                          },
+                          allowedSwipeDirection: _getAllowedSwipeDirection(),
+                          numberOfCardsDisplayed: 1,
+                          padding: const EdgeInsets.all(24.0),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -248,26 +346,33 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
           top: 0,
           bottom: 0,
           child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.red.withOpacity(0.2)
-                    : Colors.red.withOpacity(0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
+            child: Transform.scale(
+              scale: 1.0 +
+                  0.5 *
+                      (_leftSwipeProgress > 0
+                          ? _leftSwipeProgress
+                          : _bottomLeftSwipeProgress),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.red.withOpacity(0.8)
-                      : Colors.red,
-                  width: 2,
+                      ? Colors.red.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.red.withOpacity(0.8)
+                        : Colors.red,
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: Icon(
-                Icons.block,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.red.withOpacity(0.9)
-                    : Colors.red,
-                size: 24,
+                child: Icon(
+                  Icons.block,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.red.withOpacity(0.9)
+                      : Colors.red,
+                  size: 24,
+                ),
               ),
             ),
           ),
@@ -278,26 +383,33 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
           top: 0,
           bottom: 0,
           child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.green.withOpacity(0.2)
-                    : Colors.green.withOpacity(0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
+            child: Transform.scale(
+              scale: 1.0 +
+                  0.5 *
+                      (_rightSwipeProgress > 0
+                          ? _rightSwipeProgress
+                          : _bottomRightSwipeProgress),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.green.withOpacity(0.8)
-                      : Colors.green,
-                  width: 2,
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.green.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.green.withOpacity(0.8)
+                        : Colors.green,
+                    width: 2,
+                  ),
                 ),
-              ),
-              child: Icon(
-                Icons.check,
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.green.withOpacity(0.9)
-                    : Colors.green,
-                size: 24,
+                child: Icon(
+                  Icons.check,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.green.withOpacity(0.9)
+                      : Colors.green,
+                  size: 24,
+                ),
               ),
             ),
           ),
