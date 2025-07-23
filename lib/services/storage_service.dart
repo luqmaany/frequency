@@ -367,4 +367,16 @@ class StorageService {
     }
     return id;
   }
+
+  // ===== TEAM ID PERSISTENCE METHODS =====
+
+  /// Save the current teamId to local storage for rejoining
+  static Future<void> saveTeamId(String teamId) async {
+    await saveString('my_team_id', teamId);
+  }
+
+  /// Load the saved teamId from local storage (returns null if not set)
+  static Future<String?> loadTeamId() async {
+    return await loadString('my_team_id');
+  }
 }
