@@ -93,7 +93,7 @@ class GameSettingsScreen extends ConsumerWidget {
                               // Use the correct navigation service based on mode
                               if (sessionId != null) {
                                 OnlineGameNavigationService
-                                    .navigateToNextScreen(
+                                    .navigateFromSettingsScreen(
                                   context,
                                   ref,
                                   sessionId!,

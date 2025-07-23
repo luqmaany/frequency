@@ -17,8 +17,8 @@ class FirestoreService {
     });
   }
 
-  // Update a team's info (name, color, ready) in the teams array
-  static Future<void> updateTeam(String sessionId, String teamName,
+  // Update a team's info (name, color, ready) in the teams array by teamId
+  static Future<void> updateTeam(String sessionId, String teamId,
       Map<String, dynamic> updatedFields) async {
     final doc = await _sessions.doc(sessionId).get();
     if (!doc.exists) return;
@@ -26,7 +26,7 @@ class FirestoreService {
     final teams = (data['teams'] as List)
         .map((e) => Map<String, dynamic>.from(e))
         .toList();
-    final idx = teams.indexWhere((t) => t['teamName'] == teamName);
+    final idx = teams.indexWhere((t) => t['teamId'] == teamId);
     if (idx == -1) return;
     teams[idx].addAll(updatedFields);
     await _sessions.doc(sessionId).update({'teams': teams});
@@ -36,5 +36,38 @@ class FirestoreService {
   static Stream<DocumentSnapshot<Map<String, dynamic>>> sessionStream(
       String sessionId) {
     return _sessions.doc(sessionId).snapshots();
+  }
+
+  // Mark a team as inactive (team leaves the game)
+  static Future<void> leaveTeam(String sessionId, String teamId) async {
+    final doc = await _sessions.doc(sessionId).get();
+    if (!doc.exists) return;
+    final data = doc.data() as Map<String, dynamic>;
+    final teams = (data['teams'] as List)
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    final idx = teams.indexWhere((t) => t['teamId'] == teamId);
+    if (idx == -1) return;
+    teams[idx]['active'] = false;
+    teams[idx]['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
+    await _sessions.doc(sessionId).update({'teams': teams});
+  }
+
+  // Mark a team as active (team rejoins the game)
+  // Optionally update the players list
+  static Future<void> rejoinTeam(
+      String sessionId, String teamId, List<String> players) async {
+    final doc = await _sessions.doc(sessionId).get();
+    if (!doc.exists) return;
+    final data = doc.data() as Map<String, dynamic>;
+    final teams = (data['teams'] as List)
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    final idx = teams.indexWhere((t) => t['teamId'] == teamId);
+    if (idx == -1) return;
+    teams[idx]['active'] = true;
+    teams[idx]['players'] = players;
+    teams[idx]['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
+    await _sessions.doc(sessionId).update({'teams': teams});
   }
 }

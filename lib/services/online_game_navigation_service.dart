@@ -45,17 +45,29 @@ class OnlineGameNavigationService {
     });
   }
 
-  static Future<void> navigateToNextScreen(
-      BuildContext context, WidgetRef ref, String sessionId) async {
-    // Get the latest session data
+  static Future<Map<String, dynamic>?> getSessionContext(
+      String sessionId) async {
     final sessionSnap = await FirestoreService.sessionStream(sessionId).first;
     final sessionData = sessionSnap.data();
-    if (sessionData == null) return;
+    if (sessionData == null) return null;
     final status = sessionData['status'] as String?;
     final hostId = sessionData['hostId'] as String?;
     final deviceId = await StorageService.getDeviceId();
     final isHost = deviceId == hostId;
+    return {
+      'sessionData': sessionData,
+      'status': status,
+      'hostId': hostId,
+      'deviceId': deviceId,
+      'isHost': isHost,
+    };
+  }
 
+  static Future<void> navigateToNextScreen(
+      BuildContext context, WidgetRef ref, String sessionId) async {
+    final contextData = await getSessionContext(sessionId);
+    if (contextData == null) return;
+    final status = contextData['status'] as String?;
     // TODO: Use sessionData to determine which screen to navigate to, similar to GameNavigationService
     if (status == 'playing') {
       // For now, just navigate to CategorySelectionScreen for the first team
@@ -74,5 +86,24 @@ class OnlineGameNavigationService {
       return;
     }
     // TODO: Add more navigation logic for other statuses/screens as needed
+  }
+
+  static Future<void> navigateFromSettingsScreen(
+      BuildContext context, WidgetRef ref, String sessionId) async {
+    final contextData = await getSessionContext(sessionId);
+    if (contextData == null) return;
+    // For now, just navigate to CategorySelectionScreen for the first team
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => CategorySelectionScreen(
+            teamIndex: 0,
+            roundNumber: 1,
+            turnNumber: 1,
+            displayString: '',
+          ),
+        ),
+      );
+    });
   }
 }
