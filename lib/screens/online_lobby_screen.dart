@@ -5,6 +5,7 @@ import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import '../services/storage_service.dart';
+import 'online_team_lobby_screen.dart';
 
 class OnlineLobbyScreen extends StatefulWidget {
   const OnlineLobbyScreen({Key? key}) : super(key: key);
@@ -15,8 +16,6 @@ class OnlineLobbyScreen extends StatefulWidget {
 
 class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
   final TextEditingController _joinCodeController = TextEditingController();
-  final TextEditingController _teamNameController = TextEditingController();
-  int _selectedColorIndex = 0;
   String? _error;
   bool _loading = false;
 
@@ -31,21 +30,58 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       _error = null;
     });
     try {
-      // Navigate to team setup screen
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => OnlineTeamSetupScreen(
-            sessionId: code,
-            isHost: false,
-          ),
-        ),
+      final deviceId = await StorageService.getDeviceId();
+      final doc = await FirebaseFirestore.instance
+          .collection('sessions')
+          .doc(code)
+          .get();
+      if (!mounted) return;
+      if (!doc.exists) {
+        setState(() => _error = 'Session not found.');
+        return;
+      }
+      final teams = (doc.data()?['teams'] as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      final myTeam = teams.firstWhere(
+        (t) => t['deviceId'] == deviceId,
+        orElse: () => <String, dynamic>{},
       );
+      if (myTeam.isNotEmpty) {
+        // Rejoin: mark as active and go to team lobby
+        await FirestoreService.rejoinTeam(
+            code, myTeam['teamId'], List<String>.from(myTeam['players']));
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => OnlineTeamLobbyScreen(
+              sessionId: code,
+              teamName: myTeam['teamName'],
+              player1Name: myTeam['players'][0],
+              player2Name: myTeam['players'][1],
+            ),
+          ),
+        );
+      } else {
+        // No team found for this device, proceed to team setup
+        if (!mounted) return;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => OnlineTeamSetupScreen(
+              sessionId: code,
+              isHost: false,
+            ),
+          ),
+        );
+      }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _error = 'Failed to join session.');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to join session: $e')),
       );
     } finally {
+      if (!mounted) return;
       setState(() {
         _loading = false;
       });
@@ -69,9 +105,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
     // Try up to 5 times to generate a unique code
     while (exists && attempts < 5) {
       newCode = _generateRandomCode();
-      print('Generated code: $newCode');
       exists = await _sessionExists(newCode);
-      print('Does $newCode exist? $exists');
       attempts++;
     }
     if (exists) {
@@ -87,14 +121,16 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       await FirebaseFirestore.instance.collection('sessions').doc(newCode).set({
         'sessionId': newCode,
         'hostId': hostId,
-        'status': 'lobby',
         'settings': {
           'roundTimeSeconds': 60,
           'targetScore': 20,
           'allowedSkips': 3,
         },
         'teams': [],
-        'gameState': null,
+        'gameState': {
+          'status': 'lobby',
+          // Add other initial game state fields as needed
+        },
       });
 
       Navigator.of(context).push(

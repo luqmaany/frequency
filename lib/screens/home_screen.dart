@@ -3,6 +3,91 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_navigation_service.dart';
 import 'online_lobby_screen.dart';
 
+// Animated gradient text widget for the title
+class AnimatedGradientText extends StatefulWidget {
+  final String text;
+  final double fontSize;
+  const AnimatedGradientText(
+      {super.key, required this.text, this.fontSize = 72});
+
+  @override
+  State<AnimatedGradientText> createState() => _AnimatedGradientTextState();
+}
+
+class _AnimatedGradientTextState extends State<AnimatedGradientText>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8), // Slow animation
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final double shift = _controller.value;
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            // The gradient will be 2x the width of the text, so it can flow through and loop seamlessly
+            final gradientWidth = width * 2;
+            // Animate from 0 to half the gradient width for a seamless loop
+            final double animatedOffset = -gradientWidth * 0.5 * shift;
+            return ShaderMask(
+              shaderCallback: (Rect bounds) {
+                return LinearGradient(
+                  colors: const [
+                    Colors.blue,
+                    Colors.purple,
+                    Colors.pink,
+                    Colors.orange,
+                    Colors.yellow,
+                    Colors.green,
+                    Colors.blue,
+                    Colors.purple,
+                    Colors.pink,
+                    Colors.orange,
+                    Colors.yellow,
+                    Colors.green,
+                    Colors.blue, // repeat for seamless loop
+                  ],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ).createShader(
+                  Rect.fromLTWH(
+                      animatedOffset, 0, gradientWidth, bounds.height),
+                );
+              },
+              child: Text(
+                widget.text,
+                style: TextStyle(
+                  fontSize: widget.fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -25,19 +110,16 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Color picker removed
-              const SizedBox(height: 24),
+              const SizedBox(height: 30),
               const Center(
-                child: Text(
-                  'Welcome back!',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: AnimatedGradientText(
+                  text: 'Convey',
+                  fontSize: 72,
                 ),
               ),
               const Center(
                 child: Text(
-                  'Ready to get roasted?',
+                  'How would you conveyyy...',
                   style: TextStyle(
                     fontSize: 24,
                     color: Colors.grey,
@@ -70,22 +152,15 @@ class HomeScreen extends ConsumerWidget {
                     : buttonColors[1],
               ),
               const SizedBox(height: 16),
+              // Removed Last Game Recap button
               _buildMenuButton(
                 context,
-                'Last Game Recap',
-                Icons.history_rounded,
+                'Stats & History',
+                Icons.bar_chart_rounded,
                 () {
-                  // TODO: Implement last game recap
+                  // TODO: Implement stats & history
                 },
-                buttonColors[1],
-              ),
-              const SizedBox(height: 16),
-              _buildMenuButton(
-                context,
-                'Settings',
-                Icons.settings_rounded,
-                () => GameNavigationService.navigateToSettings(context),
-                buttonColors[2],
+                buttonColors[4],
               ),
               const SizedBox(height: 16),
               _buildMenuButton(
@@ -98,12 +173,10 @@ class HomeScreen extends ConsumerWidget {
               const SizedBox(height: 16),
               _buildMenuButton(
                 context,
-                'Stats & History',
-                Icons.bar_chart_rounded,
-                () {
-                  // TODO: Implement stats & history
-                },
-                buttonColors[4],
+                'Settings',
+                Icons.settings_rounded,
+                () => GameNavigationService.navigateToSettings(context),
+                buttonColors[2],
               ),
             ],
           ),

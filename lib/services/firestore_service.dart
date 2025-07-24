@@ -3,10 +3,27 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirestoreService {
   static final _sessions = FirebaseFirestore.instance.collection('sessions');
 
-  // Create a new session document
-  static Future<void> createSession(
-      String sessionId, Map<String, dynamic> sessionData) async {
-    await _sessions.doc(sessionId).set(sessionData);
+  // Create a new session document with a gameState object
+  static Future<void> createSession(String sessionId,
+      Map<String, dynamic> sessionData, Map<String, dynamic>? gameState) async {
+    await _sessions.doc(sessionId).set({
+      ...sessionData,
+      'gameState': gameState,
+    });
+  }
+
+  // Update the gameState object for a session
+  static Future<void> setGameState(
+      String sessionId, Map<String, dynamic> gameState) async {
+    await _sessions.doc(sessionId).update({'gameState': gameState});
+  }
+
+  // Get the gameState object for a session (one-time fetch)
+  static Future<Map<String, dynamic>?> getGameState(String sessionId) async {
+    final doc = await _sessions.doc(sessionId).get();
+    if (!doc.exists) return null;
+    final data = doc.data() as Map<String, dynamic>;
+    return data['gameState'] as Map<String, dynamic>?;
   }
 
   // Join a session by adding a team to the teams array
@@ -69,5 +86,30 @@ class FirestoreService {
     teams[idx]['players'] = players;
     teams[idx]['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
     await _sessions.doc(sessionId).update({'teams': teams});
+  }
+
+  // Transfer host status to another active team if the current host leaves
+  static Future<void> transferHostIfNeeded(
+      String sessionId, String leavingDeviceId) async {
+    final doc = await _sessions.doc(sessionId).get();
+    if (!doc.exists) return;
+    final data = doc.data() as Map<String, dynamic>;
+    final currentHostId = data['hostId'] as String?;
+    if (currentHostId != leavingDeviceId)
+      return; // Only transfer if the host is leaving
+
+    final teams = (data['teams'] as List)
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
+    // Find the first active team with a deviceId different from the leaving host
+    final newHostTeam = teams.firstWhere(
+      (t) => t['active'] == true && t['deviceId'] != leavingDeviceId,
+      orElse: () => <String, dynamic>{},
+    );
+    if (newHostTeam.isNotEmpty && newHostTeam['deviceId'] != null) {
+      await _sessions
+          .doc(sessionId)
+          .update({'hostId': newHostTeam['deviceId']});
+    }
   }
 }

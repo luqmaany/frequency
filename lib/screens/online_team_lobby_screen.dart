@@ -66,8 +66,14 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     _player1Controller.dispose();
     _player2Controller.dispose();
     _animationController.dispose();
-    _removeTeamFromFirestore();
+    _handleLeaveAndHostTransfer();
     super.dispose();
+  }
+
+  Future<void> _handleLeaveAndHostTransfer() async {
+    await _removeTeamFromFirestore();
+    final deviceId = await StorageService.getDeviceId();
+    await FirestoreService.transferHostIfNeeded(widget.sessionId, deviceId);
   }
 
   Future<void> _initializeColorIndex() async {
@@ -126,15 +132,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     } finally {
       setState(() => _updating = false);
     }
-  }
-
-  Future<void> _selectColor(int index) async {
-    setState(() {
-      _selectedColorIndex = index;
-    });
-    // Trigger animation when color changes
-    _animationController.forward(from: 0);
-    await _updateTeamInfo();
   }
 
   Future<void> _onReady() async {
@@ -280,7 +277,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) {
-          await _removeTeamFromFirestore();
+          await _handleLeaveAndHostTransfer();
         }
       },
       child: Scaffold(
@@ -576,8 +573,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                   .collection('sessions')
                                   .doc(widget.sessionId)
                                   .update({
-                                'status': 'settings'
-                              }); // <-- update to 'settings'
+                                'gameState.status': 'settings'
+                              }); // <-- update gameState.status
                             },
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             iconSize: 28,
