@@ -84,27 +84,22 @@ class GameSettingsScreen extends ConsumerWidget {
                             FocusScope.of(context).unfocus();
                             await Future.delayed(
                                 const Duration(milliseconds: 150));
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              // Initialize game state with current config
-                              ref
-                                  .read(gameStateProvider.notifier)
-                                  .initializeGame(gameConfig);
+                            // Initialize game state with current config (local only)
+                            ref
+                                .read(gameStateProvider.notifier)
+                                .initializeGame(gameConfig);
 
-                              // Use the correct navigation service based on mode
-                              if (sessionId != null) {
-                                OnlineGameNavigationService
-                                    .navigateFromSettingsScreen(
-                                  context,
-                                  ref,
-                                  sessionId!,
-                                );
-                              } else {
-                                GameNavigationService.navigateToNextScreen(
-                                  context,
-                                  ref,
-                                );
-                              }
-                            });
+                            if (sessionId != null) {
+                              // Centralized online game state update
+                              await OnlineGameNavigationService.startGame(
+                                  sessionId!);
+                              // Do not navigate directly; let the navigation service handle it
+                            } else {
+                              GameNavigationService.navigateToNextScreen(
+                                context,
+                                ref,
+                              );
+                            }
                           }
                         : null,
                   ),
