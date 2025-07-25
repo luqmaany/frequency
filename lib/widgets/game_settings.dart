@@ -32,19 +32,19 @@ class GameSettingsState extends ConsumerState<GameSettings> {
     if (widget.sessionId == null) return;
     final doc =
         FirebaseFirestore.instance.collection('sessions').doc(widget.sessionId);
-    await doc.update({'settings.$key': value});
+    await doc.update({'gameState.gameConfig.$key': value});
   }
 
   @override
   Widget build(BuildContext context) {
     if (widget.sessionId != null) {
       // ONLINE MODE: Use Firestore settings
-      final settingsAsync =
+      final gameConfigAsync =
           ref.watch(sessionSettingsProvider(widget.sessionId!));
-      if (!settingsAsync.hasValue || settingsAsync.value == null) {
+      if (!gameConfigAsync.hasValue || gameConfigAsync.value == null) {
         return const Center(child: CircularProgressIndicator());
       }
-      final settings = settingsAsync.value!;
+      final settings = gameConfigAsync.value!;
       // Initialize controllers only once per settings change
       if (!_controllersInitialized ||
           _roundTimeController.text !=

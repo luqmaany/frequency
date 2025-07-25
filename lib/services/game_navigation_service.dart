@@ -34,7 +34,7 @@ class GameNavigationService {
     }
 
     // Handle tiebreaker navigation
-    if (gameState.isInTiebreaker) {
+    if (gameState.phase == GamePhase.tiebreaker) {
       _handleTiebreakerNavigation(context, gameState, teamIndex);
       return;
     }
