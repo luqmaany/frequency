@@ -121,14 +121,14 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       await FirebaseFirestore.instance.collection('sessions').doc(newCode).set({
         'sessionId': newCode,
         'hostId': hostId,
-        'settings': {
-          'roundTimeSeconds': 60,
-          'targetScore': 20,
-          'allowedSkips': 3,
-        },
         'teams': [],
         'gameState': {
           'status': 'lobby',
+          'gameConfig': {
+            'roundTimeSeconds': 60,
+            'targetScore': 20,
+            'allowedSkips': 3,
+          },
           // Add other initial game state fields as needed
         },
       });
