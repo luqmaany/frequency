@@ -16,6 +16,7 @@ class GameScreen extends ConsumerStatefulWidget {
   final int roundNumber;
   final int turnNumber;
   final WordCategory category;
+  final String? sessionId; // Add sessionId for online mode
 
   const GameScreen({
     super.key,
@@ -23,6 +24,7 @@ class GameScreen extends ConsumerStatefulWidget {
     required this.roundNumber,
     required this.turnNumber,
     required this.category,
+    this.sessionId, // Make it optional for backward compatibility
   });
 
   @override
