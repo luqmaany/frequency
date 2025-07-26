@@ -14,6 +14,14 @@ class GameSettingsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Set up online navigation listener if in online mode
+    if (sessionId != null) {
+      OnlineGameNavigationService.navigate(
+        context: context,
+        ref: ref,
+        sessionId: sessionId!,
+      );
+    }
     final gameConfig = ref.watch(gameSetupProvider);
     final validationState = ref.watch(settingsValidationProvider);
 
@@ -84,17 +92,17 @@ class GameSettingsScreen extends ConsumerWidget {
                             FocusScope.of(context).unfocus();
                             await Future.delayed(
                                 const Duration(milliseconds: 150));
-                            // Initialize game state with current config (local only)
-                            ref
-                                .read(gameStateProvider.notifier)
-                                .initializeGame(gameConfig);
 
                             if (sessionId != null) {
-                              // Centralized online game state update
+                              // Online mode - only update Firestore, don't initialize local game state
                               await OnlineGameNavigationService.startGame(
                                   sessionId!);
                               // Do not navigate directly; let the navigation service handle it
                             } else {
+                              // Local mode - initialize game state with current config
+                              ref
+                                  .read(gameStateProvider.notifier)
+                                  .initializeGame(gameConfig);
                               GameNavigationService.navigateToNextScreen(
                                 context,
                                 ref,

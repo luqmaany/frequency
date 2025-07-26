@@ -153,13 +153,13 @@ class GameNavigationService {
   static void navigateToNextRound(
       BuildContext context, WidgetRef ref, int nextRound) {
     final gameState = ref.read(gameStateProvider);
-    if (gameState != null && gameState.isTiebreaker) {
+    if (gameState != null && gameState.tiebreaker.isActive) {
       // For tiebreaker, navigate to category selection for the first tied team
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (context) => CategorySelectionScreen(
-            teamIndex: gameState.tiedTeamIndices[0],
-            roundNumber: gameState.tiebreakerRound,
+            teamIndex: gameState.tiebreaker.tiedTeamIndices[0],
+            roundNumber: gameState.tiebreaker.round,
             turnNumber: 1,
             displayString: 'Tiebreaker Round',
           ),
@@ -199,14 +199,16 @@ class GameNavigationService {
     }
 
     // Handle tiebreaker logic
-    if (gameState.isTiebreaker) {
+    if (gameState.tiebreaker.isActive) {
       // Start tiebreaker mode
       ref.read(gameStateProvider.notifier).startTiebreaker(category);
       // Navigate to role assignment for first tied team
       navigateToRoleAssignment(
         context,
-        gameState.tiedTeamIndices.isNotEmpty ? gameState.tiedTeamIndices[0] : 0,
-        gameState.tiebreakerRound,
+        gameState.tiebreaker.tiedTeamIndices.isNotEmpty
+            ? gameState.tiebreaker.tiedTeamIndices[0]
+            : 0,
+        gameState.tiebreaker.round,
         1,
         category,
       );
@@ -258,9 +260,9 @@ class GameNavigationService {
     bool isTiebreaker = false;
     List<int>? tiedTeamIndices;
     if (gameState != null) {
-      isTiebreaker = gameState.isTiebreaker;
-      tiedTeamIndices = gameState.tiedTeamIndices.isNotEmpty
-          ? gameState.tiedTeamIndices
+      isTiebreaker = gameState.tiebreaker.isActive;
+      tiedTeamIndices = gameState.tiebreaker.tiedTeamIndices.isNotEmpty
+          ? gameState.tiebreaker.tiedTeamIndices
           : null;
     }
     Navigator.of(context).pushReplacement(
@@ -298,7 +300,7 @@ class GameNavigationService {
   /// Handle navigation for tiebreaker mode
   static void _handleTiebreakerNavigation(
       BuildContext context, GameState gameState, int? teamIndex) {
-    final tiedTeamIndices = gameState.tiedTeamIndices;
+    final tiedTeamIndices = gameState.tiebreaker.tiedTeamIndices;
 
     // Ensure we have a valid team index that's actually in the tiebreaker
     final effectiveTeamIndex = teamIndex ?? gameState.currentTeamIndex;
@@ -311,7 +313,7 @@ class GameNavigationService {
     }
 
     if (_isEndOfTiebreakerRound(teamIndexInTiedTeams, tiedTeamIndices.length)) {
-      _navigateToScoreboard(context, gameState.tiebreakerRound,
+      _navigateToScoreboard(context, gameState.tiebreaker.round,
           gameState: gameState);
     } else {
       _navigateToNextTiedTeam(context, gameState, teamIndexInTiedTeams);
@@ -334,7 +336,7 @@ class GameNavigationService {
   /// Navigate to the next tied team in tiebreaker mode
   static void _navigateToNextTiedTeam(BuildContext context, GameState gameState,
       int currentTeamIndexInTiedTeams) {
-    final tiedTeamIndices = gameState.tiedTeamIndices;
+    final tiedTeamIndices = gameState.tiebreaker.tiedTeamIndices;
 
     // If currentTeamIndexInTiedTeams is -1, start with the first team
     // Otherwise, get the next team in the sequence
@@ -346,9 +348,9 @@ class GameNavigationService {
     navigateToRoleAssignment(
       context,
       nextTiedTeamIndex,
-      gameState.tiebreakerRound,
+      gameState.tiebreaker.round,
       gameState.currentTurn,
-      gameState.tiebreakerCategory,
+      gameState.tiebreaker.category,
     );
   }
 
