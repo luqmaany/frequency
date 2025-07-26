@@ -179,7 +179,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   }
 
   // Helper to build team data
-  Map<String, dynamic> _buildTeamData(String deviceId) => {
+  Map<String, dynamic> get _myTeamData => {
         'teamName': widget.teamName.trim(),
         'colorIndex': _selectedColorIndex,
         'ready': true,
@@ -187,14 +187,11 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
           widget.player1Name.trim(),
           widget.player2Name.trim(),
         ],
-        'deviceId':
-            deviceId, // Add deviceId to track which device controls this team
       };
 
   // Add or update team in Firestore
   Future<void> _syncTeamToFirestore() async {
     if (_canPickColor && _selectedColorIndex != null) {
-      final deviceId = await _deviceIdFuture;
       final doc = await FirebaseFirestore.instance
           .collection('sessions')
           .doc(widget.sessionId)
@@ -212,7 +209,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
               (t['players'] as List).join(',') ==
                   [widget.player1Name.trim(), widget.player2Name.trim()]
                       .join(',')));
-      teams.add(_buildTeamData(deviceId));
+      teams.add(_myTeamData);
       await FirebaseFirestore.instance
           .collection('sessions')
           .doc(widget.sessionId)

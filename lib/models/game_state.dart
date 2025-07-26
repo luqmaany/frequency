@@ -62,46 +62,6 @@ enum GamePhase {
   gameOver,
 }
 
-// New class to hold all tiebreaker-related state
-class TiebreakerState {
-  final bool isActive;
-  final List<int> scores;
-  final List<int> tiedTeamIndices;
-  final int round;
-  final WordCategory? category;
-
-  TiebreakerState({
-    required this.isActive,
-    required this.scores,
-    required this.tiedTeamIndices,
-    required this.round,
-    this.category,
-  });
-
-  TiebreakerState.initial()
-      : isActive = false,
-        scores = [],
-        tiedTeamIndices = [],
-        round = 0,
-        category = null;
-
-  TiebreakerState copyWith({
-    bool? isActive,
-    List<int>? scores,
-    List<int>? tiedTeamIndices,
-    int? round,
-    WordCategory? category,
-  }) {
-    return TiebreakerState(
-      isActive: isActive ?? this.isActive,
-      scores: scores ?? this.scores,
-      tiedTeamIndices: tiedTeamIndices ?? this.tiedTeamIndices,
-      round: round ?? this.round,
-      category: category ?? this.category,
-    );
-  }
-}
-
 class GameState {
   final GameConfig config;
   final List<int> teamScores;
@@ -110,7 +70,11 @@ class GameState {
   final int currentTurn;
   final int currentTeamIndex;
   final bool isGameOver;
-  final TiebreakerState tiebreaker;
+  final bool isTiebreaker;
+  final List<int> tiebreakerScores;
+  final List<int> tiedTeamIndices;
+  final int tiebreakerRound;
+  final WordCategory? tiebreakerCategory;
   final GamePhase phase;
 
   GameState({
@@ -121,7 +85,11 @@ class GameState {
     required this.currentTurn,
     required this.currentTeamIndex,
     required this.isGameOver,
-    required this.tiebreaker,
+    required this.isTiebreaker,
+    required this.tiebreakerScores,
+    required this.tiedTeamIndices,
+    required this.tiebreakerRound,
+    this.tiebreakerCategory,
     required this.phase,
   });
 
@@ -133,7 +101,11 @@ class GameState {
         currentTurn = 1,
         currentTeamIndex = 0,
         isGameOver = false,
-        tiebreaker = TiebreakerState.initial(),
+        isTiebreaker = false,
+        tiebreakerScores = [],
+        tiedTeamIndices = [],
+        tiebreakerRound = 0,
+        tiebreakerCategory = null,
         phase = GamePhase.normal;
 
   GameState copyWith({
@@ -144,7 +116,11 @@ class GameState {
     int? currentTurn,
     int? currentTeamIndex,
     bool? isGameOver,
-    TiebreakerState? tiebreaker,
+    bool? isTiebreaker,
+    List<int>? tiebreakerScores,
+    List<int>? tiedTeamIndices,
+    int? tiebreakerRound,
+    WordCategory? tiebreakerCategory,
     GamePhase? phase,
   }) {
     return GameState(
@@ -155,7 +131,11 @@ class GameState {
       currentTurn: currentTurn ?? this.currentTurn,
       currentTeamIndex: currentTeamIndex ?? this.currentTeamIndex,
       isGameOver: isGameOver ?? this.isGameOver,
-      tiebreaker: tiebreaker ?? this.tiebreaker,
+      isTiebreaker: isTiebreaker ?? this.isTiebreaker,
+      tiebreakerScores: tiebreakerScores ?? this.tiebreakerScores,
+      tiedTeamIndices: tiedTeamIndices ?? this.tiedTeamIndices,
+      tiebreakerRound: tiebreakerRound ?? this.tiebreakerRound,
+      tiebreakerCategory: tiebreakerCategory ?? this.tiebreakerCategory,
       phase: phase ?? this.phase,
     );
   }
@@ -180,12 +160,11 @@ class GameState {
   // Private method for tiebreaker turn logic
   GameState _advanceTiebreakerTurn(TurnRecord turnRecord) {
     // Guard: If no tied teams, end the game immediately
-    if (tiebreaker.tiedTeamIndices.isEmpty) {
+    if (tiedTeamIndices.isEmpty) {
       return copyWith(isGameOver: true);
     }
-    final newTiebreakerScores = List<int>.from(tiebreaker.scores);
-    final teamIndexInTiebreaker =
-        tiebreaker.tiedTeamIndices.indexOf(turnRecord.teamIndex);
+    final newTiebreakerScores = List<int>.from(tiebreakerScores);
+    final teamIndexInTiebreaker = tiedTeamIndices.indexOf(turnRecord.teamIndex);
 
     if (teamIndexInTiebreaker != -1) {
       newTiebreakerScores[teamIndexInTiebreaker] += turnRecord.score;
@@ -194,12 +173,12 @@ class GameState {
     final newTurnHistory = List<TurnRecord>.from(turnHistory)..add(turnRecord);
     // Use the team that just played to find the next team in tiebreaker
     final nextTeamIndexInTiebreaker =
-        (teamIndexInTiebreaker + 1) % tiebreaker.tiedTeamIndices.length;
+        (teamIndexInTiebreaker + 1) % tiedTeamIndices.length;
     final isEndOfTiebreakerRound = nextTeamIndexInTiebreaker == 0;
 
     bool isGameOver = false;
-    List<int> newTiedTeamIndices = List.from(tiebreaker.tiedTeamIndices);
-    int newTiebreakerRound = tiebreaker.round;
+    List<int> newTiedTeamIndices = List.from(tiedTeamIndices);
+    int newTiebreakerRound = tiebreakerRound;
 
     if (isEndOfTiebreakerRound) {
       final tiebreakerResult = _resolveTiebreakerRound(newTiebreakerScores);
@@ -210,18 +189,16 @@ class GameState {
 
     final nextTeamIndex = isEndOfTiebreakerRound
         ? (newTiedTeamIndices.isNotEmpty ? newTiedTeamIndices[0] : 0)
-        : tiebreaker.tiedTeamIndices[nextTeamIndexInTiebreaker];
+        : tiedTeamIndices[nextTeamIndexInTiebreaker];
 
     return copyWith(
-      tiebreaker: tiebreaker.copyWith(
-        scores: newTiebreakerScores,
-        tiedTeamIndices: newTiedTeamIndices,
-        round: newTiebreakerRound,
-      ),
+      tiebreakerScores: newTiebreakerScores,
       turnHistory: newTurnHistory,
       currentTeamIndex: nextTeamIndex,
       currentTurn: isEndOfTiebreakerRound ? currentTurn + 1 : currentTurn,
       isGameOver: isGameOver,
+      tiedTeamIndices: newTiedTeamIndices,
+      tiebreakerRound: newTiebreakerRound,
     );
   }
 
@@ -252,12 +229,8 @@ class GameState {
       currentTurn: nextTurn,
       currentTeamIndex: nextTeamIndex,
       isGameOver: isGameOver,
-      tiebreaker: isTiebreaker
-          ? tiebreaker.copyWith(
-              isActive: isTiebreaker,
-              tiedTeamIndices: tiedTeamIndices,
-            )
-          : tiebreaker,
+      isTiebreaker: isTiebreaker,
+      tiedTeamIndices: tiedTeamIndices,
     );
   }
 
@@ -268,7 +241,7 @@ class GameState {
 
     for (int i = 0; i < tiebreakerScores.length; i++) {
       if (tiebreakerScores[i] == maxScore) {
-        teamsWithMaxScore.add(tiebreaker.tiedTeamIndices[i]);
+        teamsWithMaxScore.add(tiedTeamIndices[i]);
       }
     }
 
@@ -277,14 +250,14 @@ class GameState {
       return {
         'isGameOver': true,
         'newTiedTeamIndices': <int>[],
-        'newTiebreakerRound': tiebreaker.round,
+        'newTiebreakerRound': tiebreakerRound,
       };
     } else {
       // Still tied, continue to next tiebreaker round
       return {
         'isGameOver': false,
         'newTiedTeamIndices': teamsWithMaxScore,
-        'newTiebreakerRound': tiebreaker.round + 1,
+        'newTiebreakerRound': tiebreakerRound + 1,
       };
     }
   }
@@ -317,16 +290,13 @@ class GameState {
   // Start tiebreaker mode
   GameState startTiebreaker() {
     // Guard: If no tied teams, end the game immediately
-    if (tiebreaker.tiedTeamIndices.isEmpty) {
+    if (tiedTeamIndices.isEmpty) {
       return copyWith(isGameOver: true, phase: GamePhase.gameOver);
     }
     final result = copyWith(
-      tiebreaker: tiebreaker.copyWith(
-        round: 1,
-        scores: List.filled(tiebreaker.tiedTeamIndices.length, 0),
-        isActive: true,
-      ),
-      currentTeamIndex: tiebreaker.tiedTeamIndices[0], // Safe, not empty
+      tiebreakerRound: 1,
+      tiebreakerScores: List.filled(tiedTeamIndices.length, 0),
+      currentTeamIndex: tiedTeamIndices[0], // Safe, not empty
       currentTurn: 1,
       phase: GamePhase.tiebreaker, // Set phase to tiebreaker
       // Keep currentRound unchanged - don't reset it
