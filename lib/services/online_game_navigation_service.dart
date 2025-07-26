@@ -15,7 +15,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OnlineGameNavigationService {
   /// Call this in your widget's build or initState to handle navigation
-  static void handleNavigation({
+  static void navigate({
     required BuildContext context,
     required WidgetRef ref,
     required String sessionId,
