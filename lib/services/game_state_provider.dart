@@ -33,9 +33,8 @@ class GameStateNotifier extends StateNotifier<GameState?> {
 
   void startTiebreaker(WordCategory category) {
     if (state == null) return;
-    final tiebreakerState = state!.startTiebreaker().copyWith(
-          tiebreaker: state!.tiebreaker.copyWith(category: category),
-        );
+    final tiebreakerState =
+        state!.startTiebreaker().copyWith(tiebreakerCategory: category);
     state = tiebreakerState;
   }
 
