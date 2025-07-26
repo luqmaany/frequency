@@ -117,15 +117,7 @@ class HomeScreen extends ConsumerWidget {
                   fontSize: 72,
                 ),
               ),
-              const Center(
-                child: Text(
-                  'How would you conveyyy...',
-                  style: TextStyle(
-                    fontSize: 24,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
+
               const SizedBox(height: 48),
               _buildMenuButton(
                 context,
