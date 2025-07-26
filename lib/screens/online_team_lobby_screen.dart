@@ -267,7 +267,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     final sessionAsync = ref.watch(sessionStreamProvider(widget.sessionId));
 
     // Centralized navigation for online play
-    OnlineGameNavigationService.handleNavigation(
+    OnlineGameNavigationService.navigate(
       context: context,
       ref: ref,
       sessionId: widget.sessionId,
