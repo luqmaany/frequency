@@ -10,6 +10,7 @@ import 'package:convey/widgets/team_color_button.dart';
 import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/online_game_navigation_service.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -49,6 +50,8 @@ class _CategorySelectionScreenState
   static const int _initialDelay = 25; // Faster initial speed
   static const int _finalDelay = 120; // Smoother final speed
   String? _currentDeviceId; // Add this to track current device
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      _spinStateSubscription;
 
   @override
   void initState() {
@@ -90,7 +93,7 @@ class _CategorySelectionScreenState
   void _listenToSpinState() {
     if (widget.sessionId == null) return;
 
-    FirebaseFirestore.instance
+    _spinStateSubscription = FirebaseFirestore.instance
         .collection('sessions')
         .doc(widget.sessionId)
         .snapshots()
@@ -109,14 +112,16 @@ class _CategorySelectionScreenState
         final selectedCategory =
             categorySpin['selectedCategory'] as String? ?? '';
 
-        setState(() {
-          _isSpinning = isSpinning;
-          _spinCount = spinCount;
-          _currentCategory = currentCategory;
-          if (selectedCategory.isNotEmpty) {
-            _selectedCategory = _getCategoryFromName(selectedCategory);
-          }
-        });
+        if (mounted) {
+          setState(() {
+            _isSpinning = isSpinning;
+            _spinCount = spinCount;
+            _currentCategory = currentCategory;
+            if (selectedCategory.isNotEmpty) {
+              _selectedCategory = _getCategoryFromName(selectedCategory);
+            }
+          });
+        }
       }
     });
   }
@@ -140,6 +145,7 @@ class _CategorySelectionScreenState
   void dispose() {
     _scaleController.dispose();
     _categoryTimer?.cancel();
+    _spinStateSubscription?.cancel();
 
     // Clean up spin state for online games
     if (widget.sessionId != null) {
@@ -275,6 +281,12 @@ class _CategorySelectionScreenState
       teamColor = teamColors[0];
     }
 
+    OnlineGameNavigationService.navigate(
+      context: context,
+      ref: ref,
+      sessionId: widget.sessionId!,
+    );
+
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -404,7 +416,7 @@ class _CategorySelectionScreenState
                                     if (widget.sessionId != null) {
                                       // For online games, update game state with selected category and change status
                                       await FirestoreService
-                                          .updateGameStateForRoleAssignment(
+                                          .updateGameStateFromCategorySelection(
                                         widget.sessionId!,
                                         selectedCategory: _selectedCategory!,
                                       );
