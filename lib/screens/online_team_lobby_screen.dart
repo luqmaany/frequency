@@ -58,6 +58,15 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
     // Initialize color index from existing team data
     _initializeColorIndex();
+
+    // Set up navigation listener after the widget tree is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      OnlineGameNavigationService.navigate(
+        context: context,
+        ref: ref,
+        sessionId: widget.sessionId,
+      );
+    });
   }
 
   @override
@@ -265,13 +274,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   @override
   Widget build(BuildContext context) {
     final sessionAsync = ref.watch(sessionStreamProvider(widget.sessionId));
-
-    // Centralized navigation for online play
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: widget.sessionId,
-    );
 
     return PopScope(
       canPop: true,
