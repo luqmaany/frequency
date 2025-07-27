@@ -12,7 +12,6 @@ final sessionStreamProvider =
 /// Provides a stream of the settings map for a given session ID.
 final sessionSettingsProvider =
     StreamProvider.family<Map<String, dynamic>?, String>((ref, sessionId) {
-  return FirestoreService.sessionStream(sessionId).map((doc) =>
-      (doc.data()?['gameState'] as Map<String, dynamic>?)?['gameConfig']
-          as Map<String, dynamic>?);
+  return FirestoreService.sessionStream(sessionId)
+      .map((doc) => doc.data()?['settings'] as Map<String, dynamic>?);
 });
