@@ -13,8 +13,15 @@ import '../screens/turn_over_screen.dart';
 // Import other screens as needed
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Service for handling navigation in online multiplayer games
+/// Manages automatic screen transitions based on Firestore game state changes
 class OnlineGameNavigationService {
-  /// Call this in your widget's build or initState to handle navigation
+  // ============================================================================
+  // MAIN NAVIGATION METHOD
+  // ============================================================================
+
+  /// Sets up a listener for session changes and handles automatic navigation
+  /// Call this in your widget's initState to handle navigation
   static void navigate({
     required BuildContext context,
     required WidgetRef ref,
@@ -24,91 +31,37 @@ class OnlineGameNavigationService {
       final sessionSnap = next?.value;
       final sessionData = sessionSnap?.data();
       if (sessionData == null) return;
+
       final gameState = sessionData['gameState'] as Map<String, dynamic>?;
       final status = gameState != null ? gameState['status'] as String? : null;
       final hostId = sessionData['hostId'] as String?;
       final deviceId = await StorageService.getDeviceId();
       final isHost = deviceId == hostId;
 
-      // Example: Navigate to GameSettingsScreen when status is 'settings'
+      // Handle different game states
       if (status == 'settings') {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => GameSettingsScreen(
-                isHost: isHost,
-                sessionId: sessionId,
-              ),
-            ),
-          );
+          _navigateToGameSettings(context, ref, sessionId, isHost);
         });
       }
-      // Add more navigation logic for other statuses as needed
+      // TODO: Add more navigation logic for other statuses as needed
+      // Examples: 'category_selection', 'playing', 'game_over', etc.
     });
   }
 
-  static Future<Map<String, dynamic>?> getSessionContext(
-      String sessionId) async {
-    final sessionSnap = await FirestoreService.sessionStream(sessionId).first;
-    final sessionData = sessionSnap.data();
-    if (sessionData == null) return null;
-    final gameState = sessionData['gameState'] as Map<String, dynamic>?;
-    final status = gameState != null ? gameState['status'] as String? : null;
-    final hostId = sessionData['hostId'] as String?;
-    final deviceId = await StorageService.getDeviceId();
-    final isHost = deviceId == hostId;
-    return {
-      'sessionData': sessionData,
-      'status': status,
-      'hostId': hostId,
-      'deviceId': deviceId,
-      'isHost': isHost,
-    };
-  }
+  // ============================================================================
+  // PRIVATE NAVIGATION HELPERS
+  // ============================================================================
 
-  static Future<void> navigateToNextScreen(
-      BuildContext context, WidgetRef ref, String sessionId) async {
-    final contextData = await getSessionContext(sessionId);
-    if (contextData == null) return;
-    final gameState =
-        contextData['sessionData']['gameState'] as Map<String, dynamic>?;
-    final status = gameState != null ? gameState['status'] as String? : null;
-    // TODO: Use sessionData to determine which screen to navigate to, similar to GameNavigationService
-    if (status == 'playing') {
-      // For now, just navigate to CategorySelectionScreen for the first team
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => CategorySelectionScreen(
-              teamIndex: 0,
-              roundNumber: 1,
-              turnNumber: 1,
-              displayString: '',
-            ),
-          ),
-        );
-      });
-      return;
-    }
-    // TODO: Add more navigation logic for other statuses/screens as needed
-  }
-
-  /// Helper to get teamIndex from teamId and teams array
-  static int getTeamIndexById(List teams, String teamId) {
-    return teams.indexWhere((team) => team['teamId'] == teamId);
-  }
-
-  /// Centralized method to start the game by updating gameState in Firestore
-  static Future<void> startGame(String sessionId) async {
-    await FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(sessionId)
-        .update({
-      'gameState.status': 'category_selection',
-      'gameState.currentTeamIndex': 0,
-      'gameState.roundNumber': 1,
-      'gameState.turnNumber': 1,
-      // Add other initial fields as needed
-    });
+  /// Private helper to navigate to GameSettingsScreen
+  /// Uses addPostFrameCallback to ensure safe navigation timing
+  static void _navigateToGameSettings(
+      BuildContext context, WidgetRef ref, String sessionId, bool isHost) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) =>
+            GameSettingsScreen(isHost: isHost, sessionId: sessionId),
+      ),
+    );
   }
 }

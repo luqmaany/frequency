@@ -1,9 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+/// Service for handling all Firestore database operations
+/// Manages sessions, teams, game state, and host transfers for online multiplayer
 class FirestoreService {
   static final _sessions = FirebaseFirestore.instance.collection('sessions');
 
-  // Create a new session document with a gameState object
+  // ============================================================================
+  // SESSION MANAGEMENT
+  // ============================================================================
+
+  /// Create a new session document with a gameState object
   static Future<void> createSession(String sessionId,
       Map<String, dynamic> sessionData, Map<String, dynamic>? gameState) async {
     await _sessions.doc(sessionId).set({
@@ -12,13 +18,23 @@ class FirestoreService {
     });
   }
 
-  // Update the gameState object for a session
+  /// Listen to session changes in real-time
+  static Stream<DocumentSnapshot<Map<String, dynamic>>> sessionStream(
+      String sessionId) {
+    return _sessions.doc(sessionId).snapshots();
+  }
+
+  // ============================================================================
+  // GAME STATE OPERATIONS
+  // ============================================================================
+
+  /// Update the gameState object for a session
   static Future<void> setGameState(
       String sessionId, Map<String, dynamic> gameState) async {
     await _sessions.doc(sessionId).update({'gameState': gameState});
   }
 
-  // Get the gameState object for a session (one-time fetch)
+  /// Get the gameState object for a session (one-time fetch)
   static Future<Map<String, dynamic>?> getGameState(String sessionId) async {
     final doc = await _sessions.doc(sessionId).get();
     if (!doc.exists) return null;
@@ -26,7 +42,23 @@ class FirestoreService {
     return data['gameState'] as Map<String, dynamic>?;
   }
 
-  // Join a session by adding a team to the teams array
+  /// Start the game by updating gameState in Firestore
+  /// This triggers the navigation listener for all players in the session
+  static Future<void> startGame(String sessionId) async {
+    await _sessions.doc(sessionId).update({
+      'gameState.status': 'category_selection',
+      'gameState.currentTeamIndex': 0,
+      'gameState.roundNumber': 1,
+      'gameState.turnNumber': 1,
+      // Add other initial fields as needed
+    });
+  }
+
+  // ============================================================================
+  // TEAM MANAGEMENT
+  // ============================================================================
+
+  /// Join a session by adding a team to the teams array
   static Future<void> joinSession(
       String sessionId, Map<String, dynamic> teamData) async {
     await _sessions.doc(sessionId).update({
@@ -34,7 +66,7 @@ class FirestoreService {
     });
   }
 
-  // Update a team's info (name, color, ready) in the teams array by teamId
+  /// Update a team's info (name, color, ready) in the teams array by teamId
   static Future<void> updateTeam(String sessionId, String teamId,
       Map<String, dynamic> updatedFields) async {
     final doc = await _sessions.doc(sessionId).get();
@@ -49,13 +81,7 @@ class FirestoreService {
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 
-  // Listen to session changes
-  static Stream<DocumentSnapshot<Map<String, dynamic>>> sessionStream(
-      String sessionId) {
-    return _sessions.doc(sessionId).snapshots();
-  }
-
-  // Mark a team as inactive (team leaves the game)
+  /// Mark a team as inactive (team leaves the game)
   static Future<void> leaveTeam(String sessionId, String teamId) async {
     final doc = await _sessions.doc(sessionId).get();
     if (!doc.exists) return;
@@ -70,8 +96,8 @@ class FirestoreService {
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 
-  // Mark a team as active (team rejoins the game)
-  // Optionally update the players list
+  /// Mark a team as active (team rejoins the game)
+  /// Optionally update the players list
   static Future<void> rejoinTeam(
       String sessionId, String teamId, List<String> players) async {
     final doc = await _sessions.doc(sessionId).get();
@@ -88,7 +114,11 @@ class FirestoreService {
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 
-  // Transfer host status to another active team if the current host leaves
+  // ============================================================================
+  // HOST MANAGEMENT
+  // ============================================================================
+
+  /// Transfer host status to another active team if the current host leaves
   static Future<void> transferHostIfNeeded(
       String sessionId, String leavingDeviceId) async {
     final doc = await _sessions.doc(sessionId).get();
