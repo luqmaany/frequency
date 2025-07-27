@@ -58,15 +58,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
     // Initialize color index from existing team data
     _initializeColorIndex();
-
-    // Set up navigation listener after the widget tree is built
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      OnlineGameNavigationService.navigate(
-        context: context,
-        ref: ref,
-        sessionId: widget.sessionId,
-      );
-    });
   }
 
   @override
@@ -121,58 +112,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   bool get _canPickColor =>
       widget.player1Name.trim().isNotEmpty &&
       widget.player2Name.trim().isNotEmpty;
-
-  Future<void> _updateTeamInfo() async {
-    if (_updating) return;
-    setState(() => _updating = true);
-    try {
-      await FirestoreService.updateTeam(
-        widget.sessionId,
-        _teamNameController.text.trim(),
-        {
-          'teamName': _teamNameController.text.trim(),
-          'colorIndex': _selectedColorIndex,
-        },
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update team info: $e')),
-      );
-    } finally {
-      setState(() => _updating = false);
-    }
-  }
-
-  Future<void> _onReady() async {
-    if (_updating) return;
-    setState(() => _updating = true);
-    try {
-      await FirestoreService.updateTeam(
-        widget.sessionId,
-        _teamNameController.text.trim(),
-        {'ready': true},
-      );
-      setState(() => _ready = true);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to mark as ready: $e')),
-      );
-    } finally {
-      setState(() => _updating = false);
-    }
-  }
-
-  List<int> _getUsedColors(List<dynamic> teams) {
-    final myPlayers = [
-      widget.player1Name.trim(),
-      widget.player2Name.trim(),
-    ];
-    return teams
-        .where((team) => !(team['players'] is List &&
-            (team['players'] as List).join(',') == myPlayers.join(',')))
-        .map((team) => team['colorIndex'] as int)
-        .toList();
-  }
 
   // Helper to get the current team's color index from Firestore
   int? _getMyTeamColorIndex(List teams) {
@@ -275,6 +214,13 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   Widget build(BuildContext context) {
     final sessionAsync = ref.watch(sessionStreamProvider(widget.sessionId));
 
+    // Set up navigation listener (this is safe in build because ref.listen handles duplicates)
+    OnlineGameNavigationService.navigate(
+      context: context,
+      ref: ref,
+      sessionId: widget.sessionId,
+    );
+
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
@@ -294,12 +240,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
             }
 
             final teams = (sessionData['teams'] as List?) ?? [];
-            final usedColors = _getUsedColors(teams);
-            final myTeam = teams.firstWhere(
-              (team) => team['teamName'] == _teamNameController.text.trim(),
-              orElse: () => {'ready': false},
-            );
-            final isReady = myTeam['ready'] ?? false;
 
             // Host logic
             final hostId = sessionData['hostId'] as String?;
