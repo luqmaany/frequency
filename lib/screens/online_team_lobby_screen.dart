@@ -87,21 +87,13 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       final teams = (data['teams'] as List?) ?? [];
 
       // Find our team and set the color index
-      for (final team in teams) {
-        if (team['players'] is List &&
-            (team['players'] as List).join(',') ==
-                [widget.player1Name.trim(), widget.player2Name.trim()]
-                    .join(',')) {
-          final colorIndex = team['colorIndex'] as int?;
-          if (colorIndex != null) {
-            setState(() {
-              _selectedColorIndex = colorIndex;
-            });
-            // Trigger animation for initial display
-            _animationController.forward(from: 0);
-          }
-          break;
-        }
+      final colorIndex = await _getMyTeamColorIndex(teams);
+      if (colorIndex != null) {
+        setState(() {
+          _selectedColorIndex = colorIndex;
+        });
+        // Trigger animation for initial display
+        _animationController.forward(from: 0);
       }
     } catch (e) {
       print('Error initializing color index: $e');
@@ -113,8 +105,14 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       widget.player2Name.trim().isNotEmpty;
 
   // Helper to get the current team's color index from Firestore
-  int? _getMyTeamColorIndex(List teams) {
+  Future<int?> _getMyTeamColorIndex(List teams) async {
+    final deviceId = await _deviceIdFuture;
     for (final t in teams) {
+      // Check by device ID first (most reliable)
+      if (t['deviceId'] == deviceId) {
+        return t['colorIndex'] as int?;
+      }
+      // Fallback to player names
       if (t['players'] is List &&
           (t['players'] as List).join(',') ==
               [widget.player1Name.trim(), widget.player2Name.trim()]
@@ -136,6 +134,21 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
         ],
       };
 
+  // Helper to build team data with device ID
+  Future<Map<String, dynamic>> _getMyTeamDataWithDeviceId() async {
+    final deviceId = await _deviceIdFuture;
+    return {
+      'teamName': widget.teamName.trim(),
+      'colorIndex': _selectedColorIndex,
+      'ready': true,
+      'deviceId': deviceId, // Add device ID to team data
+      'players': [
+        widget.player1Name.trim(),
+        widget.player2Name.trim(),
+      ],
+    };
+  }
+
   // Add or update team in Firestore
   Future<void> _syncTeamToFirestore() async {
     if (_canPickColor && _selectedColorIndex != null) {
@@ -156,7 +169,11 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
               (t['players'] as List).join(',') ==
                   [widget.player1Name.trim(), widget.player2Name.trim()]
                       .join(',')));
-      teams.add(_myTeamData);
+
+      // Add team data with device ID
+      final teamDataWithDeviceId = await _getMyTeamDataWithDeviceId();
+      teams.add(teamDataWithDeviceId);
+
       await FirebaseFirestore.instance
           .collection('sessions')
           .doc(widget.sessionId)
@@ -176,12 +193,16 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
             ?.map((e) => Map<String, dynamic>.from(e))
             .toList() ??
         [];
+
+    final deviceId = await _deviceIdFuture;
     teams.removeWhere((t) =>
+        t['deviceId'] == deviceId ||
         (t['players'] is List &&
             (t['players'] as List).join(',') ==
                 [widget.player1Name.trim(), widget.player2Name.trim()]
                     .join(',')) ||
         t['colorIndex'] == _selectedColorIndex);
+
     await FirebaseFirestore.instance
         .collection('sessions')
         .doc(widget.sessionId)
@@ -207,6 +228,29 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     setState(() {
       _ready = true;
     });
+  }
+
+  // Ensure all teams have deviceIds before starting the game
+  Future<void> _ensureAllTeamsHaveDeviceIds() async {
+    final doc = await FirebaseFirestore.instance
+        .collection('sessions')
+        .doc(widget.sessionId)
+        .get();
+    if (!doc.exists) return;
+
+    final data = doc.data() as Map<String, dynamic>;
+    final teams = (data['teams'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e))
+            .toList() ??
+        [];
+
+    for (final team in teams) {
+      if (team['deviceId'] == null) {
+        // This team doesn't have a deviceId, but we can't fix it automatically
+        // In practice, all teams should have deviceIds when they're ready
+        print('Warning: Found team without deviceId: $team');
+      }
+    }
   }
 
   @override
@@ -511,6 +555,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                 ? teamColors[_selectedColorIndex!]
                                 : teamColors[0],
                             onPressed: () async {
+                              // Ensure all teams have deviceIds before starting
+                              await _ensureAllTeamsHaveDeviceIds();
                               await FirebaseFirestore.instance
                                   .collection('sessions')
                                   .doc(widget.sessionId)

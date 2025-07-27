@@ -74,13 +74,35 @@ class OnlineGameNavigationService {
 
   static void _navigateToCategorySelection(BuildContext context, WidgetRef ref,
       String sessionId, bool isHost, sessionData) {
+    // Get the current team's device ID from the game state
+    final gameState = sessionData['gameState'] as Map<String, dynamic>?;
+    final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
+    final teams = sessionData['teams'] as List? ?? [];
+
+    String? currentTeamDeviceId;
+    if (teams.isNotEmpty && currentTeamIndex < teams.length) {
+      final currentTeam = teams[currentTeamIndex] as Map<String, dynamic>?;
+      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
+
+      // If no deviceId is stored yet, this might be an older team entry
+      // In this case, we'll allow all teams to interact (fallback behavior)
+      if (currentTeamDeviceId == null) {
+        print(
+            'Warning: Team at index $currentTeamIndex has no deviceId stored');
+      }
+    }
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => CategorySelectionScreen(
-          teamIndex: 0,
-          roundNumber: 1,
-          turnNumber: 1,
-          displayString: sessionData['teams'][0]['teamName'] ?? '',
+          teamIndex: currentTeamIndex,
+          roundNumber: gameState?['roundNumber'] as int? ?? 1,
+          turnNumber: gameState?['turnNumber'] as int? ?? 1,
+          displayString: teams.isNotEmpty && currentTeamIndex < teams.length
+              ? (teams[currentTeamIndex]['teamName'] as String? ?? '')
+              : '',
+          currentTeamDeviceId: currentTeamDeviceId,
+          sessionId: sessionId,
         ),
       ),
     );
