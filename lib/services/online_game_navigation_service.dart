@@ -10,6 +10,7 @@ import '../screens/scoreboard_screen.dart';
 import '../screens/role_assignment_screen.dart';
 import '../screens/game_screen.dart';
 import '../screens/turn_over_screen.dart';
+import '../screens/word_lists_manager_screen.dart';
 // Import other screens as needed
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -51,8 +52,12 @@ class OnlineGameNavigationService {
               context, ref, sessionId, isHost, sessionData);
         });
       }
-      // TODO: Add more navigation logic for other statuses as needed
-      // Examples: 'category_selection', 'playing', 'game_over', etc.
+      if (status == 'role_assignment') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToRoleAssignment(
+              context, ref, sessionId, isHost, sessionData);
+        });
+      }
     });
   }
 
@@ -103,6 +108,52 @@ class OnlineGameNavigationService {
               : '',
           currentTeamDeviceId: currentTeamDeviceId,
           sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
+  static void _navigateToRoleAssignment(BuildContext context, WidgetRef ref,
+      String sessionId, bool isHost, sessionData) {
+    // Get the current team's device ID from the game state
+    final gameState = sessionData['gameState'] as Map<String, dynamic>?;
+    final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
+    final teams = sessionData['teams'] as List? ?? [];
+    final selectedCategoryName =
+        gameState?['selectedCategory'] as String? ?? 'Person';
+
+    String? currentTeamDeviceId;
+    if (teams.isNotEmpty && currentTeamIndex < teams.length) {
+      final currentTeam = teams[currentTeamIndex] as Map<String, dynamic>?;
+      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
+    }
+
+    // Convert category name to WordCategory enum
+    WordCategory selectedCategory;
+    switch (selectedCategoryName) {
+      case 'Person':
+        selectedCategory = WordCategory.person;
+        break;
+      case 'Action':
+        selectedCategory = WordCategory.action;
+        break;
+      case 'World':
+        selectedCategory = WordCategory.world;
+        break;
+      case 'Random':
+        selectedCategory = WordCategory.random;
+        break;
+      default:
+        selectedCategory = WordCategory.person;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => RoleAssignmentScreen(
+          teamIndex: currentTeamIndex,
+          roundNumber: gameState?['roundNumber'] as int? ?? 1,
+          turnNumber: gameState?['turnNumber'] as int? ?? 1,
+          category: selectedCategory,
         ),
       ),
     );
