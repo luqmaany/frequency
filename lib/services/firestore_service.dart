@@ -109,7 +109,7 @@ class FirestoreService {
   }
 
   /// Update game state for role assignment with selected category
-  static Future<void> updateGameStateForRoleAssignment(
+  static Future<void> updateGameStateFromCategorySelection(
     String sessionId, {
     required WordCategory selectedCategory,
   }) async {

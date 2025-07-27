@@ -56,20 +56,44 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
           MaterialPageRoute(
             builder: (context) => OnlineTeamLobbyScreen(
               sessionId: code,
-              teamName: myTeam['teamName'],
-              player1Name: myTeam['players'][0],
-              player2Name: myTeam['players'][1],
+              teamName: myTeam['teamName'] ?? 'Team',
+              player1Name: (myTeam['players'] as List?)?[0] ?? 'Player 1',
+              player2Name: (myTeam['players'] as List?)?[1] ?? 'Player 2',
             ),
           ),
         );
       } else {
-        // No team found for this device, proceed to team setup
+        // No team found for this device, automatically create a team for testing
+        final teamName = 'Team ${Random().nextInt(1000)}';
+        const colorIndex = 1; // Second color
+        const player1Name = 'Player 1';
+        const player2Name = 'Player 2';
+
+        // Create team data with deviceId
+        final teamData = {
+          'teamName': teamName,
+          'colorIndex': colorIndex,
+          'ready': true,
+          'deviceId': deviceId,
+          'players': [player1Name, player2Name],
+        };
+
+        // Add team to session
+        await FirebaseFirestore.instance
+            .collection('sessions')
+            .doc(code)
+            .update({
+          'teams': FieldValue.arrayUnion([teamData])
+        });
+
         if (!mounted) return;
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => OnlineTeamSetupScreen(
+            builder: (context) => OnlineTeamLobbyScreen(
               sessionId: code,
-              isHost: false,
+              teamName: teamName,
+              player1Name: player1Name,
+              player2Name: player2Name,
             ),
           ),
         );
@@ -117,6 +141,30 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
     }
     try {
       final hostId = await StorageService.getDeviceId();
+
+      // Generate random team data for testing
+      final randomNames = await StorageService.loadSuggestedNames();
+      final shuffledNames = List<String>.from(randomNames)..shuffle();
+      final teamName = 'Team ${Random().nextInt(1000)}';
+      const colorIndex = 0; // First color
+
+      // Get player names safely
+      final player1Name = shuffledNames.isNotEmpty && shuffledNames[0] != null
+          ? shuffledNames[0]!
+          : 'Player 1';
+      final player2Name = shuffledNames.length > 1 && shuffledNames[1] != null
+          ? shuffledNames[1]!
+          : 'Player 2';
+
+      // Create team data with deviceId
+      final teamData = {
+        'teamName': teamName,
+        'colorIndex': colorIndex,
+        'ready': true,
+        'deviceId': hostId,
+        'players': [player1Name, player2Name],
+      };
+
       // Actually create the session document in Firestore!
       await FirebaseFirestore.instance.collection('sessions').doc(newCode).set({
         'sessionId': newCode,
@@ -126,7 +174,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
           'targetScore': 20,
           'allowedSkips': 3,
         },
-        'teams': [],
+        'teams': [teamData],
         'gameState': {
           'status': 'lobby',
           // Add other initial game state fields as needed
@@ -135,9 +183,11 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
 
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => OnlineTeamSetupScreen(
+          builder: (context) => OnlineTeamLobbyScreen(
             sessionId: newCode,
-            isHost: true,
+            teamName: teamName,
+            player1Name: player1Name,
+            player2Name: player2Name,
           ),
         ),
       );
