@@ -402,10 +402,12 @@ class _CategorySelectionScreenState
                             (_isCurrentTeamActive && _selectedCategory != null)
                                 ? () async {
                                     if (widget.sessionId != null) {
-                                      // For online games, advance to next team in Firestore
-                                      // This will trigger navigation for all players
-                                      await FirestoreService.advanceToNextTeam(
-                                          widget.sessionId!);
+                                      // For online games, update game state with selected category and change status
+                                      await FirestoreService
+                                          .updateGameStateForRoleAssignment(
+                                        widget.sessionId!,
+                                        selectedCategory: _selectedCategory!,
+                                      );
                                     } else {
                                       // For local games, use the existing navigation service
                                       GameNavigationService

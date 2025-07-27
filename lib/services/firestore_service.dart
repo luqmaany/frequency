@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../screens/word_lists_manager_screen.dart';
 
 /// Service for handling all Firestore database operations
 /// Manages sessions, teams, game state, and host transfers for online multiplayer
@@ -105,6 +106,19 @@ class FirestoreService {
     }
 
     await _sessions.doc(sessionId).update(updates);
+  }
+
+  /// Update game state for role assignment with selected category
+  static Future<void> updateGameStateForRoleAssignment(
+    String sessionId, {
+    required WordCategory selectedCategory,
+  }) async {
+    await _sessions.doc(sessionId).update({
+      'gameState.status': 'role_assignment',
+      'gameState.selectedCategory': selectedCategory.name,
+      'gameState.categorySpin.isSpinning': false,
+      'gameState.categorySpin.selectedCategory': selectedCategory.name,
+    });
   }
 
   // ============================================================================
