@@ -102,7 +102,7 @@ class HomeScreen extends ConsumerWidget {
       Colors.red,
     ];
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5EEFF), // Very light purple
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
