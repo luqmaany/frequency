@@ -93,25 +93,6 @@ class OnlineGameNavigationService {
     // TODO: Add more navigation logic for other statuses/screens as needed
   }
 
-  static Future<void> navigateFromSettingsScreen(
-      BuildContext context, WidgetRef ref, String sessionId) async {
-    final contextData = await getSessionContext(sessionId);
-    if (contextData == null) return;
-    // For now, just navigate to CategorySelectionScreen for the first team
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => CategorySelectionScreen(
-            teamIndex: 0,
-            roundNumber: 1,
-            turnNumber: 1,
-            displayString: '',
-          ),
-        ),
-      );
-    });
-  }
-
   /// Helper to get teamIndex from teamId and teams array
   static int getTeamIndexById(List teams, String teamId) {
     return teams.indexWhere((team) => team['teamId'] == teamId);
