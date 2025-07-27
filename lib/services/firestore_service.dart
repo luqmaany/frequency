@@ -46,7 +46,7 @@ class FirestoreService {
   /// This triggers the navigation listener for all players in the session
   static Future<void> startGame(String sessionId) async {
     await _sessions.doc(sessionId).update({
-      'gameState.status': 'category_selection',
+      'gameState.status': 'start_game',
       'gameState.currentTeamIndex': 0,
       'gameState.roundNumber': 1,
       'gameState.turnNumber': 1,

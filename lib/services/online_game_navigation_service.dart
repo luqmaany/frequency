@@ -44,6 +44,13 @@ class OnlineGameNavigationService {
           _navigateToGameSettings(context, ref, sessionId, isHost);
         });
       }
+      if (status == 'start_game') {
+        print("navigate now please");
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToCategorySelection(
+              context, ref, sessionId, isHost, sessionData);
+        });
+      }
       // TODO: Add more navigation logic for other statuses as needed
       // Examples: 'category_selection', 'playing', 'game_over', etc.
     });
@@ -61,6 +68,20 @@ class OnlineGameNavigationService {
       MaterialPageRoute(
         builder: (context) =>
             GameSettingsScreen(isHost: isHost, sessionId: sessionId),
+      ),
+    );
+  }
+
+  static void _navigateToCategorySelection(BuildContext context, WidgetRef ref,
+      String sessionId, bool isHost, sessionData) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => CategorySelectionScreen(
+          teamIndex: 0,
+          roundNumber: 1,
+          turnNumber: 1,
+          displayString: sessionData['teams'][0]['teamName'] ?? '',
+        ),
       ),
     );
   }
