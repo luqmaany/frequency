@@ -7,12 +7,17 @@ import '../services/game_navigation_service.dart';
 import '../services/game_state_provider.dart';
 import '../utils/category_utils.dart';
 import 'package:convey/widgets/team_color_button.dart';
+import '../services/storage_service.dart';
+import '../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
   final String displayString;
+  final String? currentTeamDeviceId;
+  final String? sessionId; // Add sessionId for online games
 
   const CategorySelectionScreen({
     super.key,
@@ -20,6 +25,8 @@ class CategorySelectionScreen extends ConsumerStatefulWidget {
     required this.roundNumber,
     required this.turnNumber,
     required this.displayString,
+    this.currentTeamDeviceId,
+    this.sessionId, // Add sessionId for online games
   });
 
   @override
@@ -41,6 +48,7 @@ class _CategorySelectionScreenState
   static const int _totalSpins = 30; // More spins for smoother effect
   static const int _initialDelay = 25; // Faster initial speed
   static const int _finalDelay = 120; // Smoother final speed
+  String? _currentDeviceId; // Add this to track current device
 
   @override
   void initState() {
@@ -60,12 +68,89 @@ class _CategorySelectionScreenState
       parent: _scaleController,
       curve: Curves.easeInOut,
     ));
+
+    // Get current device ID
+    _getCurrentDeviceId();
+
+    // For online games, listen to spin state changes
+    if (widget.sessionId != null) {
+      _listenToSpinState();
+    }
+  }
+
+  Future<void> _getCurrentDeviceId() async {
+    // Import StorageService at the top of the file
+    final deviceId = await StorageService.getDeviceId();
+    setState(() {
+      _currentDeviceId = deviceId;
+    });
+  }
+
+  // Listen to spin state changes from Firestore for synchronized animation
+  void _listenToSpinState() {
+    if (widget.sessionId == null) return;
+
+    FirebaseFirestore.instance
+        .collection('sessions')
+        .doc(widget.sessionId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final gameState = data['gameState'] as Map<String, dynamic>?;
+      final categorySpin = gameState?['categorySpin'] as Map<String, dynamic>?;
+
+      if (categorySpin != null) {
+        final isSpinning = categorySpin['isSpinning'] as bool? ?? false;
+        final spinCount = categorySpin['spinCount'] as int? ?? 0;
+        final currentCategory =
+            categorySpin['currentCategory'] as String? ?? '';
+        final selectedCategory =
+            categorySpin['selectedCategory'] as String? ?? '';
+
+        setState(() {
+          _isSpinning = isSpinning;
+          _spinCount = spinCount;
+          _currentCategory = currentCategory;
+          if (selectedCategory.isNotEmpty) {
+            _selectedCategory = _getCategoryFromName(selectedCategory);
+          }
+        });
+      }
+    });
+  }
+
+  // Check if current device is the active team
+  bool get _isCurrentTeamActive {
+    // For local games (no sessionId), always allow interaction
+    if (widget.sessionId == null) {
+      return true;
+    }
+    // For online games, check if current device matches the active team
+    // If no deviceId is stored for the current team, allow all teams to interact (fallback)
+    if (widget.currentTeamDeviceId == null) {
+      return true;
+    }
+    return _currentDeviceId != null &&
+        _currentDeviceId == widget.currentTeamDeviceId;
   }
 
   @override
   void dispose() {
     _scaleController.dispose();
     _categoryTimer?.cancel();
+
+    // Clean up spin state for online games
+    if (widget.sessionId != null) {
+      FirestoreService.updateCategorySpinState(
+        widget.sessionId!,
+        isSpinning: false,
+        currentCategory: '',
+        selectedCategory: '',
+      );
+    }
+
     super.dispose();
   }
 
@@ -84,41 +169,80 @@ class _CategorySelectionScreenState
     }
   }
 
-  void _spinCategories() {
+  void _spinCategories() async {
     if (_isSpinning) return;
 
-    setState(() {
-      _isSpinning = true;
-      _selectedCategory = null;
-      _spinCount = 0;
-    });
+    // Only the active team can trigger the spin
+    if (!_isCurrentTeamActive) return;
+
+    // For online games, sync the spin state to Firestore
+    if (widget.sessionId != null) {
+      await FirestoreService.updateCategorySpinState(
+        widget.sessionId!,
+        isSpinning: true,
+        spinCount: 0,
+        currentCategory: '',
+      );
+    } else {
+      // For local games, just update local state
+      setState(() {
+        _isSpinning = true;
+        _selectedCategory = null;
+        _spinCount = 0;
+        _currentCategory = '';
+      });
+    }
 
     // Add a subtle scale animation for feedback
     _scaleController.forward().then((_) => _scaleController.reverse());
 
-    void updateCategory() {
+    void updateCategory() async {
       if (_spinCount >= _totalSpins) {
         _categoryTimer?.cancel();
 
         // Final selection with smooth transition
         final finalCategory = WordCategory
             .values[math.Random().nextInt(WordCategory.values.length)];
+        final finalCategoryName = CategoryUtils.getCategoryName(finalCategory);
 
-        setState(() {
-          _isSpinning = false;
-          _selectedCategory = finalCategory;
-          _currentCategory = CategoryUtils.getCategoryName(finalCategory);
-        });
+        if (widget.sessionId != null) {
+          // For online games, sync the final result
+          await FirestoreService.updateCategorySpinState(
+            widget.sessionId!,
+            isSpinning: false,
+            selectedCategory: finalCategoryName,
+            currentCategory: finalCategoryName,
+          );
+        } else {
+          // For local games, just update local state
+          setState(() {
+            _isSpinning = false;
+            _selectedCategory = finalCategory;
+            _currentCategory = finalCategoryName;
+          });
+        }
 
         // Add a celebration animation
         _scaleController.forward().then((_) => _scaleController.reverse());
         return;
       }
 
-      setState(() {
-        _currentCategory = CategoryUtils.getCategoryName(WordCategory
-            .values[math.Random().nextInt(WordCategory.values.length)]);
-      });
+      final newCategory = CategoryUtils.getCategoryName(WordCategory
+          .values[math.Random().nextInt(WordCategory.values.length)]);
+
+      if (widget.sessionId != null) {
+        // For online games, sync the current category
+        await FirestoreService.updateCategorySpinState(
+          widget.sessionId!,
+          currentCategory: newCategory,
+          spinCount: _spinCount + 1,
+        );
+      } else {
+        // For local games, just update local state
+        setState(() {
+          _currentCategory = newCategory;
+        });
+      }
 
       _spinCount++;
 
@@ -167,8 +291,38 @@ class _CategorySelectionScreenState
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 40),
+                    // Show waiting message for non-active teams in online games
+                    if (widget.sessionId != null && !_isCurrentTeamActive) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border:
+                              Border.all(color: Colors.orange.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.hourglass_empty,
+                                color: Colors.orange),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Waiting for ${widget.displayString} to select category...',
+                              style: const TextStyle(
+                                color: Colors.orange,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     GestureDetector(
-                      onTap: (!_isSpinning && _selectedCategory == null)
+                      onTap: (_isCurrentTeamActive &&
+                              !_isSpinning &&
+                              _selectedCategory == null)
                           ? _spinCategories
                           : null,
                       child: AnimatedBuilder(
@@ -244,20 +398,28 @@ class _CategorySelectionScreenState
                         text: 'Next',
                         icon: Icons.arrow_forward,
                         color: uiColors[1], // Green
-                        onPressed: _selectedCategory != null
-                            ? () {
-                                // Use navigation service to handle all navigation logic based on game state
-                                GameNavigationService
-                                    .navigateFromCategorySelection(
-                                  context,
-                                  ref,
-                                  widget.teamIndex,
-                                  widget.roundNumber,
-                                  widget.turnNumber,
-                                  _selectedCategory!,
-                                );
-                              }
-                            : null,
+                        onPressed:
+                            (_isCurrentTeamActive && _selectedCategory != null)
+                                ? () async {
+                                    if (widget.sessionId != null) {
+                                      // For online games, advance to next team in Firestore
+                                      // This will trigger navigation for all players
+                                      await FirestoreService.advanceToNextTeam(
+                                          widget.sessionId!);
+                                    } else {
+                                      // For local games, use the existing navigation service
+                                      GameNavigationService
+                                          .navigateFromCategorySelection(
+                                        context,
+                                        ref,
+                                        widget.teamIndex,
+                                        widget.roundNumber,
+                                        widget.turnNumber,
+                                        _selectedCategory!,
+                                      );
+                                    }
+                                  }
+                                : null,
                       ),
                     ),
                   ],

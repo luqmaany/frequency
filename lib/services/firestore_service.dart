@@ -54,6 +54,59 @@ class FirestoreService {
     });
   }
 
+  /// Advance to the next team's turn
+  static Future<void> advanceToNextTeam(String sessionId) async {
+    final doc = await _sessions.doc(sessionId).get();
+    if (!doc.exists) return;
+
+    final data = doc.data() as Map<String, dynamic>;
+    final gameState = data['gameState'] as Map<String, dynamic>?;
+    final teams = (data['teams'] as List?) ?? [];
+
+    if (gameState == null || teams.isEmpty) return;
+
+    final currentTeamIndex = gameState['currentTeamIndex'] as int? ?? 0;
+    final currentRound = gameState['roundNumber'] as int? ?? 1;
+
+    // Calculate next team index
+    final nextTeamIndex = (currentTeamIndex + 1) % teams.length;
+
+    // If we've gone through all teams, advance to next round
+    final nextRound = nextTeamIndex == 0 ? currentRound + 1 : currentRound;
+
+    await _sessions.doc(sessionId).update({
+      'gameState.currentTeamIndex': nextTeamIndex,
+      'gameState.roundNumber': nextRound,
+      'gameState.turnNumber': 1, // Each team has 1 turn per round
+    });
+  }
+
+  /// Update the category spin state for synchronized animation across all players
+  static Future<void> updateCategorySpinState(
+    String sessionId, {
+    bool? isSpinning,
+    int? spinCount,
+    String? currentCategory,
+    String? selectedCategory,
+  }) async {
+    final updates = <String, dynamic>{};
+
+    if (isSpinning != null) {
+      updates['gameState.categorySpin.isSpinning'] = isSpinning;
+    }
+    if (spinCount != null) {
+      updates['gameState.categorySpin.spinCount'] = spinCount;
+    }
+    if (currentCategory != null) {
+      updates['gameState.categorySpin.currentCategory'] = currentCategory;
+    }
+    if (selectedCategory != null) {
+      updates['gameState.categorySpin.selectedCategory'] = selectedCategory;
+    }
+
+    await _sessions.doc(sessionId).update(updates);
+  }
+
   // ============================================================================
   // TEAM MANAGEMENT
   // ============================================================================
