@@ -66,7 +66,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     _player1Controller.dispose();
     _player2Controller.dispose();
     _animationController.dispose();
-    _handleLeaveAndHostTransfer();
     super.dispose();
   }
 
@@ -225,6 +224,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) {
+          // Manual navigation - always remove team
           await _handleLeaveAndHostTransfer();
         }
       },
