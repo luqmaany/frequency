@@ -4,6 +4,7 @@ import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
 import '../services/online_game_navigation_service.dart';
+import '../services/firestore_service.dart';
 import '../widgets/game_settings.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
@@ -91,8 +92,7 @@ class GameSettingsScreen extends ConsumerWidget {
 
                             if (sessionId != null) {
                               // Centralized online game state update
-                              await OnlineGameNavigationService.startGame(
-                                  sessionId!);
+                              await FirestoreService.startGame(sessionId!);
                               // Do not navigate directly; let the navigation service handle it
                             } else {
                               GameNavigationService.navigateToNextScreen(
