@@ -28,13 +28,16 @@ class OnlineGameNavigationService {
     required WidgetRef ref,
     required String sessionId,
   }) {
-    ref.listen(sessionStreamProvider(sessionId), (prev, next) async {
-      final sessionSnap = next?.value;
+    ref.listen(sessionStatusProvider(sessionId), (prev, next) async {
+      final status = next?.value;
+      if (status == null) return;
+
+      // Get the full session data for navigation
+      final sessionAsync = ref.read(sessionStreamProvider(sessionId));
+      final sessionSnap = sessionAsync.value;
       final sessionData = sessionSnap?.data();
       if (sessionData == null) return;
 
-      final gameState = sessionData['gameState'] as Map<String, dynamic>?;
-      final status = gameState != null ? gameState['status'] as String? : null;
       final hostId = sessionData['hostId'] as String?;
       final deviceId = await StorageService.getDeviceId();
       final isHost = deviceId == hostId;
@@ -46,7 +49,6 @@ class OnlineGameNavigationService {
         });
       }
       if (status == 'start_game') {
-        print("navigate now please");
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _navigateToCategorySelection(
               context, ref, sessionId, isHost, sessionData);
@@ -122,25 +124,25 @@ class OnlineGameNavigationService {
     final selectedCategoryName =
         gameState?['selectedCategory'] as String? ?? 'Person';
 
-    String? currentTeamDeviceId;
+    // Get current team data
+    Map<String, dynamic>? currentTeam;
     if (teams.isNotEmpty && currentTeamIndex < teams.length) {
-      final currentTeam = teams[currentTeamIndex] as Map<String, dynamic>?;
-      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
+      currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
     }
 
     // Convert category name to WordCategory enum
     WordCategory selectedCategory;
     switch (selectedCategoryName) {
-      case 'Person':
+      case 'person':
         selectedCategory = WordCategory.person;
         break;
-      case 'Action':
+      case 'action':
         selectedCategory = WordCategory.action;
         break;
-      case 'World':
+      case 'world':
         selectedCategory = WordCategory.world;
         break;
-      case 'Random':
+      case 'random':
         selectedCategory = WordCategory.random;
         break;
       default:
@@ -154,6 +156,8 @@ class OnlineGameNavigationService {
           roundNumber: gameState?['roundNumber'] as int? ?? 1,
           turnNumber: gameState?['turnNumber'] as int? ?? 1,
           category: selectedCategory,
+          sessionId: sessionId,
+          onlineTeam: currentTeam,
         ),
       ),
     );
