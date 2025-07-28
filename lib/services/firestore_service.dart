@@ -157,6 +157,35 @@ class FirestoreService {
     });
   }
 
+  static Future<void> fromGameScreen(
+      String sessionId,
+      int teamIndex,
+      int roundNumber,
+      int turnNumber,
+      WordCategory category,
+      int correctCount,
+      int skipsLeft,
+      List<String> wordsGuessed,
+      List<String> wordsSkipped,
+      Set<String> disputedWords) async {
+    await _sessions.doc(sessionId).update({
+      'gameState.status': 'turn_over',
+      'gameState.turnHistory': FieldValue.arrayUnion([
+        {
+          'teamIndex': teamIndex,
+          'roundNumber': roundNumber,
+          'turnNumber': turnNumber,
+          'category': category.name,
+          'correctCount': correctCount,
+          'skipsLeft': skipsLeft,
+          'wordsGuessed': wordsGuessed,
+          'wordsSkipped': wordsSkipped,
+          'disputedWords': disputedWords,
+        }
+      ]),
+    });
+  }
+
   // ============================================================================
   // TEAM MANAGEMENT
   // ============================================================================
