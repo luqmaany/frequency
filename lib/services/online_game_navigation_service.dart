@@ -11,12 +11,32 @@ import '../screens/role_assignment_screen.dart';
 import '../screens/game_screen.dart';
 import '../screens/turn_over_screen.dart';
 import '../screens/word_lists_manager_screen.dart';
-// Import other screens as needed
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../screens/game_screen.dart';
 
 /// Service for handling navigation in online multiplayer games
 /// Manages automatic screen transitions based on Firestore game state changes
 class OnlineGameNavigationService {
+  // ============================================================================
+  // HELPER METHODS
+  // ============================================================================
+
+  // Convert category name to WordCategory enum
+  static WordCategory _convertCategoryNameToEnum(String categoryName) {
+    switch (categoryName) {
+      case 'person':
+        return WordCategory.person;
+      case 'action':
+        return WordCategory.action;
+      case 'world':
+        return WordCategory.world;
+      case 'random':
+        return WordCategory.random;
+      default:
+        return WordCategory.person;
+    }
+  }
+
   // ============================================================================
   // MAIN NAVIGATION METHOD
   // ============================================================================
@@ -58,6 +78,11 @@ class OnlineGameNavigationService {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _navigateToRoleAssignment(
               context, ref, sessionId, isHost, sessionData);
+        });
+      }
+      if (status == 'game') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToGameScreen(context, ref, sessionId, isHost, sessionData);
         });
       }
     });
@@ -133,23 +158,7 @@ class OnlineGameNavigationService {
     }
 
     // Convert category name to WordCategory enum
-    WordCategory selectedCategory;
-    switch (selectedCategoryName) {
-      case 'person':
-        selectedCategory = WordCategory.person;
-        break;
-      case 'action':
-        selectedCategory = WordCategory.action;
-        break;
-      case 'world':
-        selectedCategory = WordCategory.world;
-        break;
-      case 'random':
-        selectedCategory = WordCategory.random;
-        break;
-      default:
-        selectedCategory = WordCategory.person;
-    }
+    final selectedCategory = _convertCategoryNameToEnum(selectedCategoryName);
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -161,6 +170,43 @@ class OnlineGameNavigationService {
           sessionId: sessionId,
           onlineTeam: currentTeam,
           currentTeamDeviceId: currentTeamDeviceId,
+        ),
+      ),
+    );
+  }
+
+  static void _navigateToGameScreen(
+    BuildContext context,
+    WidgetRef ref,
+    String sessionId,
+    bool isHost,
+    sessionData,
+  ) {
+    final gameState = sessionData['gameState'] as Map<String, dynamic>?;
+    final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
+    final teams = sessionData['teams'] as List? ?? [];
+    final selectedCategoryName =
+        gameState?['selectedCategory'] as String? ?? 'Person';
+    final selectedCategory = _convertCategoryNameToEnum(selectedCategoryName);
+
+    // Get current team data
+    Map<String, dynamic>? currentTeam;
+    String? currentTeamDeviceId;
+    if (teams.isNotEmpty && currentTeamIndex < teams.length) {
+      currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
+      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => GameScreen(
+          teamIndex: currentTeamIndex,
+          roundNumber: gameState?['roundNumber'] as int? ?? 1,
+          turnNumber: gameState?['turnNumber'] as int? ?? 1,
+          category: selectedCategory,
+          currentTeamDeviceId: currentTeamDeviceId,
+          sessionId: sessionId,
+          onlineTeam: currentTeam,
         ),
       ),
     );
