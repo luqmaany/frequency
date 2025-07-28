@@ -126,8 +126,10 @@ class OnlineGameNavigationService {
 
     // Get current team data
     Map<String, dynamic>? currentTeam;
+    String? currentTeamDeviceId;
     if (teams.isNotEmpty && currentTeamIndex < teams.length) {
       currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
+      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
     }
 
     // Convert category name to WordCategory enum
@@ -158,6 +160,7 @@ class OnlineGameNavigationService {
           category: selectedCategory,
           sessionId: sessionId,
           onlineTeam: currentTeam,
+          currentTeamDeviceId: currentTeamDeviceId,
         ),
       ),
     );

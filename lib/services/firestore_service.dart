@@ -121,6 +121,42 @@ class FirestoreService {
     });
   }
 
+  /// Update role assignment state for synchronized viewing across all players
+  static Future<void> updateRoleAssignment(
+    String sessionId, {
+    String? guesser,
+    String? conveyor,
+    bool? isTransitioning,
+  }) async {
+    final updates = <String, dynamic>{};
+
+    if (guesser != null) {
+      updates['gameState.roleAssignment.guesser'] = guesser;
+    }
+    if (conveyor != null) {
+      updates['gameState.roleAssignment.conveyor'] = conveyor;
+    }
+    if (isTransitioning != null) {
+      updates['gameState.roleAssignment.isTransitioning'] = isTransitioning;
+    }
+
+    await _sessions.doc(sessionId).update(updates);
+  }
+
+  /// Transition from role assignment to game screen
+  static Future<void> fromRoleAssignment(
+    String sessionId, {
+    required String guesser,
+    required String conveyor,
+  }) async {
+    await _sessions.doc(sessionId).update({
+      'gameState.status': 'game',
+      'gameState.currentGuesser': guesser,
+      'gameState.currentConveyor': conveyor,
+      'gameState.roleAssignment.isTransitioning': false,
+    });
+  }
+
   // ============================================================================
   // TEAM MANAGEMENT
   // ============================================================================
