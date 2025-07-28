@@ -105,8 +105,10 @@ class GameNavigationService {
     int teamIndex,
     int roundNumber,
     int turnNumber,
-    WordCategory category,
-  ) {
+    WordCategory category, {
+    String? sessionId,
+    String? currentTeamDeviceId,
+  }) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => GameScreen(
@@ -114,6 +116,8 @@ class GameNavigationService {
           roundNumber: roundNumber,
           turnNumber: turnNumber,
           category: category,
+          sessionId: sessionId,
+          currentTeamDeviceId: currentTeamDeviceId,
         ),
       ),
     );
