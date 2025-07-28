@@ -5,6 +5,10 @@ import '../services/game_navigation_service.dart';
 import 'word_lists_manager_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import 'package:convey/utils/category_utils.dart';
+import '../services/storage_service.dart';
+import '../services/firestore_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -15,6 +19,7 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
   // Online game parameters
   final String? sessionId;
   final Map<String, dynamic>? onlineTeam;
+  final String? currentTeamDeviceId; // Add device ID for interaction control
 
   const RoleAssignmentScreen({
     super.key,
@@ -24,6 +29,7 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
     required this.category,
     this.sessionId,
     this.onlineTeam,
+    this.currentTeamDeviceId,
   });
 
   @override
@@ -56,6 +62,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   int _swipeStep = 0;
   bool _swipeRightDone = false;
   bool _swipeLeftDone = false;
+  String? _currentDeviceId;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      _roleAssignmentSubscription;
 
   final List<_SwipeTutorialStep> _swipeSteps = [
     _SwipeTutorialStep(
@@ -87,15 +96,83 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         curve: Curves.easeInOut,
       ),
     );
-    // Automatically assign roles at start
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _assignRandomRoles();
+
+    // Get current device ID
+    _getCurrentDeviceId();
+
+    // For online games, listen to role assignment changes
+    if (widget.sessionId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _assignRandomRoles();
+      });
+      _listenToRoleAssignment();
+    } else {
+      // Local game: automatically assign roles at start
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _assignRandomRoles();
+      });
+    }
+  }
+
+  Future<void> _getCurrentDeviceId() async {
+    final deviceId = await StorageService.getDeviceId();
+    setState(() {
+      _currentDeviceId = deviceId;
     });
+  }
+
+  // Listen to role assignment changes from Firestore for synchronized viewing
+  void _listenToRoleAssignment() {
+    if (widget.sessionId == null) return;
+
+    _roleAssignmentSubscription = FirebaseFirestore.instance
+        .collection('sessions')
+        .doc(widget.sessionId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final gameState = data['gameState'] as Map<String, dynamic>?;
+      final roleAssignment =
+          gameState?['roleAssignment'] as Map<String, dynamic>?;
+
+      if (roleAssignment != null) {
+        final guesser = roleAssignment['guesser'] as String?;
+        final conveyor = roleAssignment['conveyor'] as String?;
+        final isTransitioning =
+            roleAssignment['isTransitioning'] as bool? ?? false;
+
+        if (mounted) {
+          setState(() {
+            _selectedGuesser = guesser;
+            _selectedConveyor = conveyor;
+            _isTransitioning = isTransitioning;
+          });
+        }
+      }
+    });
+  }
+
+  // Check if current device is the active team
+  bool get _isCurrentTeamActive {
+    // For local games (no sessionId), always allow interaction
+    if (widget.sessionId == null) {
+      return true;
+    }
+    // For online games, check if current device matches the active team
+    // If no deviceId is stored for the current team, allow all teams to interact (fallback)
+    if (widget.currentTeamDeviceId == null) {
+      return true;
+    }
+    return _currentDeviceId != null &&
+        _currentDeviceId == widget.currentTeamDeviceId;
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _roleAssignmentSubscription?.cancel();
     super.dispose();
   }
 
@@ -125,24 +202,69 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     }
 
     final random = teamPlayers.toList()..shuffle();
-    setState(() {
-      _selectedGuesser = random[0];
-      _selectedConveyor = random[1];
-    });
+
+    if (widget.sessionId != null) {
+      // Online game: update Firestore
+      _updateRoleAssignment(random[0], random[1], false);
+    } else {
+      // Local game: update local state
+      setState(() {
+        _selectedGuesser = random[0];
+        _selectedConveyor = random[1];
+      });
+    }
+  }
+
+  void _updateRoleAssignment(
+      String guesser, String conveyor, bool isTransitioning) {
+    if (widget.sessionId != null) {
+      // Online game: update Firestore
+      FirestoreService.updateRoleAssignment(
+        widget.sessionId!,
+        guesser: guesser,
+        conveyor: conveyor,
+        isTransitioning: isTransitioning,
+      );
+    } else {
+      // Local game: update local state
+      setState(() {
+        _selectedGuesser = guesser;
+        _selectedConveyor = conveyor;
+        _isTransitioning = isTransitioning;
+      });
+    }
   }
 
   void _showTransitionScreen() {
-    setState(() {
-      _isTransitioning = true;
-    });
+    if (widget.sessionId != null) {
+      // Online game: update Firestore
+      _updateRoleAssignment(_selectedGuesser!, _selectedConveyor!, true);
+    } else {
+      // Local game: update local state
+      setState(() {
+        _isTransitioning = true;
+      });
+    }
   }
 
   void _switchRoles() {
-    setState(() {
-      final temp = _selectedGuesser;
-      _selectedGuesser = _selectedConveyor;
-      _selectedConveyor = temp;
-    });
+    if (!_isCurrentTeamActive) return; // Only current team can switch roles
+
+    final temp = _selectedGuesser;
+    final newGuesser = _selectedConveyor;
+    final newConveyor = temp;
+
+    if (widget.sessionId != null) {
+      // Online game: update Firestore
+      _updateRoleAssignment(newGuesser!, newConveyor!, _isTransitioning);
+    } else {
+      // Local game: update local state
+      setState(() {
+        _selectedGuesser = newGuesser;
+        _selectedConveyor = newConveyor;
+      });
+    }
+
     _animationController.forward(from: 0).then((_) {
       _animationController.reverse();
     });
@@ -222,7 +344,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               // No extra space above the card now
               Expanded(
                 child: Center(
-                  child: (_swipeRightDone && _swipeLeftDone)
+                  child: (_swipeRightDone && _swipeLeftDone) ||
+                          !_isCurrentTeamActive
                       ? SizedBox.shrink()
                       : Dismissible(
                           key: ValueKey(_swipeStep),
@@ -293,8 +416,16 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                   text: 'Start',
                   icon: Icons.play_arrow,
                   color: uiColors[1], // Green
-                  onPressed: (_swipeRightDone && _swipeLeftDone)
-                      ? () {
+                  onPressed: (_swipeRightDone && _swipeLeftDone) &&
+                          _isCurrentTeamActive
+                      ? () async {
+                          if (widget.sessionId != null) {
+                            await FirestoreService.fromRoleAssignment(
+                              widget.sessionId!,
+                              guesser: _selectedGuesser!,
+                              conveyor: _selectedConveyor!,
+                            );
+                          }
                           GameNavigationService.navigateToGameScreen(
                             context,
                             widget.teamIndex,
@@ -358,6 +489,34 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               style: Theme.of(context).textTheme.headlineMedium,
               textAlign: TextAlign.center,
             ),
+            // Show current team info for online games
+            if (widget.sessionId != null && widget.onlineTeam != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? teamColor.border.withOpacity(0.2)
+                      : teamColor.background.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: teamColor.border.withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  _isCurrentTeamActive
+                      ? 'Your turn to assign roles'
+                      : '${widget.onlineTeam!['teamName'] ?? 'Team'}\'s turn',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: teamColor.text,
+                        fontWeight: FontWeight.w600,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             Expanded(
               child: Column(
@@ -432,24 +591,29 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? teamColor.border.withOpacity(0.2)
-                          : teamColor.border.withOpacity(0.1),
+                          ? teamColor.border
+                              .withOpacity(_isCurrentTeamActive ? 0.2 : 0.1)
+                          : teamColor.border
+                              .withOpacity(_isCurrentTeamActive ? 0.1 : 0.05),
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? teamColor.border.withOpacity(0.8)
+                            ? teamColor.border
+                                .withOpacity(_isCurrentTeamActive ? 0.8 : 0.4)
                             : teamColor.border,
                         width: 2,
                       ),
                     ),
                     child: IconButton(
-                      onPressed: _switchRoles,
+                      onPressed: _isCurrentTeamActive ? _switchRoles : null,
                       icon: Icon(
                         Icons.swap_vert,
                         size: 32,
                         color: Theme.of(context).brightness == Brightness.dark
-                            ? teamColor.border.withOpacity(0.9)
-                            : teamColor.border,
+                            ? teamColor.border
+                                .withOpacity(_isCurrentTeamActive ? 0.9 : 0.4)
+                            : teamColor.border
+                                .withOpacity(_isCurrentTeamActive ? 1.0 : 0.4),
                       ),
                     ),
                   ),
@@ -526,13 +690,19 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               child: SizedBox(
                 width: 200,
                 child: TeamColorButton(
-                  text: 'Pick For Us',
-                  icon: Icons.shuffle,
+                  text: _isCurrentTeamActive
+                      ? 'Pick For Us'
+                      : 'Waiting for team...',
+                  icon: _isCurrentTeamActive
+                      ? Icons.shuffle
+                      : Icons.hourglass_empty,
                   color: uiColors[0], // Blue
-                  onPressed: () {
-                    _assignRandomRoles();
-                    _showTransitionScreen();
-                  },
+                  onPressed: _isCurrentTeamActive
+                      ? () {
+                          _assignRandomRoles();
+                          _showTransitionScreen();
+                        }
+                      : null,
                 ),
               ),
             ),
@@ -540,12 +710,16 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
             SizedBox(
               width: 200,
               child: TeamColorButton(
-                text: 'Next',
-                icon: Icons.arrow_forward,
+                text: _isCurrentTeamActive ? 'Next' : 'Waiting for team...',
+                icon: _isCurrentTeamActive
+                    ? Icons.arrow_forward
+                    : Icons.hourglass_empty,
                 color: uiColors[1], // Green
-                onPressed: () {
-                  _showTransitionScreen();
-                },
+                onPressed: _isCurrentTeamActive
+                    ? () {
+                        _showTransitionScreen();
+                      }
+                    : null,
               ),
             ),
           ],
