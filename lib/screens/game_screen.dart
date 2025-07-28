@@ -23,6 +23,7 @@ class GameScreen extends ConsumerStatefulWidget {
   final String? sessionId;
   final String? currentTeamDeviceId;
   final Map<String, dynamic>? onlineTeam;
+  final Map<String, dynamic>? sessionData;
 
   const GameScreen({
     super.key,
@@ -33,6 +34,7 @@ class GameScreen extends ConsumerStatefulWidget {
     this.sessionId,
     this.currentTeamDeviceId,
     this.onlineTeam,
+    this.sessionData,
   });
 
   @override
@@ -87,9 +89,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _isCurrentTeamActive = true;
     }
 
-    final gameConfig = ref.read(gameSetupProvider);
-    initializeGameMechanics(
-        gameConfig.roundTimeSeconds, gameConfig.allowedSkips);
+    final gameConfig = _getGameConfig();
+    initializeGameMechanics(gameConfig['roundTimeSeconds'] as int,
+        gameConfig['allowedSkips'] as int);
     loadInitialWords();
 
     // Pause timer during countdown
@@ -102,6 +104,32 @@ class _GameScreenState extends ConsumerState<GameScreen>
       _currentDeviceId = deviceId;
       _isCurrentTeamActive = _currentDeviceId == widget.currentTeamDeviceId;
     });
+  }
+
+  // Get game configuration for both local and online games
+  Map<String, dynamic> _getGameConfig() {
+    if (widget.sessionId != null && widget.sessionData != null) {
+      // Online game: get configuration from session data
+      final settings = widget.sessionData!['settings'] as Map<String, dynamic>?;
+      if (settings != null) {
+        return {
+          'roundTimeSeconds': settings['roundTimeSeconds'] as int? ?? 60,
+          'allowedSkips': settings['allowedSkips'] as int? ?? 3,
+        };
+      }
+      // Fallback to default values if settings not found
+      return {
+        'roundTimeSeconds': 60,
+        'allowedSkips': 3,
+      };
+    } else {
+      // Local game: get from game setup provider
+      final gameConfig = ref.read(gameSetupProvider);
+      return {
+        'roundTimeSeconds': gameConfig.roundTimeSeconds,
+        'allowedSkips': gameConfig.allowedSkips,
+      };
+    }
   }
 
   // Get current team players safely for both local and online games
@@ -181,9 +209,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
 
     final gameConfig = ref.watch(gameSetupProvider);
-    final colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
-        ? gameConfig.teamColorIndices[widget.teamIndex]
-        : widget.teamIndex % teamColors.length;
+    int colorIndex;
+    if (widget.sessionId != null && widget.onlineTeam != null) {
+      // Online game: use the provided color index
+      colorIndex = widget.onlineTeam!['colorIndex'] as int? ?? 0;
+    } else {
+      // Local game: get color index from game setup provider
+      colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
+          ? gameConfig.teamColorIndices[widget.teamIndex]
+          : widget.teamIndex % teamColors.length;
+    }
     final teamColor = teamColors[colorIndex];
 
     return WillPopScope(
@@ -320,72 +355,127 @@ class _GameScreenState extends ConsumerState<GameScreen>
   Widget _buildSpectatorScreen() {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.visibility,
-                size: 80,
-                color: Theme.of(context).colorScheme.secondary,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Spectator Mode',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
+                ),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Spacer(),
+                        // Spectator icon
+                        Icon(
+                          Icons.visibility,
+                          size: constraints.maxWidth * 0.2, // Responsive size
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                        const SizedBox(height: 24),
+                        // Spectator mode title
+                        Text(
+                          'Spectator Mode',
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 16),
+                        // Category display
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                CategoryUtils.getCategoryColor(widget.category)
+                                    .withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: CategoryUtils.getCategoryColor(
+                                  widget.category),
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            CategoryUtils.getCategoryName(widget.category),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: CategoryUtils.getCategoryColor(
+                                      widget.category),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Team info
+                        Text(
+                          widget.onlineTeam != null
+                              ? '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing'
+                              : 'Team ${widget.teamIndex + 1} is currently playing',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Round ${widget.roundNumber}, Turn ${widget.turnNumber}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 32),
+                        // Info message
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceVariant
+                                .withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .outline
+                                  .withOpacity(0.2),
+                            ),
+                          ),
+                          child: Text(
+                            'You\'ll be able to play when it\'s your team\'s turn',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurface
+                                      .withOpacity(0.7),
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        const Spacer(),
+                      ],
                     ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: CategoryUtils.getCategoryColor(widget.category)
-                      .withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: CategoryUtils.getCategoryColor(widget.category),
-                    width: 2,
                   ),
                 ),
-                child: Text(
-                  CategoryUtils.getCategoryName(widget.category),
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: CategoryUtils.getCategoryColor(widget.category),
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Team ${widget.teamIndex + 1} is currently playing',
-                style: Theme.of(context).textTheme.headlineSmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Round ${widget.roundNumber}, Turn ${widget.turnNumber}',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.secondary,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 48),
-              Text(
-                'You\'ll be able to play when it\'s your team\'s turn',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
-                          .withOpacity(0.7),
-                    ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

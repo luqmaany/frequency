@@ -207,6 +207,7 @@ class OnlineGameNavigationService {
           currentTeamDeviceId: currentTeamDeviceId,
           sessionId: sessionId,
           onlineTeam: currentTeam,
+          sessionData: sessionData,
         ),
       ),
     );
