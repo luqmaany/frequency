@@ -12,12 +12,18 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int turnNumber;
   final WordCategory category;
 
+  // Online game parameters
+  final String? sessionId;
+  final Map<String, dynamic>? onlineTeam;
+
   const RoleAssignmentScreen({
     super.key,
     required this.teamIndex,
     required this.roundNumber,
     required this.turnNumber,
     required this.category,
+    this.sessionId,
+    this.onlineTeam,
   });
 
   @override
@@ -94,19 +100,31 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   }
 
   void _assignRandomRoles() {
-    final gameConfig = ref.read(gameSetupProvider);
-    final teams = gameConfig.teams;
+    List<String> teamPlayers = [];
 
-    if (teams.isEmpty || widget.teamIndex >= teams.length) {
+    // Check if this is an online game
+    if (widget.sessionId != null && widget.onlineTeam != null) {
+      // Online game: get team data from online teams
+      final team = widget.onlineTeam;
+      final players = team?['players'] as List?;
+      if (players != null) {
+        teamPlayers = players.map((p) => p.toString()).toList();
+      }
+    } else {
+      // Local game: get team data from game setup provider
+      final gameConfig = ref.read(gameSetupProvider);
+      final teams = gameConfig.teams;
+
+      if (teams.isNotEmpty && widget.teamIndex < teams.length) {
+        teamPlayers = teams[widget.teamIndex];
+      }
+    }
+
+    if (teamPlayers.length < 2) {
       return;
     }
 
-    final team = teams[widget.teamIndex];
-    if (team.length < 2) {
-      return;
-    }
-
-    final random = team.toList()..shuffle();
+    final random = teamPlayers.toList()..shuffle();
     setState(() {
       _selectedGuesser = random[0];
       _selectedConveyor = random[1];
@@ -141,10 +159,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     }
 
     // Get the team color for the current team
-    final gameConfig = ref.watch(gameSetupProvider);
-    final colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
-        ? gameConfig.teamColorIndices[widget.teamIndex]
-        : widget.teamIndex % teamColors.length;
+    int colorIndex;
+    if (widget.sessionId != null && widget.onlineTeam != null) {
+      // Online game: use the provided color index
+      colorIndex = widget.onlineTeam!['colorIndex'] as int? ?? 0;
+    } else {
+      // Local game: get color index from game setup provider
+      final gameConfig = ref.watch(gameSetupProvider);
+      colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
+          ? gameConfig.teamColorIndices[widget.teamIndex]
+          : widget.teamIndex % teamColors.length;
+    }
     final teamColor = teamColors[colorIndex];
 
     final Color categoryColor = CategoryUtils.getCategoryColor(widget.category);

@@ -15,3 +15,12 @@ final sessionSettingsProvider =
   return FirestoreService.sessionStream(sessionId)
       .map((doc) => doc.data()?['settings'] as Map<String, dynamic>?);
 });
+
+/// Provides a stream of only the game status for a given session ID.
+/// Only triggers when the status field actually changes.
+final sessionStatusProvider =
+    StreamProvider.family<String?, String>((ref, sessionId) {
+  return FirestoreService.sessionStream(sessionId)
+      .map((doc) => doc.data()?['gameState']?['status'] as String?)
+      .distinct(); // Only emit when the value actually changes
+});

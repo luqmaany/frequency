@@ -267,6 +267,12 @@ class _CategorySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
+    OnlineGameNavigationService.navigate(
+      context: context,
+      ref: ref,
+      sessionId: widget.sessionId!,
+    );
+
     // Get the team color for the current team
     final gameState = ref.watch(gameStateProvider);
     TeamColor teamColor;
@@ -280,12 +286,6 @@ class _CategorySelectionScreenState
       // Fallback to first team color if game state is not available
       teamColor = teamColors[0];
     }
-
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: widget.sessionId!,
-    );
 
     return Scaffold(
       body: SafeArea(
@@ -410,30 +410,29 @@ class _CategorySelectionScreenState
                         text: 'Next',
                         icon: Icons.arrow_forward,
                         color: uiColors[1], // Green
-                        onPressed:
-                            (_isCurrentTeamActive && _selectedCategory != null)
-                                ? () async {
-                                    if (widget.sessionId != null) {
-                                      // For online games, update game state with selected category and change status
-                                      await FirestoreService
-                                          .updateGameStateFromCategorySelection(
-                                        widget.sessionId!,
-                                        selectedCategory: _selectedCategory!,
-                                      );
-                                    } else {
-                                      // For local games, use the existing navigation service
-                                      GameNavigationService
-                                          .navigateFromCategorySelection(
-                                        context,
-                                        ref,
-                                        widget.teamIndex,
-                                        widget.roundNumber,
-                                        widget.turnNumber,
-                                        _selectedCategory!,
-                                      );
-                                    }
-                                  }
-                                : null,
+                        onPressed: (_isCurrentTeamActive &&
+                                _selectedCategory != null)
+                            ? () async {
+                                if (widget.sessionId != null) {
+                                  // For online games, update game state with selected category and change status
+                                  await FirestoreService.fromCategorySelection(
+                                    widget.sessionId!,
+                                    selectedCategory: _selectedCategory!,
+                                  );
+                                } else {
+                                  // For local games, use the existing navigation service
+                                  GameNavigationService
+                                      .navigateFromCategorySelection(
+                                    context,
+                                    ref,
+                                    widget.teamIndex,
+                                    widget.roundNumber,
+                                    widget.turnNumber,
+                                    _selectedCategory!,
+                                  );
+                                }
+                              }
+                            : null,
                       ),
                     ),
                   ],
