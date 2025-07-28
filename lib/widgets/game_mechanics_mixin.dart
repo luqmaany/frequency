@@ -78,7 +78,6 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     setState(() {
       _correctCount++;
       _wordsGuessed.add(word);
-      _usedWords.add(word);
     });
     onWordGuessed(word);
   }
@@ -89,7 +88,6 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       setState(() {
         _skipsLeft--;
         _wordsSkipped.add(word);
-        _usedWords.add(word);
       });
       // Increment skip count for the word
       ref.read(wordsProvider.notifier).incrementWordSkip(word);
