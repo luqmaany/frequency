@@ -8,7 +8,7 @@ import '../screens/category_selection_screen.dart';
 import '../screens/game_over_screen.dart';
 import '../screens/scoreboard_screen.dart';
 import '../screens/role_assignment_screen.dart';
-import '../screens/game_screen.dart';
+import '../screens/online_game_screen.dart';
 import '../screens/turn_over_screen.dart';
 import '../screens/word_lists_manager_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -199,7 +199,7 @@ class OnlineGameNavigationService {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => GameScreen(
+        builder: (context) => OnlineGameScreen(
           teamIndex: currentTeamIndex,
           roundNumber: gameState?['roundNumber'] as int? ?? 1,
           turnNumber: gameState?['turnNumber'] as int? ?? 1,

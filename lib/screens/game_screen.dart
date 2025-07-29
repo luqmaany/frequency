@@ -9,9 +9,7 @@ import '../widgets/game_mechanics_mixin.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
 import '../widgets/game_countdown.dart';
-import '../widgets/team_color_button.dart';
-import '../services/storage_service.dart';
-import '../utils/category_utils.dart';
+import '../widgets/team_color_button.dart'; // Added import for TeamColorButton
 
 class GameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -19,22 +17,12 @@ class GameScreen extends ConsumerStatefulWidget {
   final int turnNumber;
   final WordCategory category;
 
-  // Online game parameters
-  final String? sessionId;
-  final String? currentTeamDeviceId;
-  final Map<String, dynamic>? onlineTeam;
-  final Map<String, dynamic>? sessionData;
-
   const GameScreen({
     super.key,
     required this.teamIndex,
     required this.roundNumber,
     required this.turnNumber,
     required this.category,
-    this.sessionId,
-    this.currentTeamDeviceId,
-    this.onlineTeam,
-    this.sessionData,
   });
 
   @override
@@ -44,8 +32,6 @@ class GameScreen extends ConsumerStatefulWidget {
 class _GameScreenState extends ConsumerState<GameScreen>
     with GameMechanicsMixin<GameScreen> {
   bool _isCountdownActive = true;
-  String? _currentDeviceId;
-  bool _isCurrentTeamActive = false;
 
   @override
   WordCategory get category => widget.category;
@@ -80,77 +66,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void initState() {
     super.initState();
-
-    // Get current device ID for online games
-    if (widget.sessionId != null) {
-      _getCurrentDeviceId();
-    } else {
-      // Local game: always active
-      _isCurrentTeamActive = true;
-    }
-
-    final gameConfig = _getGameConfig();
-    initializeGameMechanics(gameConfig['roundTimeSeconds'] as int,
-        gameConfig['allowedSkips'] as int);
+    final gameConfig = ref.read(gameSetupProvider);
+    initializeGameMechanics(
+        gameConfig.roundTimeSeconds, gameConfig.allowedSkips);
     loadInitialWords();
 
     // Pause timer during countdown
     pauseTimer();
-  }
-
-  Future<void> _getCurrentDeviceId() async {
-    final deviceId = await StorageService.getDeviceId();
-    setState(() {
-      _currentDeviceId = deviceId;
-      _isCurrentTeamActive = _currentDeviceId == widget.currentTeamDeviceId;
-    });
-  }
-
-  // Get game configuration for both local and online games
-  Map<String, dynamic> _getGameConfig() {
-    if (widget.sessionId != null && widget.sessionData != null) {
-      // Online game: get configuration from session data
-      final settings = widget.sessionData!['settings'] as Map<String, dynamic>?;
-      if (settings != null) {
-        return {
-          'roundTimeSeconds': settings['roundTimeSeconds'] as int? ?? 60,
-          'allowedSkips': settings['allowedSkips'] as int? ?? 3,
-        };
-      }
-      // Fallback to default values if settings not found
-      return {
-        'roundTimeSeconds': 60,
-        'allowedSkips': 3,
-      };
-    } else {
-      // Local game: get from game setup provider
-      final gameConfig = ref.read(gameSetupProvider);
-      return {
-        'roundTimeSeconds': gameConfig.roundTimeSeconds,
-        'allowedSkips': gameConfig.allowedSkips,
-      };
-    }
-  }
-
-  // Get current team players safely for both local and online games
-  List<String> _getCurrentTeamPlayers() {
-    if (widget.sessionId != null && widget.onlineTeam != null) {
-      // Online game: get team data from online team
-      final players = widget.onlineTeam!['players'] as List?;
-      if (players != null && players.length >= 2) {
-        return players.map((p) => p.toString()).toList();
-      }
-      // Fallback if not enough players
-      return ['Player 1', 'Player 2'];
-    } else {
-      // Local game: get from game state provider
-      final players = ref.read(currentTeamPlayersProvider);
-      if (players.length >= 2) {
-        return players;
-      }
-      // Fallback if not enough players
-      return ['Player 1', 'Player 2'];
-    }
   }
 
   @override
@@ -169,12 +91,6 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Show spectator screen for non-active teams in online games
-    if (widget.sessionId != null && !_isCurrentTeamActive) {
-      return _buildSpectatorScreen();
-    }
-
-    // Show actual game screen for active team or local games
     if (currentWords.isEmpty) {
       return const Scaffold(
         body: Center(
@@ -209,16 +125,9 @@ class _GameScreenState extends ConsumerState<GameScreen>
     }
 
     final gameConfig = ref.watch(gameSetupProvider);
-    int colorIndex;
-    if (widget.sessionId != null && widget.onlineTeam != null) {
-      // Online game: use the provided color index
-      colorIndex = widget.onlineTeam!['colorIndex'] as int? ?? 0;
-    } else {
-      // Local game: get color index from game setup provider
-      colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
-          ? gameConfig.teamColorIndices[widget.teamIndex]
-          : widget.teamIndex % teamColors.length;
-    }
+    final colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
+        ? gameConfig.teamColorIndices[widget.teamIndex]
+        : widget.teamIndex % teamColors.length;
     final teamColor = teamColors[colorIndex];
 
     return WillPopScope(
@@ -295,7 +204,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Text(
-                      "${_getCurrentTeamPlayers()[0]} & ${_getCurrentTeamPlayers()[1]}'s Turn",
+                      "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
                       style: Theme.of(context).textTheme.headlineMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -340,142 +249,13 @@ class _GameScreenState extends ConsumerState<GameScreen>
               // Countdown overlay
               if (_isCountdownActive)
                 GameCountdown(
-                  player1Name: _getCurrentTeamPlayers()[0],
-                  player2Name: _getCurrentTeamPlayers()[1],
+                  player1Name: ref.read(currentTeamPlayersProvider)[0],
+                  player2Name: ref.read(currentTeamPlayersProvider)[1],
                   category: category,
                   onCountdownComplete: _onCountdownComplete,
                 ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpectatorScreen() {
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Spacer(),
-                        // Spectator icon
-                        Icon(
-                          Icons.visibility,
-                          size: constraints.maxWidth * 0.2, // Responsive size
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                        const SizedBox(height: 24),
-                        // Spectator mode title
-                        Text(
-                          'Spectator Mode',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        // Category display
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color:
-                                CategoryUtils.getCategoryColor(widget.category)
-                                    .withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: CategoryUtils.getCategoryColor(
-                                  widget.category),
-                              width: 2,
-                            ),
-                          ),
-                          child: Text(
-                            CategoryUtils.getCategoryName(widget.category),
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  color: CategoryUtils.getCategoryColor(
-                                      widget.category),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        // Team info
-                        Text(
-                          widget.onlineTeam != null
-                              ? '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing'
-                              : 'Team ${widget.teamIndex + 1} is currently playing',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Round ${widget.roundNumber}, Turn ${widget.turnNumber}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.secondary,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 32),
-                        // Info message
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .surfaceVariant
-                                .withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .outline
-                                  .withOpacity(0.2),
-                            ),
-                          ),
-                          child: Text(
-                            'You\'ll be able to play when it\'s your team\'s turn',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurface
-                                      .withOpacity(0.7),
-                                ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                        const Spacer(),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            );
-          },
         ),
       ),
     );
