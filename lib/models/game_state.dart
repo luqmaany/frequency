@@ -1,5 +1,4 @@
 import 'game_config.dart';
-import '../screens/word_lists_manager_screen.dart';
 
 enum PlayerRole { conveyor, guesser }
 
@@ -68,7 +67,7 @@ class GameState {
   final List<int> tiedTeamIndices;
   final bool isInTiebreaker;
   final int tiebreakerRound;
-  final WordCategory? tiebreakerCategory;
+  final String? tiebreakerCategory;
 
   GameState({
     required this.config,
@@ -114,7 +113,7 @@ class GameState {
     List<int>? tiedTeamIndices,
     bool? isInTiebreaker,
     int? tiebreakerRound,
-    WordCategory? tiebreakerCategory,
+    String? tiebreakerCategory,
   }) {
     return GameState(
       config: config ?? this.config,

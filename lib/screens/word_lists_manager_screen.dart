@@ -1,30 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/word_lists.dart';
-
-// TODO: Move these to a separate models file later
-enum WordCategory {
-  person,
-  action,
-  world,
-  random,
-}
-
-class Word {
-  final String text;
-  final WordCategory category;
-  int appearanceCount;
-  int skipCount;
-  int guessedCount;
-
-  Word({
-    required this.text,
-    required this.category,
-    this.appearanceCount = 0,
-    this.skipCount = 0,
-    this.guessedCount = 0,
-  });
-}
+import '../models/category.dart';
 
 // TODO: Move to a separate providers file later
 final wordsProvider = StateNotifierProvider<WordsNotifier, List<Word>>((ref) {
@@ -39,14 +16,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
   void _initializeWords() {
     // Add all words to state
     final allWords = [
-      ...WordLists.people
-          .map((word) => Word(text: word, category: WordCategory.person)),
+      ...WordLists.people.map((word) => Word(text: word, categoryId: 'person')),
       ...WordLists.actions
-          .map((word) => Word(text: word, category: WordCategory.action)),
+          .map((word) => Word(text: word, categoryId: 'action')),
       ...WordLists.locations
-          .map((word) => Word(text: word, category: WordCategory.world)),
-      ...WordLists.random
-          .map((word) => Word(text: word, category: WordCategory.random)),
+          .map((word) => Word(text: word, categoryId: 'world')),
+      ...WordLists.random.map((word) => Word(text: word, categoryId: 'random')),
     ];
 
     // Remove duplicates by keeping the first occurrence of each word
@@ -59,10 +34,13 @@ class WordsNotifier extends StateNotifier<List<Word>> {
         final existing = uniqueWords[word.text]!;
         uniqueWords[word.text] = Word(
           text: existing.text,
-          category: existing.category,
-          appearanceCount: existing.appearanceCount + word.appearanceCount,
-          skipCount: existing.skipCount + word.skipCount,
-          guessedCount: existing.guessedCount + word.guessedCount,
+          categoryId: existing.categoryId,
+          stats: WordStats(
+            appearanceCount:
+                existing.stats.appearanceCount + word.stats.appearanceCount,
+            skipCount: existing.stats.skipCount + word.stats.skipCount,
+            guessedCount: existing.stats.guessedCount + word.stats.guessedCount,
+          ),
         );
       }
     }
