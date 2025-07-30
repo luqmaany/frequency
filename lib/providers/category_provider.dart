@@ -181,6 +181,231 @@ class CategoryProvider extends StateNotifier<Map<String, Category>> {
     });
     return sortedWords;
   }
+
+  // Add a word to a category
+  void addWord(Word word) {
+    final category = state[word.categoryId];
+    if (category == null) return;
+
+    // Check if word already exists to prevent duplicates
+    final existingWord =
+        category.words.where((w) => w.text == word.text).firstOrNull;
+    if (existingWord != null) {
+      // Update the existing word instead of adding a duplicate
+      final updatedWords = category.words.map((w) {
+        if (w.text == word.text) {
+          return Word(
+            text: w.text,
+            categoryId: word.categoryId, // Use the new category if different
+            stats: w.stats,
+          );
+        }
+        return w;
+      }).toList();
+
+      final updatedCategory = Category(
+        id: category.id,
+        displayName: category.displayName,
+        color: category.color,
+        icon: category.icon,
+        description: category.description,
+        words: updatedWords,
+        type: category.type,
+        isUnlocked: category.isUnlocked,
+      );
+
+      state = {...state, word.categoryId: updatedCategory};
+    } else {
+      // Add new word
+      final updatedWords = List<Word>.from(category.words)..add(word);
+      final updatedCategory = Category(
+        id: category.id,
+        displayName: category.displayName,
+        color: category.color,
+        icon: category.icon,
+        description: category.description,
+        words: updatedWords,
+        type: category.type,
+        isUnlocked: category.isUnlocked,
+      );
+
+      state = {...state, word.categoryId: updatedCategory};
+    }
+  }
+
+  // Delete a word from a category
+  void deleteWord(Word word) {
+    final category = state[word.categoryId];
+    if (category == null) return;
+
+    final updatedWords =
+        category.words.where((w) => w.text != word.text).toList();
+    final updatedCategory = Category(
+      id: category.id,
+      displayName: category.displayName,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      words: updatedWords,
+      type: category.type,
+      isUnlocked: category.isUnlocked,
+    );
+
+    state = {...state, word.categoryId: updatedCategory};
+  }
+
+  // Reset appearance counts for all words in a category
+  void resetAppearanceCounts(String categoryId) {
+    final category = state[categoryId];
+    if (category == null) return;
+
+    final updatedWords = category.words
+        .map((word) => word.copyWith(
+              stats: WordStats(
+                appearanceCount: 0,
+                skipCount: word.stats.skipCount,
+                guessedCount: word.stats.guessedCount,
+              ),
+            ))
+        .toList();
+
+    final updatedCategory = Category(
+      id: category.id,
+      displayName: category.displayName,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      words: updatedWords,
+      type: category.type,
+      isUnlocked: category.isUnlocked,
+    );
+
+    state = {...state, categoryId: updatedCategory};
+  }
+
+  // Reset skip counts for all words in a category
+  void resetSkipCounts(String categoryId) {
+    final category = state[categoryId];
+    if (category == null) return;
+
+    final updatedWords = category.words
+        .map((word) => word.copyWith(
+              stats: WordStats(
+                appearanceCount: word.stats.appearanceCount,
+                skipCount: 0,
+                guessedCount: word.stats.guessedCount,
+              ),
+            ))
+        .toList();
+
+    final updatedCategory = Category(
+      id: category.id,
+      displayName: category.displayName,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      words: updatedWords,
+      type: category.type,
+      isUnlocked: category.isUnlocked,
+    );
+
+    state = {...state, categoryId: updatedCategory};
+  }
+
+  // Reset guessed counts for all words in a category
+  void resetGuessedCounts(String categoryId) {
+    final category = state[categoryId];
+    if (category == null) return;
+
+    final updatedWords = category.words
+        .map((word) => word.copyWith(
+              stats: WordStats(
+                appearanceCount: word.stats.appearanceCount,
+                skipCount: word.stats.skipCount,
+                guessedCount: 0,
+              ),
+            ))
+        .toList();
+
+    final updatedCategory = Category(
+      id: category.id,
+      displayName: category.displayName,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      words: updatedWords,
+      type: category.type,
+      isUnlocked: category.isUnlocked,
+    );
+
+    state = {...state, categoryId: updatedCategory};
+  }
+
+  // Reset all counts for all words in a category
+  void resetAllCounts(String categoryId) {
+    final category = state[categoryId];
+    if (category == null) return;
+
+    final updatedWords = category.words
+        .map((word) => word.copyWith(
+              stats: const WordStats(),
+            ))
+        .toList();
+
+    final updatedCategory = Category(
+      id: category.id,
+      displayName: category.displayName,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      words: updatedWords,
+      type: category.type,
+      isUnlocked: category.isUnlocked,
+    );
+
+    state = {...state, categoryId: updatedCategory};
+  }
+
+  // Purge low frequency words from a category
+  void purgeLowFrequencyWords(String categoryId, int threshold) {
+    final category = state[categoryId];
+    if (category == null) return;
+
+    final updatedWords = category.words
+        .where((word) => word.stats.appearanceCount >= threshold)
+        .toList();
+    final updatedCategory = Category(
+      id: category.id,
+      displayName: category.displayName,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      words: updatedWords,
+      type: category.type,
+      isUnlocked: category.isUnlocked,
+    );
+
+    state = {...state, categoryId: updatedCategory};
+  }
+
+  // Update all words in a category
+  void updateWords(String categoryId, List<Word> updatedWords) {
+    final category = state[categoryId];
+    if (category == null) return;
+
+    final updatedCategory = Category(
+      id: category.id,
+      displayName: category.displayName,
+      color: category.color,
+      icon: category.icon,
+      description: category.description,
+      words: updatedWords,
+      type: category.type,
+      isUnlocked: category.isUnlocked,
+    );
+
+    state = {...state, categoryId: updatedCategory};
+  }
 }
 
 // Provider instance
