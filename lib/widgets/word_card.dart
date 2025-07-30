@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import '../screens/word_lists_manager_screen.dart';
-import '../utils/category_utils.dart';
+import '../models/category.dart';
+import '../data/category_registry.dart';
 
 class WordCard extends StatelessWidget {
   final Word word;
-  final WordCategory category;
 
   const WordCard({
     super.key,
     required this.word,
-    required this.category,
   });
 
   @override
   Widget build(BuildContext context) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color categoryColor = CategoryUtils.getCategoryColor(category);
+    final category = CategoryRegistry.getCategory(word.categoryId);
+    final Color categoryColor = category.color;
 
     // Theme-aware colors
     final Color background = isDark
