@@ -2,41 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/session_providers.dart';
 import '../services/storage_service.dart';
-import '../services/firestore_service.dart';
 import '../screens/game_settings_screen.dart';
 import '../screens/category_selection_screen.dart';
-import '../screens/game_over_screen.dart';
-import '../screens/scoreboard_screen.dart';
 import '../screens/role_assignment_screen.dart';
 import '../screens/online_game_screen.dart';
-import '../screens/turn_over_screen.dart';
-import '../screens/word_lists_manager_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../screens/game_screen.dart';
 
 /// Service for handling navigation in online multiplayer games
 /// Manages automatic screen transitions based on Firestore game state changes
 class OnlineGameNavigationService {
-  // ============================================================================
-  // HELPER METHODS
-  // ============================================================================
-
-  // Convert category name to WordCategory enum
-  static WordCategory _convertCategoryNameToEnum(String categoryName) {
-    switch (categoryName) {
-      case 'person':
-        return WordCategory.person;
-      case 'action':
-        return WordCategory.action;
-      case 'world':
-        return WordCategory.world;
-      case 'random':
-        return WordCategory.random;
-      default:
-        return WordCategory.person;
-    }
-  }
-
   // ============================================================================
   // MAIN NAVIGATION METHOD
   // ============================================================================
@@ -49,7 +22,7 @@ class OnlineGameNavigationService {
     required String sessionId,
   }) {
     ref.listen(sessionStatusProvider(sessionId), (prev, next) async {
-      final status = next?.value;
+      final status = next.value;
       if (status == null) return;
 
       // Get the full session data for navigation
@@ -154,11 +127,8 @@ class OnlineGameNavigationService {
     String? currentTeamDeviceId;
     if (teams.isNotEmpty && currentTeamIndex < teams.length) {
       currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
-      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
+      currentTeamDeviceId = currentTeam['deviceId'] as String?;
     }
-
-    // Convert category name to WordCategory enum
-    final selectedCategory = _convertCategoryNameToEnum(selectedCategoryName);
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -166,7 +136,7 @@ class OnlineGameNavigationService {
           teamIndex: currentTeamIndex,
           roundNumber: gameState?['roundNumber'] as int? ?? 1,
           turnNumber: gameState?['turnNumber'] as int? ?? 1,
-          category: selectedCategory,
+          categoryId: selectedCategoryName,
           sessionId: sessionId,
           onlineTeam: currentTeam,
           currentTeamDeviceId: currentTeamDeviceId,
@@ -185,16 +155,13 @@ class OnlineGameNavigationService {
     final gameState = sessionData['gameState'] as Map<String, dynamic>?;
     final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
     final teams = sessionData['teams'] as List? ?? [];
-    final selectedCategoryName =
-        gameState?['selectedCategory'] as String? ?? 'Person';
-    final selectedCategory = _convertCategoryNameToEnum(selectedCategoryName);
 
     // Get current team data
     Map<String, dynamic>? currentTeam;
     String? currentTeamDeviceId;
     if (teams.isNotEmpty && currentTeamIndex < teams.length) {
       currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
-      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
+      currentTeamDeviceId = currentTeam['deviceId'] as String?;
     }
 
     Navigator.of(context).pushReplacement(
@@ -203,7 +170,7 @@ class OnlineGameNavigationService {
           teamIndex: currentTeamIndex,
           roundNumber: gameState?['roundNumber'] as int? ?? 1,
           turnNumber: gameState?['turnNumber'] as int? ?? 1,
-          category: selectedCategory,
+          category: gameState?['selectedCategory'] as String? ?? 'Person',
           currentTeamDeviceId: currentTeamDeviceId,
           sessionId: sessionId,
           onlineTeam: currentTeam,

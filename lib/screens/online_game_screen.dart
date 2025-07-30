@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
-import '../services/game_setup_provider.dart';
-import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
-import '../screens/word_lists_manager_screen.dart';
 import '../widgets/game_mechanics_mixin.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
 import '../widgets/game_countdown.dart';
 import '../widgets/team_color_button.dart';
 import '../services/storage_service.dart';
-import '../utils/category_utils.dart';
+import '../data/category_registry.dart';
 
 class OnlineGameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
-  final WordCategory category;
+  final String category;
 
   // Online game parameters
   final String? sessionId;
@@ -48,7 +44,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   bool _isCurrentTeamActive = false;
 
   @override
-  WordCategory get category => widget.category;
+  String get categoryId => widget.category;
 
   @override
   void onTurnEnd() {
@@ -274,7 +270,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                   // Game header with timer, category, and skips
                   GameHeader(
                     timeLeft: timeLeft,
-                    category: category,
+                    category: categoryId,
                     skipsLeft: skipsLeft,
                     isTiebreaker: false,
                   ),
@@ -283,7 +279,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                   Expanded(
                     child: GameCards(
                       currentWords: currentWords,
-                      category: category,
+                      categoryId: categoryId,
                       skipsLeft: skipsLeft,
                       showBlankCards: _isCountdownActive,
                       onWordGuessed: (word) {
@@ -312,7 +308,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                 GameCountdown(
                   player1Name: _getCurrentTeamPlayers()[0],
                   player2Name: _getCurrentTeamPlayers()[1],
-                  category: category,
+                  category: categoryId,
                   onCountdownComplete: _onCountdownComplete,
                 ),
             ],
@@ -364,24 +360,27 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
-                            color:
-                                CategoryUtils.getCategoryColor(widget.category)
-                                    .withOpacity(0.2),
+                            color: CategoryRegistry.getCategory(widget.category)
+                                .color
+                                .withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: CategoryUtils.getCategoryColor(
-                                  widget.category),
+                              color:
+                                  CategoryRegistry.getCategory(widget.category)
+                                      .color,
                               width: 2,
                             ),
                           ),
                           child: Text(
-                            CategoryUtils.getCategoryName(widget.category),
+                            CategoryRegistry.getCategory(widget.category)
+                                .displayName,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
                                 ?.copyWith(
-                                  color: CategoryUtils.getCategoryColor(
-                                      widget.category),
+                                  color: CategoryRegistry.getCategory(
+                                          widget.category)
+                                      .color,
                                   fontWeight: FontWeight.w600,
                                 ),
                             textAlign: TextAlign.center,

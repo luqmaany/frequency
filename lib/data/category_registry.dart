@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/category.dart';
 import 'word_lists.dart';
 
+// TODO: Add dynamic category management methods (addCategory, removeCategory, updateCategory)
+// to support runtime category creation and modification
 class CategoryRegistry {
   // Free categories (built-in)
   static final Map<String, Category> _categories = {
@@ -99,5 +101,11 @@ class CategoryRegistry {
     return allCats.where((category) {
       return category.isFree || purchasedCategoryIds.contains(category.id);
     }).toList();
+  }
+
+  static String getCategoryFromDisplayName(String displayName) {
+    return _categories.values
+        .firstWhere((category) => category.displayName == displayName)
+        .id;
   }
 }

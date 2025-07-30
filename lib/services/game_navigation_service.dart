@@ -85,7 +85,7 @@ class GameNavigationService {
     int teamIndex,
     int roundNumber,
     int turnNumber,
-    WordCategory? category,
+    String categoryId,
   ) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -93,7 +93,7 @@ class GameNavigationService {
           teamIndex: teamIndex,
           roundNumber: roundNumber,
           turnNumber: turnNumber,
-          category: category ?? WordCategory.values.first, // fallback
+          categoryId: categoryId,
         ),
       ),
     );
@@ -105,7 +105,7 @@ class GameNavigationService {
     int teamIndex,
     int roundNumber,
     int turnNumber,
-    WordCategory category, {
+    String category, {
     String? sessionId,
     String? currentTeamDeviceId,
   }) {
@@ -129,7 +129,7 @@ class GameNavigationService {
     int teamIndex,
     int roundNumber,
     int turnNumber,
-    WordCategory category,
+    String category,
     int correctCount,
     int skipsLeft,
     List<String> wordsGuessed,
@@ -194,7 +194,7 @@ class GameNavigationService {
     int teamIndex,
     int roundNumber,
     int turnNumber,
-    WordCategory category,
+    String category,
   ) {
     final gameState = ref.read(gameStateProvider);
     if (gameState == null) {
@@ -352,7 +352,7 @@ class GameNavigationService {
       nextTiedTeamIndex,
       gameState.tiebreakerRound,
       gameState.currentTurn,
-      gameState.tiebreakerCategory,
+      gameState.tiebreakerCategory!,
     );
   }
 

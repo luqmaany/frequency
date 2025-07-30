@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import '../screens/word_lists_manager_screen.dart';
-import '../utils/category_utils.dart';
+import '../data/category_registry.dart';
 
 class GameCountdown extends StatefulWidget {
   final String player1Name;
   final String player2Name;
-  final WordCategory category;
+  final String category;
   final VoidCallback onCountdownComplete;
 
   const GameCountdown({
@@ -94,13 +93,14 @@ class _GameCountdownState extends State<GameCountdown>
                       width: 200,
                       height: 200,
                       decoration: BoxDecoration(
-                        color: CategoryUtils.getCategoryColor(widget.category),
+                        color:
+                            CategoryRegistry.getCategory(widget.category).color,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                CategoryUtils.getCategoryColor(widget.category)
-                                    .withOpacity(0.4),
+                            color: CategoryRegistry.getCategory(widget.category)
+                                .color
+                                .withOpacity(0.4),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),

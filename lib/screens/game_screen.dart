@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
-import '../screens/word_lists_manager_screen.dart';
 import '../widgets/game_mechanics_mixin.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
@@ -15,7 +13,7 @@ class GameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
-  final WordCategory category;
+  final String category;
 
   const GameScreen({
     super.key,
@@ -34,7 +32,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
   bool _isCountdownActive = true;
 
   @override
-  WordCategory get category => widget.category;
+  String get categoryId => widget.category;
 
   @override
   void onTurnEnd() {
@@ -213,7 +211,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   // Game header with timer, category, and skips
                   GameHeader(
                     timeLeft: timeLeft,
-                    category: category,
+                    category: categoryId,
                     skipsLeft: skipsLeft,
                     isTiebreaker: false,
                   ),
@@ -222,7 +220,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   Expanded(
                     child: GameCards(
                       currentWords: currentWords,
-                      category: category,
+                      categoryId: categoryId,
                       skipsLeft: skipsLeft,
                       showBlankCards: _isCountdownActive,
                       onWordGuessed: (word) {
@@ -251,7 +249,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 GameCountdown(
                   player1Name: ref.read(currentTeamPlayersProvider)[0],
                   player2Name: ref.read(currentTeamPlayersProvider)[1],
-                  category: category,
+                  category: categoryId,
                   onCountdownComplete: _onCountdownComplete,
                 ),
             ],

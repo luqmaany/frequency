@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../widgets/team_color_button.dart';
-import 'online_team_setup_screen.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
@@ -149,12 +148,8 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       const colorIndex = 0; // First color
 
       // Get player names safely
-      final player1Name = shuffledNames.isNotEmpty && shuffledNames[0] != null
-          ? shuffledNames[0]!
-          : 'Player 1';
-      final player2Name = shuffledNames.length > 1 && shuffledNames[1] != null
-          ? shuffledNames[1]!
-          : 'Player 2';
+      final player1Name = shuffledNames[0];
+      final player2Name = shuffledNames[1];
 
       // Create team data with deviceId
       final teamData = {
