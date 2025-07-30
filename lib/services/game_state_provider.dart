@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/game_state.dart';
 import '../models/game_config.dart';
-import '../screens/word_lists_manager_screen.dart';
 
 class GameStateNotifier extends StateNotifier<GameState?> {
   // Track used words across the entire game
@@ -31,10 +30,10 @@ class GameStateNotifier extends StateNotifier<GameState?> {
     state = null;
   }
 
-  void startTiebreaker(WordCategory category) {
+  void startTiebreaker(String categoryId) {
     if (state == null) return;
     final tiebreakerState =
-        state!.startTiebreaker().copyWith(tiebreakerCategory: category);
+        state!.startTiebreaker().copyWith(tiebreakerCategory: categoryId);
     state = tiebreakerState;
   }
 

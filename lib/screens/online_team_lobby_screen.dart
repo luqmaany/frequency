@@ -123,17 +123,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     return null;
   }
 
-  // Helper to build team data
-  Map<String, dynamic> get _myTeamData => {
-        'teamName': widget.teamName.trim(),
-        'colorIndex': _selectedColorIndex,
-        'ready': true,
-        'players': [
-          widget.player1Name.trim(),
-          widget.player2Name.trim(),
-        ],
-      };
-
   // Helper to build team data with device ID
   Future<Map<String, dynamic>> _getMyTeamDataWithDeviceId() async {
     final deviceId = await _deviceIdFuture;

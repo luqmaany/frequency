@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
-import '../screens/word_lists_manager_screen.dart';
+import '../models/category.dart';
 import 'word_card.dart';
 
 class GameCards extends StatefulWidget {
   final List<Word> currentWords;
-  final WordCategory category;
+  final String categoryId;
   final int skipsLeft;
   final Function(String) onWordGuessed;
   final Function(String) onWordSkipped;
@@ -15,7 +15,7 @@ class GameCards extends StatefulWidget {
   const GameCards({
     super.key,
     required this.currentWords,
-    required this.category,
+    required this.categoryId,
     required this.skipsLeft,
     required this.onWordGuessed,
     required this.onWordSkipped,
@@ -40,9 +40,6 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
   double _leftSwipeProgress = 0.0;
   double _bottomRightSwipeProgress = 0.0;
   double _bottomLeftSwipeProgress = 0.0;
-
-  // Icon size for swipe feedback
-  static const double _swipeIconSize = 22;
 
   @override
   void initState() {
@@ -193,7 +190,6 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                             }
                             return WordCard(
                               word: widget.currentWords[0],
-                              category: widget.category,
                             );
                           },
                           onSwipe: (previousIndex, currentIndex, direction) {
@@ -305,7 +301,6 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                             }
                             return WordCard(
                               word: widget.currentWords[1],
-                              category: widget.category,
                             );
                           },
                           onSwipe: (previousIndex, currentIndex, direction) {

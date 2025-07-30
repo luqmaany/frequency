@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../screens/word_lists_manager_screen.dart';
 
 /// Service for handling all Firestore database operations
 /// Manages sessions, teams, game state, and host transfers for online multiplayer
@@ -111,13 +110,13 @@ class FirestoreService {
   /// Update game state for role assignment with selected category
   static Future<void> fromCategorySelection(
     String sessionId, {
-    required WordCategory selectedCategory,
+    required String selectedCategory,
   }) async {
     await _sessions.doc(sessionId).update({
       'gameState.status': 'role_assignment',
-      'gameState.selectedCategory': selectedCategory.name,
+      'gameState.selectedCategory': selectedCategory,
       'gameState.categorySpin.isSpinning': false,
-      'gameState.categorySpin.selectedCategory': selectedCategory.name,
+      'gameState.categorySpin.selectedCategory': selectedCategory,
     });
   }
 
@@ -157,12 +156,13 @@ class FirestoreService {
     });
   }
 
+//TODO: fix this so that it updates the turn history properly
   static Future<void> fromGameScreen(
       String sessionId,
       int teamIndex,
       int roundNumber,
       int turnNumber,
-      WordCategory category,
+      String category,
       int correctCount,
       int skipsLeft,
       List<String> wordsGuessed,
@@ -175,7 +175,7 @@ class FirestoreService {
           'teamIndex': teamIndex,
           'roundNumber': roundNumber,
           'turnNumber': turnNumber,
-          'category': category.name,
+          'category': category,
           'correctCount': correctCount,
           'skipsLeft': skipsLeft,
           'wordsGuessed': wordsGuessed,

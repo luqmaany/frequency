@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_navigation_service.dart';
-import 'word_lists_manager_screen.dart';
 import 'package:convey/widgets/team_color_button.dart';
-import 'package:convey/utils/category_utils.dart';
+import '../data/category_registry.dart';
 import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -15,7 +14,7 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
-  final WordCategory category;
+  final String categoryId;
 
   // Online game parameters
   final String? sessionId;
@@ -27,7 +26,7 @@ class RoleAssignmentScreen extends ConsumerStatefulWidget {
     required this.teamIndex,
     required this.roundNumber,
     required this.turnNumber,
-    required this.category,
+    required this.categoryId,
     this.sessionId,
     this.onlineTeam,
     this.currentTeamDeviceId,
@@ -301,7 +300,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     }
     final teamColor = teamColors[colorIndex];
 
-    final Color categoryColor = CategoryUtils.getCategoryColor(widget.category);
+    final Color categoryColor =
+        CategoryRegistry.getCategory(widget.categoryId).color;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final Color cardBackground = isDark
         ? categoryColor.withOpacity(0.2)
@@ -438,7 +438,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                               widget.teamIndex,
                               widget.roundNumber,
                               widget.turnNumber,
-                              widget.category,
+                              widget.categoryId,
                             );
                           }
                         }
@@ -466,21 +466,24 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? CategoryUtils.getCategoryColor(widget.category)
+                      ? CategoryRegistry.getCategory(widget.categoryId)
+                          .color
                           .withOpacity(0.3)
-                      : CategoryUtils.getCategoryColor(widget.category)
+                      : CategoryRegistry.getCategory(widget.categoryId)
+                          .color
                           .withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? CategoryUtils.getCategoryColor(widget.category)
+                        ? CategoryRegistry.getCategory(widget.categoryId)
+                            .color
                             .withOpacity(0.8)
-                        : CategoryUtils.getCategoryColor(widget.category),
+                        : CategoryRegistry.getCategory(widget.categoryId).color,
                     width: 2,
                   ),
                 ),
                 child: Text(
-                  CategoryUtils.getCategoryName(widget.category),
+                  CategoryRegistry.getCategory(widget.categoryId).displayName,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white.withOpacity(0.95)

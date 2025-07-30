@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'dart:async';
-import 'word_lists_manager_screen.dart';
 import '../services/game_navigation_service.dart';
 import '../services/game_state_provider.dart';
-import '../utils/category_utils.dart';
+import '../data/category_registry.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
@@ -42,7 +41,7 @@ class _CategorySelectionScreenState
   late Animation<double> _scaleAnimation;
 
   bool _isSpinning = false;
-  WordCategory? _selectedCategory;
+  String? _selectedCategory;
   String _currentCategory = '';
   Timer? _categoryTimer;
   int _spinCount = 0;
@@ -118,7 +117,8 @@ class _CategorySelectionScreenState
             _spinCount = spinCount;
             _currentCategory = currentCategory;
             if (selectedCategory.isNotEmpty) {
-              _selectedCategory = _getCategoryFromName(selectedCategory);
+              _selectedCategory =
+                  CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
             }
           });
         }
@@ -160,21 +160,6 @@ class _CategorySelectionScreenState
     super.dispose();
   }
 
-  WordCategory _getCategoryFromName(String categoryName) {
-    switch (categoryName) {
-      case 'Person':
-        return WordCategory.person;
-      case 'Action':
-        return WordCategory.action;
-      case 'World':
-        return WordCategory.world;
-      case 'Random':
-        return WordCategory.random;
-      default:
-        return WordCategory.person; // fallback
-    }
-  }
-
   void _spinCategories() async {
     if (_isSpinning) return;
 
@@ -207,9 +192,9 @@ class _CategorySelectionScreenState
         _categoryTimer?.cancel();
 
         // Final selection with smooth transition
-        final finalCategory = WordCategory
-            .values[math.Random().nextInt(WordCategory.values.length)];
-        final finalCategoryName = CategoryUtils.getCategoryName(finalCategory);
+        final finalCategory = CategoryRegistry.getFreeCategories()[
+            math.Random().nextInt(CategoryRegistry.getFreeCategories().length)];
+        final finalCategoryName = finalCategory.displayName;
 
         if (widget.sessionId != null) {
           // For online games, sync the final result
@@ -223,7 +208,7 @@ class _CategorySelectionScreenState
           // For local games, just update local state
           setState(() {
             _isSpinning = false;
-            _selectedCategory = finalCategory;
+            _selectedCategory = finalCategory.displayName;
             _currentCategory = finalCategoryName;
           });
         }
@@ -233,20 +218,20 @@ class _CategorySelectionScreenState
         return;
       }
 
-      final newCategory = CategoryUtils.getCategoryName(WordCategory
-          .values[math.Random().nextInt(WordCategory.values.length)]);
+      final newCategory = CategoryRegistry.getFreeCategories()[
+          math.Random().nextInt(CategoryRegistry.getFreeCategories().length)];
 
       if (widget.sessionId != null) {
         // For online games, sync the current category
         await FirestoreService.updateCategorySpinState(
           widget.sessionId!,
-          currentCategory: newCategory,
+          currentCategory: newCategory.displayName,
           spinCount: _spinCount + 1,
         );
       } else {
         // For local games, just update local state
         setState(() {
-          _currentCategory = newCategory;
+          _currentCategory = newCategory.displayName;
         });
       }
 
@@ -349,9 +334,9 @@ class _CategorySelectionScreenState
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _currentCategory.isNotEmpty
-                                      ? CategoryUtils.getCategoryColor(
-                                          _getCategoryFromName(
-                                              _currentCategory))
+                                      ? CategoryRegistry.getCategory(
+                                              _currentCategory)
+                                          .color
                                       : teamColor.text,
                                   width: 2,
                                 ),
@@ -377,9 +362,9 @@ class _CategorySelectionScreenState
                                         .displayLarge
                                         ?.copyWith(
                                           color: _currentCategory.isNotEmpty
-                                              ? CategoryUtils.getCategoryColor(
-                                                  _getCategoryFromName(
-                                                      _currentCategory))
+                                              ? CategoryRegistry.getCategory(
+                                                      _currentCategory)
+                                                  .color
                                               : teamColor.text,
                                           fontSize: _currentCategory.isEmpty
                                               ? 32

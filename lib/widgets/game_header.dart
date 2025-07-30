@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import '../screens/word_lists_manager_screen.dart';
 import 'game_timer.dart';
 import 'category_display.dart';
 import 'skip_counter.dart';
 
 class GameHeader extends StatelessWidget {
   final int timeLeft;
-  final WordCategory category;
+  final String category;
   final int skipsLeft;
   final bool isTiebreaker;
 

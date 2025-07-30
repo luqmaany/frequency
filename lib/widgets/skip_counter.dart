@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import '../screens/word_lists_manager_screen.dart';
-import '../utils/category_utils.dart';
+import '../data/category_registry.dart';
 
 class SkipCounter extends StatelessWidget {
   final int skipsLeft;
-  final WordCategory category;
+  final String category;
 
   const SkipCounter({
     super.key,
@@ -18,7 +17,7 @@ class SkipCounter extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: CategoryUtils.getCategoryColor(category).withOpacity(0.1),
+        color: CategoryRegistry.getCategory(category).color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
