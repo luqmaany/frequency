@@ -6,6 +6,7 @@ import '../screens/game_settings_screen.dart';
 import '../screens/category_selection_screen.dart';
 import '../screens/role_assignment_screen.dart';
 import '../screens/online_game_screen.dart';
+import '../screens/online_turn_over_screen.dart';
 
 /// Service for handling navigation in online multiplayer games
 /// Manages automatic screen transitions based on Firestore game state changes
@@ -56,6 +57,12 @@ class OnlineGameNavigationService {
       if (status == 'game') {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _navigateToGameScreen(context, ref, sessionId, isHost, sessionData);
+        });
+      }
+      if (status == 'turn_over') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToTurnOverScreen(
+              context, ref, sessionId, isHost, sessionData);
         });
       }
     });
@@ -174,6 +181,61 @@ class OnlineGameNavigationService {
           currentTeamDeviceId: currentTeamDeviceId,
           sessionId: sessionId,
           onlineTeam: currentTeam,
+          sessionData: sessionData,
+        ),
+      ),
+    );
+  }
+
+  static void _navigateToTurnOverScreen(
+    BuildContext context,
+    WidgetRef ref,
+    String sessionId,
+    bool isHost,
+    sessionData,
+  ) async {
+    final gameState = sessionData['gameState'] as Map<String, dynamic>?;
+    final currentTurnRecord =
+        gameState?['currentTurnRecord'] as Map<String, dynamic>?;
+
+    if (currentTurnRecord == null) {
+      print('Warning: No current turn record found for turn over screen');
+      return;
+    }
+
+    // Get the current device's team index
+    final deviceId = await StorageService.getDeviceId();
+    final teams = sessionData['teams'] as List? ?? [];
+    int currentTeamIndex = 0;
+
+    // Find which team this device belongs to
+    for (int i = 0; i < teams.length; i++) {
+      final team = teams[i] as Map<String, dynamic>?;
+      if (team?['deviceId'] == deviceId) {
+        currentTeamIndex = i;
+        break;
+      }
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => OnlineTurnOverScreen(
+          teamIndex:
+              currentTeamIndex, // Use the device's team index, not the turn record's
+          roundNumber: currentTurnRecord['roundNumber'] as int? ?? 1,
+          turnNumber: currentTurnRecord['turnNumber'] as int? ?? 1,
+          category: currentTurnRecord['category'] as String? ?? 'Person',
+          correctCount: currentTurnRecord['correctCount'] as int? ?? 0,
+          skipsLeft: currentTurnRecord['skipsLeft'] as int? ?? 0,
+          wordsGuessed: List<String>.from(
+              currentTurnRecord['wordsGuessed'] as List? ?? []),
+          wordsSkipped: List<String>.from(
+              currentTurnRecord['wordsSkipped'] as List? ?? []),
+          disputedWords: Set<String>.from(
+              currentTurnRecord['disputedWords'] as List? ?? []),
+          conveyor: currentTurnRecord['conveyor'] as String?,
+          guesser: currentTurnRecord['guesser'] as String?,
+          sessionId: sessionId,
           sessionData: sessionData,
         ),
       ),

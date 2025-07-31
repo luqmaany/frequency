@@ -156,7 +156,28 @@ class FirestoreService {
     });
   }
 
-//TODO: fix this so that it updates the turn history properly
+  /// Update disputed words in turn over state
+  static Future<void> updateDisputedWords(
+    String sessionId,
+    List<String> disputedWords,
+  ) async {
+    await _sessions.doc(sessionId).update({
+      'gameState.turnOverState.disputedWords': disputedWords,
+    });
+  }
+
+  /// Confirm score for a team in turn over state
+  static Future<void> confirmScoreForTeam(
+    String sessionId,
+    int teamIndex,
+  ) async {
+    await _sessions.doc(sessionId).update({
+      'gameState.turnOverState.confirmedTeams':
+          FieldValue.arrayUnion([teamIndex]),
+    });
+  }
+
+  /// Add current turn record to turn history and transition to turn over screen
   static Future<void> fromGameScreen(
       String sessionId,
       int teamIndex,
@@ -167,22 +188,36 @@ class FirestoreService {
       int skipsLeft,
       List<String> wordsGuessed,
       List<String> wordsSkipped,
-      Set<String> disputedWords) async {
+      Set<String> disputedWords,
+      String conveyor,
+      String guesser) async {
+    // Create the turn record
+    print('fromGameScreen');
+    final turnRecord = {
+      'teamIndex': teamIndex,
+      'roundNumber': roundNumber,
+      'turnNumber': turnNumber,
+      'category': category,
+      'correctCount': correctCount,
+      'skipsLeft': skipsLeft,
+      'wordsGuessed': wordsGuessed,
+      'wordsSkipped': wordsSkipped,
+      'disputedWords':
+          disputedWords.toList(), // Convert Set to List for Firestore
+      'conveyor': conveyor,
+      'guesser': guesser,
+    };
+
     await _sessions.doc(sessionId).update({
       'gameState.status': 'turn_over',
-      'gameState.turnHistory': FieldValue.arrayUnion([
-        {
-          'teamIndex': teamIndex,
-          'roundNumber': roundNumber,
-          'turnNumber': turnNumber,
-          'category': category,
-          'correctCount': correctCount,
-          'skipsLeft': skipsLeft,
-          'wordsGuessed': wordsGuessed,
-          'wordsSkipped': wordsSkipped,
-          'disputedWords': disputedWords,
-        }
-      ]),
+      'gameState.turnHistory': FieldValue.arrayUnion([turnRecord]),
+      'gameState.currentTurnRecord':
+          turnRecord, // Store current turn for easy access
+      'gameState.turnOverState': {
+        'disputedWords': disputedWords.toList(),
+        'confirmedTeams': [],
+        'currentTeamIndex': teamIndex,
+      },
     });
   }
 
