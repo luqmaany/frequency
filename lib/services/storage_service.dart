@@ -368,6 +368,44 @@ class StorageService {
     return id;
   }
 
+  // ===== UNLOCKED CATEGORIES METHODS =====
+
+  static const String _unlockedCategoryIdsKey = 'unlocked_category_ids';
+
+  // Get unlocked category IDs (includes both free and purchased)
+  static Future<List<String>> getUnlockedCategoryIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_unlockedCategoryIdsKey) ?? [];
+  }
+
+  // Save unlocked category IDs
+  static Future<void> saveUnlockedCategoryIds(List<String> categoryIds) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_unlockedCategoryIdsKey, categoryIds);
+  }
+
+  // Add an unlocked category
+  static Future<void> addUnlockedCategory(String categoryId) async {
+    final unlockedCategories = await getUnlockedCategoryIds();
+    if (!unlockedCategories.contains(categoryId)) {
+      unlockedCategories.add(categoryId);
+      await saveUnlockedCategoryIds(unlockedCategories);
+    }
+  }
+
+  // Remove an unlocked category
+  static Future<void> removeUnlockedCategory(String categoryId) async {
+    final unlockedCategories = await getUnlockedCategoryIds();
+    unlockedCategories.remove(categoryId);
+    await saveUnlockedCategoryIds(unlockedCategories);
+  }
+
+  // Check if a category is unlocked
+  static Future<bool> isCategoryUnlocked(String categoryId) async {
+    final unlockedCategories = await getUnlockedCategoryIds();
+    return unlockedCategories.contains(categoryId);
+  }
+
   // ===== TEAM ID PERSISTENCE METHODS =====
 
   /// Save the current teamId to local storage for rejoining

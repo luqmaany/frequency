@@ -4,14 +4,14 @@ import '../data/category_registry.dart';
 class GameCountdown extends StatefulWidget {
   final String player1Name;
   final String player2Name;
-  final String category;
+  final String categoryId;
   final VoidCallback onCountdownComplete;
 
   const GameCountdown({
     super.key,
     required this.player1Name,
     required this.player2Name,
-    required this.category,
+    required this.categoryId,
     required this.onCountdownComplete,
   });
 
@@ -93,14 +93,15 @@ class _GameCountdownState extends State<GameCountdown>
                       width: 200,
                       height: 200,
                       decoration: BoxDecoration(
-                        color:
-                            CategoryRegistry.getCategory(widget.category).color,
+                        color: CategoryRegistry.getCategory(widget.categoryId)
+                            .color,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: CategoryRegistry.getCategory(widget.category)
-                                .color
-                                .withOpacity(0.4),
+                            color:
+                                CategoryRegistry.getCategory(widget.categoryId)
+                                    .color
+                                    .withOpacity(0.4),
                             blurRadius: 20,
                             spreadRadius: 5,
                           ),

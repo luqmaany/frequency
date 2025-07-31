@@ -308,7 +308,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                 GameCountdown(
                   player1Name: _getCurrentTeamPlayers()[0],
                   player2Name: _getCurrentTeamPlayers()[1],
-                  category: categoryId,
+                  categoryId: categoryId,
                   onCountdownComplete: _onCountdownComplete,
                 ),
             ],
