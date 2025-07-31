@@ -12,6 +12,7 @@ import '../services/online_game_navigation_service.dart';
 import '../services/storage_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
+import '../services/firestore_service.dart';
 
 class OnlineTurnOverScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -258,9 +259,28 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   void _confirmScore() {
     if (widget.sessionId != null) {
-      // For online games, confirm score for current team
-
-      FirestoreService.confirmScoreForTeam(widget.sessionId!, widget.teamIndex);
+      // For online games
+      if (_allTeamsConfirmed && _isCurrentTeamActive) {
+        // All teams confirmed and current team is active - advance to next turn
+        FirestoreService.fromTurnOver(
+          widget.sessionId!,
+          widget.teamIndex,
+          widget.roundNumber,
+          widget.turnNumber,
+          widget.category,
+          widget.correctCount,
+          widget.skipsLeft,
+          widget.wordsGuessed,
+          widget.wordsSkipped,
+          _disputedWords,
+          widget.conveyor ?? '',
+          widget.guesser ?? '',
+        );
+      } else {
+        // Confirm score for current team
+        FirestoreService.confirmScoreForTeam(
+            widget.sessionId!, widget.teamIndex);
+      }
     } else {
       // For local games, use the existing logic
       final currentTeamPlayers = ref.read(currentTeamPlayersProvider);
