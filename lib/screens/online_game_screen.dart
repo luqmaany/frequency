@@ -1,6 +1,6 @@
+import 'package:convey/services/online_game_navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/game_navigation_service.dart';
 import '../widgets/game_mechanics_mixin.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
@@ -8,6 +8,7 @@ import '../widgets/game_countdown.dart';
 import '../widgets/team_color_button.dart';
 import '../services/storage_service.dart';
 import '../data/category_registry.dart';
+import '../services/firestore_service.dart';
 
 class OnlineGameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -49,8 +50,15 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   @override
   void onTurnEnd() {
     // Use navigation service to navigate to turn over screen
-    GameNavigationService.navigateToTurnOver(
-      context,
+    print('onTurnEnd');
+
+    // Get the current team players for conveyor and guesser
+    final teamPlayers = _getCurrentTeamPlayers();
+    final conveyor = teamPlayers[0]; // First player is conveyor
+    final guesser = teamPlayers[1]; // Second player is guesser
+
+    FirestoreService.fromGameScreen(
+      widget.sessionId!,
       widget.teamIndex,
       widget.roundNumber,
       widget.turnNumber,
@@ -60,6 +68,8 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
       wordsGuessed,
       wordsSkipped,
       disputedWords,
+      conveyor,
+      guesser,
     );
   }
 
@@ -142,13 +152,23 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
 
   @override
   Widget build(BuildContext context) {
+    OnlineGameNavigationService.navigate(
+      context: context,
+      ref: ref,
+      sessionId: widget.sessionId!,
+    );
+
     // Show spectator screen for non-active teams in online games
-    if (widget.sessionId != null && !_isCurrentTeamActive) {
+    if (!_isCurrentTeamActive) {
       return _buildSpectatorScreen();
     }
 
     // Show actual game screen for active team or local games
     if (currentWords.isEmpty) {
+      // If no words are available, end the turn immediately
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onTurnEnd();
+      });
       return const Scaffold(
         body: Center(
           child: Column(

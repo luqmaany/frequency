@@ -9,8 +9,11 @@ import '../providers/category_provider.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
 import '../services/online_game_navigation_service.dart';
+import '../services/storage_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
 
-class TurnOverScreen extends ConsumerStatefulWidget {
+class OnlineTurnOverScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
@@ -27,7 +30,7 @@ class TurnOverScreen extends ConsumerStatefulWidget {
   final String? sessionId;
   final Map<String, dynamic>? sessionData;
 
-  const TurnOverScreen({
+  const OnlineTurnOverScreen({
     super.key,
     required this.teamIndex,
     required this.roundNumber,
@@ -45,11 +48,18 @@ class TurnOverScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<TurnOverScreen> createState() => _TurnOverScreenState();
+  ConsumerState<OnlineTurnOverScreen> createState() =>
+      _OnlineTurnOverScreenState();
 }
 
-class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
+class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   Set<String> _disputedWords = {};
+  List<int> _confirmedTeams = [];
+  int _currentTeamIndex = 0;
+  bool _isCurrentTeamActive = false;
+  String? _currentDeviceId;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
+      _turnOverStateSubscription;
 
   static const List<Map<String, String>> _highScoreMessages = [
     {'text': 'You\'re the dynamic duo of word games!', 'emoji': '🦸‍♂️'},
@@ -107,6 +117,88 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
   void initState() {
     super.initState();
     _disputedWords = Set.from(widget.disputedWords);
+
+    // Get current device ID and set up online game state
+    _getCurrentDeviceId();
+
+    // Listen to turn over state changes
+    if (widget.sessionId != null) {
+      _listenToTurnOverState();
+    }
+  }
+
+  Future<void> _getCurrentDeviceId() async {
+    final deviceId = await StorageService.getDeviceId();
+    setState(() {
+      _currentDeviceId = deviceId;
+    });
+  }
+
+  void _listenToTurnOverState() {
+    if (widget.sessionId == null) return;
+
+    _turnOverStateSubscription = FirebaseFirestore.instance
+        .collection('sessions')
+        .doc(widget.sessionId)
+        .snapshots()
+        .listen((snapshot) {
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data() as Map<String, dynamic>;
+      final gameState = data['gameState'] as Map<String, dynamic>?;
+      final turnOverState =
+          gameState?['turnOverState'] as Map<String, dynamic>?;
+
+      if (turnOverState != null) {
+        final disputedWords =
+            List<String>.from(turnOverState['disputedWords'] as List? ?? []);
+        final confirmedTeams =
+            List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
+        final currentTeamIndex = turnOverState['currentTeamIndex'] as int? ?? 0;
+
+        if (mounted) {
+          setState(() {
+            _disputedWords = Set.from(disputedWords);
+            _confirmedTeams = confirmedTeams;
+            _currentTeamIndex = currentTeamIndex;
+            _isCurrentTeamActive = _currentDeviceId != null &&
+                _currentDeviceId == _getCurrentTeamDeviceId();
+          });
+
+          // Check if all teams have confirmed and advance to next turn
+          final teams = widget.sessionData?['teams'] as List? ?? [];
+          if (confirmedTeams.length >= teams.length && teams.isNotEmpty) {
+            // All teams confirmed, advance to next team
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (mounted && widget.sessionId != null) {
+                FirestoreService.advanceToNextTeam(widget.sessionId!);
+              }
+            });
+          }
+        }
+      }
+    });
+  }
+
+  String? _getCurrentTeamDeviceId() {
+    if (widget.sessionData == null) return null;
+    final teams = widget.sessionData!['teams'] as List? ?? [];
+    if (_currentTeamIndex < teams.length) {
+      final team = teams[_currentTeamIndex] as Map<String, dynamic>?;
+      return team?['deviceId'] as String?;
+    }
+    return null;
+  }
+
+  TeamColor _getCurrentTeamColor() {
+    if (widget.sessionData == null) return uiColors[0];
+    final teams = widget.sessionData!['teams'] as List? ?? [];
+    if (widget.teamIndex < teams.length) {
+      final team = teams[widget.teamIndex] as Map<String, dynamic>?;
+      final colorIndex = team?['colorIndex'] as int? ?? widget.teamIndex;
+      return teamColors[colorIndex % teamColors.length];
+    }
+    return uiColors[0];
   }
 
   String _getPerformanceMessage() {
@@ -125,12 +217,18 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
   }
 
   String _getRandomMessage(List<Map<String, String>> messages) {
-    final random =
-        messages[DateTime.now().millisecondsSinceEpoch % messages.length];
+    // Use a deterministic seed based on the turn data to avoid constant changes
+    final seed = widget.teamIndex +
+        widget.roundNumber +
+        widget.turnNumber +
+        widget.correctCount;
+    final random = messages[seed % messages.length];
     return '${random['text']} ${random['emoji']}';
   }
 
   void _onWordDisputed(String word) {
+    if (!_isCurrentTeamActive) return; // Only current team can dispute words
+
     setState(() {
       if (_disputedWords.contains(word)) {
         _disputedWords.remove(word);
@@ -138,61 +236,82 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
         _disputedWords.add(word);
       }
     });
+
+    // Sync disputed words to Firestore
+    if (widget.sessionId != null) {
+      FirestoreService.updateDisputedWords(
+        widget.sessionId!,
+        _disputedWords.toList(),
+      );
+    }
   }
 
   int get _disputedScore {
     return widget.correctCount - _disputedWords.length;
   }
 
+  bool get _allTeamsConfirmed {
+    if (widget.sessionId == null) return false;
+    final teams = widget.sessionData?['teams'] as List? ?? [];
+    return _confirmedTeams.length >= teams.length && teams.isNotEmpty;
+  }
+
   void _confirmScore() {
-    // Record the turn in game state with final disputed score
-    final currentTeamPlayers = ref.read(currentTeamPlayersProvider);
-    if (currentTeamPlayers.length >= 2) {
-      final turnRecord = TurnRecord(
-        teamIndex: widget.teamIndex,
-        roundNumber: widget.roundNumber,
-        turnNumber: widget.turnNumber,
-        conveyor: currentTeamPlayers[0],
-        guesser: currentTeamPlayers[1],
-        category: CategoryRegistry.getCategory(widget.category).displayName,
-        score: _disputedScore,
-        skipsUsed: ref.read(gameSetupProvider).allowedSkips - widget.skipsLeft,
-        wordsGuessed: widget.wordsGuessed
-            .where((word) => !_disputedWords.contains(word))
-            .toList(),
-        wordsSkipped: widget.wordsSkipped,
-      );
+    if (widget.sessionId != null) {
+      // For online games, confirm score for current team
 
-      ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
+      FirestoreService.confirmScoreForTeam(widget.sessionId!, widget.teamIndex);
+    } else {
+      // For local games, use the existing logic
+      final currentTeamPlayers = ref.read(currentTeamPlayersProvider);
+      if (currentTeamPlayers.length >= 2) {
+        final turnRecord = TurnRecord(
+          teamIndex: widget.teamIndex,
+          roundNumber: widget.roundNumber,
+          turnNumber: widget.turnNumber,
+          conveyor: currentTeamPlayers[0],
+          guesser: currentTeamPlayers[1],
+          category: CategoryRegistry.getCategory(widget.category).displayName,
+          score: _disputedScore,
+          skipsUsed:
+              ref.read(gameSetupProvider).allowedSkips - widget.skipsLeft,
+          wordsGuessed: widget.wordsGuessed
+              .where((word) => !_disputedWords.contains(word))
+              .toList(),
+          wordsSkipped: widget.wordsSkipped,
+        );
 
-      // TODO: Update word statistics using CategoryProvider
-      final categoryNotifier = ref.read(categoryProvider.notifier);
+        ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
 
-      // Increment appearance count for all words that appeared in this turn
-      for (final word in widget.wordsGuessed) {
-        categoryNotifier.incrementWordAppearance(widget.category, word);
-      }
-      for (final word in widget.wordsSkipped) {
-        categoryNotifier.incrementWordAppearance(widget.category, word);
-      }
+        // TODO: Update word statistics using CategoryProvider
+        final categoryNotifier = ref.read(categoryProvider.notifier);
 
-      // Increment guessed count only for words that were not disputed
-      for (final word in widget.wordsGuessed) {
-        if (!_disputedWords.contains(word)) {
-          categoryNotifier.incrementWordGuessed(widget.category, word);
+        // Increment appearance count for all words that appeared in this turn
+        for (final word in widget.wordsGuessed) {
+          categoryNotifier.incrementWordAppearance(widget.category, word);
         }
-      }
+        for (final word in widget.wordsSkipped) {
+          categoryNotifier.incrementWordAppearance(widget.category, word);
+        }
 
-      // Use navigation service to navigate to next screen
-      if (widget.sessionId != null) {
-        // For online games, advance to next team in Firestore
-        FirestoreService.advanceToNextTeam(widget.sessionId!);
-      } else {
-        // For local games, use the existing navigation service
+        // Increment guessed count only for words that were not disputed
+        for (final word in widget.wordsGuessed) {
+          if (!_disputedWords.contains(word)) {
+            categoryNotifier.incrementWordGuessed(widget.category, word);
+          }
+        }
+
+        // Use navigation service to navigate to next screen
         GameNavigationService.navigateToNextScreen(context, ref,
             teamIndex: widget.teamIndex);
       }
     }
+  }
+
+  @override
+  void dispose() {
+    _turnOverStateSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -481,14 +600,18 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                             ),
                           const SizedBox(height: 16),
                           Text(
-                            'Tap words to contest them',
+                            _isCurrentTeamActive
+                                ? 'Tap words to contest them'
+                                : 'Only the current team can contest words',
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
                                 ?.copyWith(
-                                  color: CategoryRegistry.getCategory(
-                                          widget.category)
-                                      .color,
+                                  color: _isCurrentTeamActive
+                                      ? CategoryRegistry.getCategory(
+                                              widget.category)
+                                          .color
+                                      : Colors.grey,
                                 ),
                           ),
                           const SizedBox(height: 16),
@@ -635,22 +758,104 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: Column(
                   children: [
-                    if (_disputedWords.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Text(
-                          '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
+                    // Show team confirmation circles and contested words count
+                    if (widget.sessionId != null) ...[
+                      const SizedBox(height: 1),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Contested words count on the left
+                          if (_disputedWords.isNotEmpty)
+                            Text(
+                              '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
                                     color: Colors.red,
                                   ),
-                        ),
+                            )
+                          else
+                            const SizedBox.shrink(),
+                          // Team confirmation circles on the right
+                          Row(
+                            children: List.generate(
+                              (widget.sessionData?['teams'] as List? ?? [])
+                                  .length,
+                              (index) {
+                                final teams =
+                                    widget.sessionData?['teams'] as List? ?? [];
+                                final team = index < teams.length
+                                    ? teams[index] as Map<String, dynamic>?
+                                    : null;
+                                final colorIndex =
+                                    team?['colorIndex'] as int? ?? index;
+                                final teamColor =
+                                    teamColors[colorIndex % teamColors.length];
+                                final isConfirmed =
+                                    _confirmedTeams.contains(index);
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: 4),
+                                  child: Container(
+                                    width: 24,
+                                    height: 24,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: isConfirmed
+                                          ? teamColor.border
+                                          : teamColor.border.withOpacity(0.3),
+                                      border: Border.all(
+                                        color: isConfirmed
+                                            ? teamColor.border
+                                            : teamColor.border.withOpacity(0.5),
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: isConfirmed
+                                        ? Icon(
+                                            Icons.check,
+                                            color: Colors.white,
+                                            size: 16,
+                                          )
+                                        : null,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 16),
+                    ],
                     TeamColorButton(
-                      text: 'Confirm Score',
-                      icon: Icons.check,
-                      color: uiColors[0],
-                      onPressed: _confirmScore,
+                      text: _allTeamsConfirmed
+                          ? (_isCurrentTeamActive ? 'Continue' : 'Waiting...')
+                          : _confirmedTeams.contains(widget.teamIndex)
+                              ? 'Confirmed ✓'
+                              : 'Confirm Score',
+                      icon: _allTeamsConfirmed
+                          ? (_isCurrentTeamActive
+                              ? Icons.arrow_forward
+                              : Icons.hourglass_empty)
+                          : _confirmedTeams.contains(widget.teamIndex)
+                              ? Icons.check_circle
+                              : Icons.check,
+                      color: _allTeamsConfirmed
+                          ? (_isCurrentTeamActive
+                              ? uiColors[1]
+                              : _getCurrentTeamColor()) // Use team's own color when waiting
+                          : _confirmedTeams.contains(widget.teamIndex)
+                              ? uiColors[1] // Green when confirmed
+                              : uiColors[0], // Blue when not confirmed
+                      onPressed: _allTeamsConfirmed
+                          ? (_isCurrentTeamActive
+                              ? _confirmScore
+                              : null) // Only current team can continue
+                          : _confirmedTeams.contains(widget.teamIndex)
+                              ? null // Disable only for this team when confirmed
+                              : _confirmScore,
                     ),
                   ],
                 ),
