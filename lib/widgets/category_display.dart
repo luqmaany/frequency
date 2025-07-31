@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import '../data/category_registry.dart';
 
 class CategoryDisplay extends StatelessWidget {
-  final String category;
+  final String categoryId;
   final bool isTiebreaker;
 
   const CategoryDisplay({
     super.key,
-    required this.category,
+    required this.categoryId,
     this.isTiebreaker = false,
   });
 
@@ -17,17 +17,17 @@ class CategoryDisplay extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: CategoryRegistry.getCategory(category).color.withOpacity(0.2),
+        color: CategoryRegistry.getCategory(categoryId).color.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: CategoryRegistry.getCategory(category).color,
+          color: CategoryRegistry.getCategory(categoryId).color,
           width: 1,
         ),
       ),
       child: Text(
         isTiebreaker
-            ? 'TIEBREAKER: ${CategoryRegistry.getCategory(category).displayName}'
-            : CategoryRegistry.getCategory(category).displayName,
+            ? 'TIEBREAKER: ${CategoryRegistry.getCategory(categoryId).displayName}'
+            : CategoryRegistry.getCategory(categoryId).displayName,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Colors.black,
               fontWeight: FontWeight.w600,

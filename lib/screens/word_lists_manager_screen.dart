@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/word_lists.dart';
 import '../models/category.dart';
+import '../data/category_registry.dart';
 
 // TODO: Move to a separate providers file later
 final wordsProvider = StateNotifierProvider<WordsNotifier, List<Word>>((ref) {
@@ -57,10 +58,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
         if (w.text == word.text) {
           return Word(
             text: w.text,
-            category: word.category, // Use the new category if different
-            appearanceCount: w.appearanceCount,
-            skipCount: w.skipCount,
-            guessedCount: w.guessedCount,
+            categoryId: word.categoryId, // Use the new category if different
+            stats: WordStats(
+              appearanceCount: w.stats.appearanceCount,
+              skipCount: w.stats.skipCount,
+              guessedCount: w.stats.guessedCount,
+            ),
           );
         }
         return w;
@@ -78,10 +81,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
     state = state
         .map((word) => Word(
               text: word.text,
-              category: word.category,
-              appearanceCount: 0,
-              skipCount: word.skipCount,
-              guessedCount: word.guessedCount,
+              categoryId: word.categoryId,
+              stats: WordStats(
+                appearanceCount: 0,
+                skipCount: word.stats.skipCount,
+                guessedCount: word.stats.guessedCount,
+              ),
             ))
         .toList();
   }
@@ -90,10 +95,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
     state = state
         .map((word) => Word(
               text: word.text,
-              category: word.category,
-              appearanceCount: word.appearanceCount,
-              skipCount: 0,
-              guessedCount: word.guessedCount,
+              categoryId: word.categoryId,
+              stats: WordStats(
+                appearanceCount: word.stats.appearanceCount,
+                skipCount: 0,
+                guessedCount: word.stats.guessedCount,
+              ),
             ))
         .toList();
   }
@@ -102,10 +109,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
     state = state
         .map((word) => Word(
               text: word.text,
-              category: word.category,
-              appearanceCount: word.appearanceCount,
-              skipCount: word.skipCount,
-              guessedCount: 0,
+              categoryId: word.categoryId,
+              stats: WordStats(
+                appearanceCount: word.stats.appearanceCount,
+                skipCount: word.stats.skipCount,
+                guessedCount: 0,
+              ),
             ))
         .toList();
   }
@@ -114,10 +123,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
     state = state
         .map((word) => Word(
               text: word.text,
-              category: word.category,
-              appearanceCount: 0,
-              skipCount: 0,
-              guessedCount: 0,
+              categoryId: word.categoryId,
+              stats: WordStats(
+                appearanceCount: 0,
+                skipCount: 0,
+                guessedCount: 0,
+              ),
             ))
         .toList();
   }
@@ -127,10 +138,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
       if (word.text == wordText) {
         return Word(
           text: word.text,
-          category: word.category,
-          appearanceCount: word.appearanceCount,
-          skipCount: word.skipCount + 1,
-          guessedCount: word.guessedCount,
+          categoryId: word.categoryId,
+          stats: WordStats(
+            appearanceCount: word.stats.appearanceCount,
+            skipCount: word.stats.skipCount + 1,
+            guessedCount: word.stats.guessedCount,
+          ),
         );
       }
       return word;
@@ -142,10 +155,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
       if (word.text == wordText) {
         return Word(
           text: word.text,
-          category: word.category,
-          appearanceCount: word.appearanceCount + 1,
-          skipCount: word.skipCount,
-          guessedCount: word.guessedCount,
+          categoryId: word.categoryId,
+          stats: WordStats(
+            appearanceCount: word.stats.appearanceCount + 1,
+            skipCount: word.stats.skipCount,
+            guessedCount: word.stats.guessedCount,
+          ),
         );
       }
       return word;
@@ -157,10 +172,12 @@ class WordsNotifier extends StateNotifier<List<Word>> {
       if (word.text == wordText) {
         return Word(
           text: word.text,
-          category: word.category,
-          appearanceCount: word.appearanceCount,
-          skipCount: word.skipCount,
-          guessedCount: word.guessedCount + 1,
+          categoryId: word.categoryId,
+          stats: WordStats(
+            appearanceCount: word.stats.appearanceCount,
+            skipCount: word.stats.skipCount,
+            guessedCount: word.stats.guessedCount + 1,
+          ),
         );
       }
       return word;
@@ -168,7 +185,8 @@ class WordsNotifier extends StateNotifier<List<Word>> {
   }
 
   void purgeLowFrequencyWords(int threshold) {
-    state = state.where((word) => word.appearanceCount >= threshold).toList();
+    state =
+        state.where((word) => word.stats.appearanceCount >= threshold).toList();
   }
 
   void updateWords(List<Word> updatedWords) {
@@ -177,19 +195,21 @@ class WordsNotifier extends StateNotifier<List<Word>> {
 
   List<Word> getWordsSortedBySkipCount() {
     final sortedWords = List<Word>.from(state);
-    sortedWords.sort((a, b) => b.skipCount.compareTo(a.skipCount));
+    sortedWords.sort((a, b) => b.stats.skipCount.compareTo(a.stats.skipCount));
     return sortedWords;
   }
 
   List<Word> getWordsSortedByAppearanceCount() {
     final sortedWords = List<Word>.from(state);
-    sortedWords.sort((a, b) => b.appearanceCount.compareTo(a.appearanceCount));
+    sortedWords.sort(
+        (a, b) => b.stats.appearanceCount.compareTo(a.stats.appearanceCount));
     return sortedWords;
   }
 
   List<Word> getWordsSortedByGuessedCount() {
     final sortedWords = List<Word>.from(state);
-    sortedWords.sort((a, b) => b.guessedCount.compareTo(a.guessedCount));
+    sortedWords
+        .sort((a, b) => b.stats.guessedCount.compareTo(a.stats.guessedCount));
     return sortedWords;
   }
 
@@ -197,15 +217,15 @@ class WordsNotifier extends StateNotifier<List<Word>> {
     final sortedWords = List<Word>.from(state);
     sortedWords.sort((a, b) {
       // Calculate difficulty score: skip rate (skips / total appearances)
-      final aTotalAppearances = a.appearanceCount;
-      final bTotalAppearances = b.appearanceCount;
+      final aTotalAppearances = a.stats.appearanceCount;
+      final bTotalAppearances = b.stats.appearanceCount;
 
       if (aTotalAppearances == 0 && bTotalAppearances == 0) return 0;
       if (aTotalAppearances == 0) return -1;
       if (bTotalAppearances == 0) return 1;
 
-      final aSkipRate = a.skipCount / aTotalAppearances;
-      final bSkipRate = b.skipCount / bTotalAppearances;
+      final aSkipRate = a.stats.skipCount / aTotalAppearances;
+      final bSkipRate = b.stats.skipCount / bTotalAppearances;
 
       return bSkipRate
           .compareTo(aSkipRate); // Higher skip rate = more difficult
@@ -224,7 +244,7 @@ class WordListsManagerScreen extends ConsumerStatefulWidget {
 
 class _WordListsManagerScreenState
     extends ConsumerState<WordListsManagerScreen> {
-  WordCategory _selectedCategory = WordCategory.person;
+  String _selectedCategory = 'person';
   String _searchQuery = '';
   String _sortBy =
       'name'; // 'name', 'appearances', 'guessed', 'skips', 'difficulty'
@@ -233,7 +253,7 @@ class _WordListsManagerScreenState
   Widget build(BuildContext context) {
     final words = ref.watch(wordsProvider);
     final filteredWords = words.where((word) {
-      final matchesCategory = word.category == _selectedCategory;
+      final matchesCategory = word.categoryId == _selectedCategory;
       final matchesSearch =
           word.text.toLowerCase().contains(_searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
@@ -244,7 +264,7 @@ class _WordListsManagerScreenState
       case 'appearances':
         filteredWords.sort((a, b) {
           final appearanceComparison =
-              b.appearanceCount.compareTo(a.appearanceCount);
+              b.stats.appearanceCount.compareTo(a.stats.appearanceCount);
           return appearanceComparison != 0
               ? appearanceComparison
               : a.text.compareTo(b.text);
@@ -252,7 +272,8 @@ class _WordListsManagerScreenState
         break;
       case 'guessed':
         filteredWords.sort((a, b) {
-          final guessedComparison = b.guessedCount.compareTo(a.guessedCount);
+          final guessedComparison =
+              b.stats.guessedCount.compareTo(a.stats.guessedCount);
           return guessedComparison != 0
               ? guessedComparison
               : a.text.compareTo(b.text);
@@ -260,7 +281,7 @@ class _WordListsManagerScreenState
         break;
       case 'skips':
         filteredWords.sort((a, b) {
-          final skipComparison = b.skipCount.compareTo(a.skipCount);
+          final skipComparison = b.stats.skipCount.compareTo(a.stats.skipCount);
           return skipComparison != 0
               ? skipComparison
               : a.text.compareTo(b.text);
@@ -268,8 +289,8 @@ class _WordListsManagerScreenState
         break;
       case 'difficulty':
         filteredWords.sort((a, b) {
-          final aTotalAppearances = a.appearanceCount;
-          final bTotalAppearances = b.appearanceCount;
+          final aTotalAppearances = a.stats.appearanceCount;
+          final bTotalAppearances = b.stats.appearanceCount;
 
           if (aTotalAppearances == 0 && bTotalAppearances == 0) {
             return a.text.compareTo(b.text);
@@ -277,8 +298,8 @@ class _WordListsManagerScreenState
           if (aTotalAppearances == 0) return -1;
           if (bTotalAppearances == 0) return 1;
 
-          final aSkipRate = a.skipCount / aTotalAppearances;
-          final bSkipRate = b.skipCount / bTotalAppearances;
+          final aSkipRate = a.stats.skipCount / aTotalAppearances;
+          final bSkipRate = b.stats.skipCount / bTotalAppearances;
 
           final difficultyComparison = bSkipRate.compareTo(aSkipRate);
           return difficultyComparison != 0
@@ -379,28 +400,28 @@ class _WordListsManagerScreenState
             child: Column(
               children: [
                 // Category selector
-                SegmentedButton<WordCategory>(
+                SegmentedButton<String>(
                   showSelectedIcon: false,
                   segments: const [
                     ButtonSegment(
-                      value: WordCategory.person,
+                      value: 'person',
                       label: Text('Person'),
                     ),
                     ButtonSegment(
-                      value: WordCategory.action,
+                      value: 'action',
                       label: Text('Action'),
                     ),
                     ButtonSegment(
-                      value: WordCategory.world,
+                      value: 'world',
                       label: Text('World'),
                     ),
                     ButtonSegment(
-                      value: WordCategory.random,
+                      value: 'random',
                       label: Text('Random'),
                     ),
                   ],
                   selected: {_selectedCategory},
-                  onSelectionChanged: (Set<WordCategory> selected) {
+                  onSelectionChanged: (Set<String> selected) {
                     setState(() {
                       _selectedCategory = selected.first;
                     });
@@ -459,7 +480,7 @@ class _WordListsManagerScreenState
                 return ListTile(
                   title: Text(word.text),
                   subtitle: Text(
-                      'Appeared: ${word.appearanceCount}, Guessed: ${word.guessedCount}, Skipped: ${word.skipCount}'),
+                      'Appeared: ${word.stats.appearanceCount}, Guessed: ${word.stats.guessedCount}, Skipped: ${word.stats.skipCount}'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
                     onPressed: () => _showDeleteDialog(context, word),
@@ -495,16 +516,16 @@ class _WordListsManagerScreenState
               ),
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<WordCategory>(
+            DropdownButtonFormField<String>(
               value: _selectedCategory,
               decoration: const InputDecoration(
                 labelText: 'Category',
                 border: OutlineInputBorder(),
               ),
-              items: WordCategory.values.map((category) {
+              items: CategoryRegistry.getFreeCategories().map((category) {
                 return DropdownMenuItem(
-                  value: category,
-                  child: Text(category.toString().split('.').last),
+                  value: category.id,
+                  child: Text(category.displayName),
                 );
               }).toList(),
               onChanged: (value) {
@@ -528,7 +549,7 @@ class _WordListsManagerScreenState
                 ref.read(wordsProvider.notifier).addWord(
                       Word(
                         text: textController.text,
-                        category: _selectedCategory,
+                        categoryId: _selectedCategory,
                       ),
                     );
                 Navigator.pop(context);
@@ -701,10 +722,10 @@ class _WordListsManagerScreenState
   }
 
   Color _getDifficultyColor(Word word) {
-    final totalAppearances = word.appearanceCount;
+    final totalAppearances = word.stats.appearanceCount;
     if (totalAppearances == 0) return Colors.transparent;
 
-    final skipRate = word.skipCount / totalAppearances;
+    final skipRate = word.stats.skipCount / totalAppearances;
     if (skipRate < 0.25) return Colors.green.withOpacity(0.1);
     if (skipRate < 0.5) return Colors.yellow.withOpacity(0.1);
     if (skipRate < 0.75) return Colors.orange.withOpacity(0.1);

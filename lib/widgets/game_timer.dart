@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import '../screens/word_lists_manager_screen.dart';
-import '../utils/category_utils.dart';
+import '../data/category_registry.dart';
 
 class GameTimer extends StatelessWidget {
   final int timeLeft;
-  final WordCategory category;
+  final String categoryId;
 
   const GameTimer({
     super.key,
     required this.timeLeft,
-    required this.category,
+    required this.categoryId,
   });
 
   @override
@@ -17,11 +16,12 @@ class GameTimer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       decoration: BoxDecoration(
-        color: CategoryUtils.getCategoryColor(category),
+        color: CategoryRegistry.getCategory(categoryId).color,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: CategoryUtils.getCategoryColor(category).withOpacity(0.4),
+            color:
+                CategoryRegistry.getCategory(categoryId).color.withOpacity(0.4),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
