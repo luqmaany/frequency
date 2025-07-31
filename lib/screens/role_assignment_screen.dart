@@ -279,12 +279,13 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         ),
       );
     }
-
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: widget.sessionId!,
-    );
+    if (widget.sessionId != null) {
+      OnlineGameNavigationService.navigate(
+        context: context,
+        ref: ref,
+        sessionId: widget.sessionId!,
+      );
+    }
 
     // Get the team color for the current team
     int colorIndex;
@@ -458,7 +459,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 24),
-            // Category display (like TurnOverScreen)
             Align(
               alignment: Alignment.center,
               child: Container(
@@ -697,31 +697,31 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
               ),
             ),
             const SizedBox(height: 16),
-            Center(
-              child: SizedBox(
-                width: 200,
-                child: TeamColorButton(
-                  text: _isCurrentTeamActive
-                      ? 'Pick For Us'
-                      : 'Waiting for team...',
-                  icon: _isCurrentTeamActive
-                      ? Icons.shuffle
-                      : Icons.hourglass_empty,
-                  color: uiColors[0], // Blue
-                  onPressed: _isCurrentTeamActive
-                      ? () {
-                          _assignRandomRoles();
-                          _showTransitionScreen();
-                        }
-                      : null,
+            // Only show "Pick For Us" button for active team in online mode, or always in local mode
+            if (_isCurrentTeamActive || widget.sessionId == null)
+              Center(
+                child: SizedBox(
+                  width: 200,
+                  child: TeamColorButton(
+                    text: _isCurrentTeamActive ? 'Pick For Us' : 'Waiting...',
+                    icon: _isCurrentTeamActive
+                        ? Icons.shuffle
+                        : Icons.hourglass_empty,
+                    color: uiColors[0], // Blue
+                    onPressed: _isCurrentTeamActive
+                        ? () {
+                            _assignRandomRoles();
+                            _showTransitionScreen();
+                          }
+                        : null,
+                  ),
                 ),
               ),
-            ),
             const SizedBox(height: 16),
             SizedBox(
               width: 200,
               child: TeamColorButton(
-                text: _isCurrentTeamActive ? 'Next' : 'Waiting for team...',
+                text: _isCurrentTeamActive ? 'Next' : 'Waiting...',
                 icon: _isCurrentTeamActive
                     ? Icons.arrow_forward
                     : Icons.hourglass_empty,

@@ -51,6 +51,7 @@ class _CategorySelectionScreenState
   String? _currentDeviceId; // Add this to track current device
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _spinStateSubscription;
+  List<String> _unlockedCategoryIds = []; // Track unlocked categories
 
   @override
   void initState() {
@@ -74,6 +75,9 @@ class _CategorySelectionScreenState
     // Get current device ID
     _getCurrentDeviceId();
 
+    // Load unlocked categories
+    _loadUnlockedCategories();
+
     // For online games, listen to spin state changes
     if (widget.sessionId != null) {
       _listenToSpinState();
@@ -85,6 +89,13 @@ class _CategorySelectionScreenState
     final deviceId = await StorageService.getDeviceId();
     setState(() {
       _currentDeviceId = deviceId;
+    });
+  }
+
+  Future<void> _loadUnlockedCategories() async {
+    final unlockedCategories = await StorageService.getUnlockedCategoryIds();
+    setState(() {
+      _unlockedCategoryIds = unlockedCategories;
     });
   }
 
@@ -192,8 +203,10 @@ class _CategorySelectionScreenState
         _categoryTimer?.cancel();
 
         // Final selection with smooth transition
-        final finalCategory = CategoryRegistry.getFreeCategories()[
-            math.Random().nextInt(CategoryRegistry.getFreeCategories().length)];
+        final unlockedCategories =
+            CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
+        final finalCategory = unlockedCategories[
+            math.Random().nextInt(unlockedCategories.length)];
         final finalCategoryName = finalCategory.displayName;
 
         if (widget.sessionId != null) {
@@ -218,8 +231,10 @@ class _CategorySelectionScreenState
         return;
       }
 
-      final newCategory = CategoryRegistry.getFreeCategories()[
-          math.Random().nextInt(CategoryRegistry.getFreeCategories().length)];
+      final unlockedCategories =
+          CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
+      final newCategory =
+          unlockedCategories[math.Random().nextInt(unlockedCategories.length)];
 
       if (widget.sessionId != null) {
         // For online games, sync the current category
@@ -252,11 +267,13 @@ class _CategorySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: widget.sessionId!,
-    );
+    if (widget.sessionId != null) {
+      OnlineGameNavigationService.navigate(
+        context: context,
+        ref: ref,
+        sessionId: widget.sessionId!,
+      );
+    }
 
     // Get the team color for the current team
     final gameState = ref.watch(gameStateProvider);
@@ -334,8 +351,9 @@ class _CategorySelectionScreenState
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: _currentCategory.isNotEmpty
-                                      ? CategoryRegistry.getCategory(
-                                              _currentCategory)
+                                      ? CategoryRegistry
+                                              .getCategoryByDisplayName(
+                                                  _currentCategory)
                                           .color
                                       : teamColor.text,
                                   width: 2,
@@ -362,8 +380,9 @@ class _CategorySelectionScreenState
                                         .displayLarge
                                         ?.copyWith(
                                           color: _currentCategory.isNotEmpty
-                                              ? CategoryRegistry.getCategory(
-                                                      _currentCategory)
+                                              ? CategoryRegistry
+                                                      .getCategoryByDisplayName(
+                                                          _currentCategory)
                                                   .color
                                               : teamColor.text,
                                           fontSize: _currentCategory.isEmpty
@@ -413,7 +432,8 @@ class _CategorySelectionScreenState
                                     widget.teamIndex,
                                     widget.roundNumber,
                                     widget.turnNumber,
-                                    _selectedCategory!,
+                                    CategoryRegistry.getCategoryFromDisplayName(
+                                        _selectedCategory!),
                                   );
                                 }
                               }

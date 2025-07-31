@@ -249,7 +249,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                 GameCountdown(
                   player1Name: ref.read(currentTeamPlayersProvider)[0],
                   player2Name: ref.read(currentTeamPlayersProvider)[1],
-                  category: categoryId,
+                  categoryId: categoryId,
                   onCountdownComplete: _onCountdownComplete,
                 ),
             ],

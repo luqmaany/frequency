@@ -18,11 +18,14 @@ class GameSettingsScreen extends ConsumerWidget {
     final gameConfig = ref.watch(gameSetupProvider);
     final validationState = ref.watch(settingsValidationProvider);
 
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: sessionId!,
-    );
+    // Only navigate if sessionId is not null
+    if (sessionId != null) {
+      OnlineGameNavigationService.navigate(
+        context: context,
+        ref: ref,
+        sessionId: sessionId!,
+      );
+    }
 
     return Scaffold(
       body: Column(

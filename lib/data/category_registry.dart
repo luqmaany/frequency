@@ -108,4 +108,10 @@ class CategoryRegistry {
         .firstWhere((category) => category.displayName == displayName)
         .id;
   }
+
+  // Get category by display name
+  static Category getCategoryByDisplayName(String displayName) {
+    return _categories.values
+        .firstWhere((category) => category.displayName == displayName);
+  }
 }
