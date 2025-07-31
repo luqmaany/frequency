@@ -74,10 +74,15 @@ class FirestoreService {
     // If we've gone through all teams, advance to next round
     final nextRound = nextTeamIndex == 0 ? currentRound + 1 : currentRound;
 
+    // Check if this is the last team in the round
+    final isLastTeamInRound = nextTeamIndex == 0;
+
     await _sessions.doc(sessionId).update({
       'gameState.currentTeamIndex': nextTeamIndex,
       'gameState.roundNumber': nextRound,
       'gameState.turnNumber': 1, // Each team has 1 turn per round
+      'gameState.status':
+          isLastTeamInRound ? 'round_end' : 'category_selection',
     });
   }
 
@@ -210,7 +215,6 @@ class FirestoreService {
 
     await _sessions.doc(sessionId).update({
       'gameState.status': 'turn_over',
-      'gameState.turnHistory': FieldValue.arrayUnion([turnRecord]),
       'gameState.currentTurnRecord':
           turnRecord, // Store current turn for easy access
       'gameState.turnOverState': {
@@ -219,6 +223,49 @@ class FirestoreService {
         'currentTeamIndex': teamIndex,
       },
     });
+  }
+
+  static Future<void> fromTurnOver(
+    String sessionId,
+    int teamIndex,
+    int roundNumber,
+    int turnNumber,
+    String category,
+    int correctCount,
+    int skipsLeft,
+    List<String> wordsGuessed,
+    List<String> wordsSkipped,
+    Set<String> disputedWords,
+    String conveyor,
+    String guesser,
+  ) async {
+    //create the final turn record
+    final turnRecord = {
+      'teamIndex': teamIndex,
+      'roundNumber': roundNumber,
+      'turnNumber': turnNumber,
+      'category': category,
+      'correctCount': correctCount,
+      'skipsLeft': skipsLeft,
+      'wordsGuessed': wordsGuessed,
+      'wordsSkipped': wordsSkipped,
+      'disputedWords': disputedWords.toList(),
+      'conveyor': conveyor,
+      'guesser': guesser,
+    };
+
+    await _sessions.doc(sessionId).update({
+      //put the final turn record into the turn history field in the gameState
+      'gameState.turnHistory': FieldValue.arrayUnion([turnRecord]),
+      'gameState.currentTurnRecord': turnRecord,
+      'gameState.turnOverState': {
+        'disputedWords': disputedWords.toList(),
+        'confirmedTeams': [],
+        'currentTeamIndex': teamIndex,
+      },
+    });
+    //advance to next team
+    await advanceToNextTeam(sessionId);
   }
 
   // ============================================================================
