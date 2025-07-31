@@ -4,15 +4,15 @@ import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
 import '../models/game_state.dart';
-import '../utils/category_utils.dart';
-import 'word_lists_manager_screen.dart';
+import '../data/category_registry.dart';
+import '../providers/category_provider.dart';
 import 'package:convey/widgets/team_color_button.dart';
 
 class TurnOverScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
-  final WordCategory category;
+  final String category;
   final int correctCount;
   final int skipsLeft;
   final List<String> wordsGuessed;
@@ -142,7 +142,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
         turnNumber: widget.turnNumber,
         conveyor: currentTeamPlayers[0],
         guesser: currentTeamPlayers[1],
-        category: CategoryUtils.getCategoryName(widget.category),
+        category: CategoryRegistry.getCategory(widget.category).displayName,
         score: _disputedScore,
         skipsUsed: ref.read(gameSetupProvider).allowedSkips - widget.skipsLeft,
         wordsGuessed: widget.wordsGuessed
@@ -153,21 +153,21 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
 
       ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
 
-      // Update word statistics
-      final wordsNotifier = ref.read(wordsProvider.notifier);
+      // TODO: Update word statistics using CategoryProvider
+      final categoryNotifier = ref.read(categoryProvider.notifier);
 
       // Increment appearance count for all words that appeared in this turn
       for (final word in widget.wordsGuessed) {
-        wordsNotifier.incrementWordAppearance(word);
+        categoryNotifier.incrementWordAppearance(widget.category, word);
       }
       for (final word in widget.wordsSkipped) {
-        wordsNotifier.incrementWordAppearance(word);
+        categoryNotifier.incrementWordAppearance(widget.category, word);
       }
 
       // Increment guessed count only for words that were not disputed
       for (final word in widget.wordsGuessed) {
         if (!_disputedWords.contains(word)) {
-          wordsNotifier.incrementWordGuessed(word);
+          categoryNotifier.incrementWordGuessed(widget.category, word);
         }
       }
 
@@ -191,21 +191,24 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? CategoryUtils.getCategoryColor(widget.category)
+                      ? CategoryRegistry.getCategory(widget.category)
+                          .color
                           .withOpacity(0.3)
-                      : CategoryUtils.getCategoryColor(widget.category)
+                      : CategoryRegistry.getCategory(widget.category)
+                          .color
                           .withOpacity(0.2),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: Theme.of(context).brightness == Brightness.dark
-                        ? CategoryUtils.getCategoryColor(widget.category)
+                        ? CategoryRegistry.getCategory(widget.category)
+                            .color
                             .withOpacity(0.8)
-                        : CategoryUtils.getCategoryColor(widget.category),
+                        : CategoryRegistry.getCategory(widget.category).color,
                     width: 2,
                   ),
                 ),
                 child: Text(
-                  CategoryUtils.getCategoryName(widget.category),
+                  CategoryRegistry.getCategory(widget.category).displayName,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white.withOpacity(0.95)
@@ -221,16 +224,19 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark
-                      ? CategoryUtils.getCategoryColor(widget.category)
+                      ? CategoryRegistry.getCategory(widget.category)
+                          .color
                           .withOpacity(0.9)
-                      : CategoryUtils.getCategoryColor(widget.category),
+                      : CategoryRegistry.getCategory(widget.category).color,
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [
                     BoxShadow(
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? CategoryUtils.getCategoryColor(widget.category)
+                          ? CategoryRegistry.getCategory(widget.category)
+                              .color
                               .withOpacity(0.4)
-                          : CategoryUtils.getCategoryColor(widget.category)
+                          : CategoryRegistry.getCategory(widget.category)
+                              .color
                               .withOpacity(0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
@@ -281,13 +287,15 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                   : Colors.red.withOpacity(0.1)
                                               : Theme.of(context).brightness ==
                                                       Brightness.dark
-                                                  ? CategoryUtils
-                                                          .getCategoryColor(
+                                                  ? CategoryRegistry
+                                                          .getCategory(
                                                               widget.category)
+                                                      .color
                                                       .withOpacity(0.2)
-                                                  : CategoryUtils
-                                                          .getCategoryColor(
+                                                  : CategoryRegistry
+                                                          .getCategory(
                                                               widget.category)
+                                                      .color
                                                       .withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(8),
@@ -298,13 +306,15 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                 : Theme.of(context)
                                                             .brightness ==
                                                         Brightness.dark
-                                                    ? CategoryUtils
-                                                            .getCategoryColor(
+                                                    ? CategoryRegistry
+                                                            .getCategory(
                                                                 widget.category)
+                                                        .color
                                                         .withOpacity(0.8)
-                                                    : CategoryUtils
-                                                        .getCategoryColor(
-                                                            widget.category),
+                                                    : CategoryRegistry
+                                                            .getCategory(
+                                                                widget.category)
+                                                        .color,
                                             width: 2,
                                           ),
                                         ),
@@ -366,11 +376,13 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                     : Theme.of(context)
                                                                 .brightness ==
                                                             Brightness.dark
-                                                        ? CategoryUtils.getCategoryColor(
+                                                        ? CategoryRegistry.getCategory(
                                                                 widget.category)
+                                                            .color
                                                             .withOpacity(0.2)
-                                                        : CategoryUtils.getCategoryColor(
+                                                        : CategoryRegistry.getCategory(
                                                                 widget.category)
+                                                            .color
                                                             .withOpacity(0.1),
                                                 borderRadius:
                                                     BorderRadius.circular(8),
@@ -383,15 +395,17 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                       : Theme.of(context)
                                                                   .brightness ==
                                                               Brightness.dark
-                                                          ? CategoryUtils
-                                                                  .getCategoryColor(
+                                                          ? CategoryRegistry
+                                                                  .getCategory(
                                                                       widget
                                                                           .category)
+                                                              .color
                                                               .withOpacity(0.8)
-                                                          : CategoryUtils
-                                                              .getCategoryColor(
-                                                                  widget
-                                                                      .category),
+                                                          : CategoryRegistry
+                                                                  .getCategory(
+                                                                      widget
+                                                                          .category)
+                                                              .color,
                                                   width: 2,
                                                 ),
                                               ),
@@ -445,8 +459,9 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                 .textTheme
                                 .titleLarge
                                 ?.copyWith(
-                                  color: CategoryUtils.getCategoryColor(
-                                      widget.category),
+                                  color: CategoryRegistry.getCategory(
+                                          widget.category)
+                                      .color,
                                 ),
                           ),
                           const SizedBox(height: 16),
@@ -457,21 +472,25 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                             decoration: BoxDecoration(
                               color: Theme.of(context).brightness ==
                                       Brightness.dark
-                                  ? CategoryUtils.getCategoryColor(
+                                  ? CategoryRegistry.getCategory(
                                           widget.category)
+                                      .color
                                       .withOpacity(0.2)
-                                  : CategoryUtils.getCategoryColor(
+                                  : CategoryRegistry.getCategory(
                                           widget.category)
+                                      .color
                                       .withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
                                 color: Theme.of(context).brightness ==
                                         Brightness.dark
-                                    ? CategoryUtils.getCategoryColor(
+                                    ? CategoryRegistry.getCategory(
                                             widget.category)
+                                        .color
                                         .withOpacity(0.8)
-                                    : CategoryUtils.getCategoryColor(
-                                        widget.category),
+                                    : CategoryRegistry.getCategory(
+                                            widget.category)
+                                        .color,
                                 width: 1,
                               ),
                             ),
@@ -540,21 +559,25 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                 decoration: BoxDecoration(
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
-                                      ? CategoryUtils.getCategoryColor(
+                                      ? CategoryRegistry.getCategory(
                                               widget.category)
+                                          .color
                                           .withOpacity(0.1)
-                                      : CategoryUtils.getCategoryColor(
+                                      : CategoryRegistry.getCategory(
                                               widget.category)
+                                          .color
                                           .withOpacity(0.05),
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(
                                     color: Theme.of(context).brightness ==
                                             Brightness.dark
-                                        ? CategoryUtils.getCategoryColor(
+                                        ? CategoryRegistry.getCategory(
                                                 widget.category)
+                                            .color
                                             .withOpacity(0.5)
-                                        : CategoryUtils.getCategoryColor(
+                                        : CategoryRegistry.getCategory(
                                                 widget.category)
+                                            .color
                                             .withOpacity(0.3),
                                     width: 1,
                                   ),

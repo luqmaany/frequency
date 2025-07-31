@@ -3,12 +3,12 @@ import '../data/category_registry.dart';
 
 class SkipCounter extends StatelessWidget {
   final int skipsLeft;
-  final String category;
+  final String categoryId;
 
   const SkipCounter({
     super.key,
     required this.skipsLeft,
-    required this.category,
+    required this.categoryId,
   });
 
   @override
@@ -17,7 +17,7 @@ class SkipCounter extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: CategoryRegistry.getCategory(category).color.withOpacity(0.1),
+        color: CategoryRegistry.getCategory(categoryId).color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(

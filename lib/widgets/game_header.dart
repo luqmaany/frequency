@@ -5,14 +5,14 @@ import 'skip_counter.dart';
 
 class GameHeader extends StatelessWidget {
   final int timeLeft;
-  final String category;
+  final String categoryId;
   final int skipsLeft;
   final bool isTiebreaker;
 
   const GameHeader({
     super.key,
     required this.timeLeft,
-    required this.category,
+    required this.categoryId,
     required this.skipsLeft,
     this.isTiebreaker = false,
   });
@@ -28,7 +28,7 @@ class GameHeader extends StatelessWidget {
             flex: 1,
             child: GameTimer(
               timeLeft: timeLeft,
-              category: category,
+              categoryId: categoryId,
             ),
           ),
           const SizedBox(width: 12),
@@ -38,13 +38,13 @@ class GameHeader extends StatelessWidget {
             child: Column(
               children: [
                 CategoryDisplay(
-                  category: category,
+                  categoryId: categoryId,
                   isTiebreaker: isTiebreaker,
                 ),
                 const SizedBox(height: 4),
                 SkipCounter(
                   skipsLeft: skipsLeft,
-                  category: category,
+                  categoryId: categoryId,
                 ),
               ],
             ),

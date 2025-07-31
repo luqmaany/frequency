@@ -211,7 +211,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   // Game header with timer, category, and skips
                   GameHeader(
                     timeLeft: timeLeft,
-                    category: categoryId,
+                    categoryId: categoryId,
                     skipsLeft: skipsLeft,
                     isTiebreaker: false,
                   ),

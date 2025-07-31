@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../screens/word_lists_manager_screen.dart';
 import '../services/game_state_provider.dart';
+import '../models/category.dart';
+import '../providers/category_provider.dart';
 
 mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   late int _timeLeft;
@@ -25,7 +26,7 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   Set<String> get disputedWords => _disputedWords;
 
   // Abstract methods that must be implemented by the using class
-  WordCategory get category;
+  String get categoryId;
   void onTurnEnd();
   void onWordGuessed(String word);
   void onWordSkipped(String word);
@@ -90,26 +91,32 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         _wordsSkipped.add(word);
       });
       // Increment skip count for the word
-      ref.read(wordsProvider.notifier).incrementWordSkip(word);
+      ref.read(categoryProvider.notifier).incrementWordSkip(categoryId, word);
       onWordSkipped(word);
     }
   }
 
   // Increment word appearance count
   void incrementWordAppearance(Word word) {
-    ref.read(wordsProvider.notifier).incrementWordAppearance(word.text);
+    ref
+        .read(categoryProvider.notifier)
+        .incrementWordAppearance(categoryId, word.text);
   }
 
   // Increment word guessed count
   void incrementWordGuessed(Word word) {
-    ref.read(wordsProvider.notifier).incrementWordGuessed(word.text);
+    ref
+        .read(categoryProvider.notifier)
+        .incrementWordGuessed(categoryId, word.text);
   }
 
   // Load initial words for the game
   void loadInitialWords() {
-    final words = ref.read(wordsProvider);
-    final categoryWords =
-        words.where((word) => word.category == category).toList();
+    final categories = ref.read(categoryProvider);
+    final category = categories[categoryId];
+    if (category == null) return;
+
+    final categoryWords = category.words;
 
     if (categoryWords.isEmpty) {
       return;
@@ -148,14 +155,16 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 
   // Get next word for a category
-  Word? getNextWord(WordCategory category) {
-    final words = ref.read(wordsProvider);
+  Word? getNextWord(String categoryId) {
+    final categories = ref.read(categoryProvider);
+    final category = categories[categoryId];
+    if (category == null) return null;
+
     final gameUsedWords = ref.read(gameStateProvider.notifier).gameUsedWords;
 
     // Get words that haven't been used in this game yet
-    final categoryWords = words
-        .where((word) =>
-            word.category == category && !gameUsedWords.contains(word.text))
+    final categoryWords = category.words
+        .where((word) => !gameUsedWords.contains(word.text))
         .toList();
 
     if (categoryWords.isEmpty) {
@@ -170,7 +179,7 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   // Load new word at specific index
   void loadNewWord(int index) {
-    final newWord = getNextWord(category);
+    final newWord = getNextWord(categoryId);
     if (newWord != null) {
       setState(() {
         _currentWords[index] = newWord;
