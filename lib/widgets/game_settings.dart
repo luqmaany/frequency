@@ -15,24 +15,76 @@ class GameSettings extends ConsumerStatefulWidget {
 }
 
 class GameSettingsState extends ConsumerState<GameSettings> {
-  late TextEditingController _roundTimeController;
-  late TextEditingController _targetScoreController;
-  late TextEditingController _allowedSkipsController;
-  bool _controllersInitialized = false;
-
-  @override
-  void dispose() {
-    _roundTimeController.dispose();
-    _targetScoreController.dispose();
-    _allowedSkipsController.dispose();
-    super.dispose();
-  }
+  // Predefined options
+  static const List<int> timeOptions = [15, 30, 60, 90, 120];
+  static const List<int> scoreOptions = [10, 20, 30, 50];
+  static const List<int> skipOptions = [0, 1, 2, 3, 4, 5];
 
   void _updateFirestoreSetting(String key, int value) async {
     if (widget.sessionId == null) return;
     final doc =
         FirebaseFirestore.instance.collection('sessions').doc(widget.sessionId);
     await doc.update({'settings.$key': value});
+  }
+
+  Widget _buildOptionButtons({
+    required String title,
+    required List<int> options,
+    required int currentValue,
+    required String settingKey,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: options.map((option) {
+            final isSelected = option == currentValue;
+            return GestureDetector(
+              onTap: widget.readOnly
+                  ? null
+                  : () {
+                      _updateFirestoreSetting(settingKey, option);
+                    },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isSelected ? color : color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? color : color.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: Text(
+                  option.toString(),
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : color,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
   }
 
   @override
@@ -45,259 +97,60 @@ class GameSettingsState extends ConsumerState<GameSettings> {
         return const Center(child: CircularProgressIndicator());
       }
       final settings = settingsAsync.value!;
-      // Initialize controllers only once per settings change
-      if (!_controllersInitialized ||
-          _roundTimeController.text !=
-              settings['roundTimeSeconds'].toString() ||
-          _targetScoreController.text != settings['targetScore'].toString() ||
-          _allowedSkipsController.text != settings['allowedSkips'].toString()) {
-        _roundTimeController = TextEditingController(
-            text: settings['roundTimeSeconds'].toString());
-        _targetScoreController =
-            TextEditingController(text: settings['targetScore'].toString());
-        _allowedSkipsController =
-            TextEditingController(text: settings['allowedSkips'].toString());
-        _controllersInitialized = true;
-      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: _roundTimeController,
-            enabled: !widget.readOnly,
-            decoration: InputDecoration(
-              labelText: 'Round Time (seconds)',
-              filled: true,
-              fillColor: Colors.blue.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue, width: 2),
-              ),
-              helperText: '10-120 seconds',
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            onChanged: widget.readOnly
-                ? null
-                : (val) {
-                    final seconds = int.tryParse(val);
-                    if (seconds != null && seconds >= 10 && seconds <= 120) {
-                      _updateFirestoreSetting('roundTimeSeconds', seconds);
-                    }
-                  },
+          _buildOptionButtons(
+            title: 'Round Time (seconds)',
+            options: timeOptions,
+            currentValue: settings['roundTimeSeconds'] as int? ?? 60,
+            settingKey: 'roundTimeSeconds',
+            color: Colors.blue,
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _targetScoreController,
-            enabled: !widget.readOnly,
-            decoration: InputDecoration(
-              labelText: 'Target Score',
-              filled: true,
-              fillColor: Colors.green.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.green.shade300, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.green.shade300, width: 2),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.green, width: 2),
-              ),
-              helperText: '10-100 points',
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            onChanged: widget.readOnly
-                ? null
-                : (val) {
-                    final score = int.tryParse(val);
-                    if (score != null && score >= 10 && score <= 100) {
-                      _updateFirestoreSetting('targetScore', score);
-                    }
-                  },
+          _buildOptionButtons(
+            title: 'Target Score',
+            options: scoreOptions,
+            currentValue: settings['targetScore'] as int? ?? 30,
+            settingKey: 'targetScore',
+            color: Colors.green,
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _allowedSkipsController,
-            enabled: !widget.readOnly,
-            decoration: InputDecoration(
-              labelText: 'Allowed Skips',
-              filled: true,
-              fillColor: Colors.red.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red.shade300, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red.shade300, width: 2),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red, width: 2),
-              ),
-              helperText: '0-5 skips',
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            onChanged: widget.readOnly
-                ? null
-                : (val) {
-                    final skips = int.tryParse(val);
-                    if (skips != null && skips >= 0 && skips <= 5) {
-                      _updateFirestoreSetting('allowedSkips', skips);
-                    }
-                  },
+          _buildOptionButtons(
+            title: 'Allowed Skips',
+            options: skipOptions,
+            currentValue: settings['allowedSkips'] as int? ?? 3,
+            settingKey: 'allowedSkips',
+            color: Colors.orange,
           ),
         ],
       );
     } else {
-      // LOCAL MODE: Use gameSetupProvider
-      final validationState = ref.watch(settingsValidationProvider);
+      // LOCAL MODE: Use local game setup provider
       final gameConfig = ref.watch(gameSetupProvider);
-      if (!_controllersInitialized) {
-        _roundTimeController =
-            TextEditingController(text: gameConfig.roundTimeSeconds.toString());
-        _targetScoreController =
-            TextEditingController(text: gameConfig.targetScore.toString());
-        _allowedSkipsController =
-            TextEditingController(text: gameConfig.allowedSkips.toString());
-        _controllersInitialized = true;
-      }
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: _roundTimeController,
-            enabled: true,
-            decoration: InputDecoration(
-              labelText: 'Round Time (seconds)',
-              filled: true,
-              fillColor: Colors.blue.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue.shade300, width: 2),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.blue, width: 2),
-              ),
-              errorText: validationState.isRoundTimeValid
-                  ? null
-                  : 'Must be between 10 and 120 seconds',
-              helperText: '10-120 seconds',
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            onChanged: (val) {
-              final seconds = int.tryParse(val);
-              if (seconds != null && seconds >= 10 && seconds <= 120) {
-                ref.read(gameSetupProvider.notifier).setRoundTime(seconds);
-              }
-              ref.read(settingsValidationProvider.notifier).setRoundTimeValid(
-                  seconds != null && seconds >= 10 && seconds <= 120);
-            },
+          _buildOptionButtons(
+            title: 'Round Time (seconds)',
+            options: timeOptions,
+            currentValue: gameConfig.roundTimeSeconds,
+            settingKey: 'roundTimeSeconds',
+            color: Colors.blue,
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _targetScoreController,
-            enabled: true,
-            decoration: InputDecoration(
-              labelText: 'Target Score',
-              filled: true,
-              fillColor: Colors.green.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.green.shade300, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.green.shade300, width: 2),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.green, width: 2),
-              ),
-              errorText: validationState.isTargetScoreValid
-                  ? null
-                  : 'Must be between 10 and 100',
-              helperText: '10-100 points',
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            onChanged: (val) {
-              final score = int.tryParse(val);
-              if (score != null && score >= 10 && score <= 100) {
-                ref.read(gameSetupProvider.notifier).setTargetScore(score);
-              }
-              ref.read(settingsValidationProvider.notifier).setTargetScoreValid(
-                  score != null && score >= 10 && score <= 100);
-            },
+          _buildOptionButtons(
+            title: 'Target Score',
+            options: scoreOptions,
+            currentValue: gameConfig.targetScore,
+            settingKey: 'targetScore',
+            color: Colors.green,
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _allowedSkipsController,
-            enabled: true,
-            decoration: InputDecoration(
-              labelText: 'Allowed Skips',
-              filled: true,
-              fillColor: Colors.red.shade50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red.shade300, width: 2),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red.shade300, width: 2),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.red, width: 2),
-              ),
-              errorText: validationState.isAllowedSkipsValid
-                  ? null
-                  : 'Must be between 0 and 5',
-              helperText: '0-5 skips',
-            ),
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-            ],
-            onChanged: (val) {
-              final skips = int.tryParse(val);
-              if (skips != null && skips >= 0 && skips <= 5) {
-                ref.read(gameSetupProvider.notifier).setAllowedSkips(skips);
-              }
-              ref
-                  .read(settingsValidationProvider.notifier)
-                  .setAllowedSkipsValid(
-                      skips != null && skips >= 0 && skips <= 5);
-            },
+          _buildOptionButtons(
+            title: 'Allowed Skips',
+            options: skipOptions,
+            currentValue: gameConfig.allowedSkips,
+            settingKey: 'allowedSkips',
+            color: Colors.orange,
           ),
         ],
       );
