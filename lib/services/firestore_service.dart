@@ -306,7 +306,6 @@ class FirestoreService {
     final idx = teams.indexWhere((t) => t['teamId'] == teamId);
     if (idx == -1) return;
     teams[idx]['active'] = false;
-    teams[idx]['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 
@@ -324,7 +323,6 @@ class FirestoreService {
     if (idx == -1) return;
     teams[idx]['active'] = true;
     teams[idx]['players'] = players;
-    teams[idx]['lastSeen'] = DateTime.now().millisecondsSinceEpoch;
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 

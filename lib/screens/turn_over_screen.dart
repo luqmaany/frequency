@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:math';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
@@ -125,9 +126,12 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
   }
 
   String _getRandomMessage(List<Map<String, String>> messages) {
-    final random =
-        messages[DateTime.now().millisecondsSinceEpoch % messages.length];
-    return '${random['text']} ${random['emoji']}';
+    // Use a proper random number generator instead of timestamps
+    // This avoids potential issues with Firestore quota and provides better randomization
+    final random = Random();
+    final randomIndex = random.nextInt(messages.length);
+    final randomMessage = messages[randomIndex];
+    return '${randomMessage['text']} ${randomMessage['emoji']}';
   }
 
   void _onWordDisputed(String word) {

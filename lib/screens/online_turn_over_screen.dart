@@ -268,9 +268,11 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
           widget.roundNumber,
           widget.turnNumber,
           widget.category,
-          widget.correctCount,
+          _disputedScore, // Use disputed score instead of original correctCount
           widget.skipsLeft,
-          widget.wordsGuessed,
+          widget.wordsGuessed
+              .where((word) => !_disputedWords.contains(word))
+              .toList(), // Filter out disputed words
           widget.wordsSkipped,
           _disputedWords,
           widget.conveyor ?? '',
@@ -337,13 +339,12 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   @override
   Widget build(BuildContext context) {
     // For online games, listen to navigation changes
-    if (widget.sessionId != null) {
-      OnlineGameNavigationService.navigate(
-        context: context,
-        ref: ref,
-        sessionId: widget.sessionId!,
-      );
-    }
+
+    OnlineGameNavigationService.navigate(
+      context: context,
+      ref: ref,
+      sessionId: widget.sessionId!,
+    );
 
     return Scaffold(
       body: SafeArea(
