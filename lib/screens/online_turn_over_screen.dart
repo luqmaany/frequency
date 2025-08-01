@@ -62,58 +62,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _turnOverStateSubscription;
 
-  static const List<Map<String, String>> _highScoreMessages = [
-    {'text': 'You\'re the dynamic duo of word games!', 'emoji': '🦸‍♂️'},
-    {
-      'text': 'Like Batman and Robin, but with better communication!',
-      'emoji': '🦇'
-    },
-    {
-      'text': 'You two are the word game equivalent of a perfect handshake!',
-      'emoji': '🤝'
-    },
-    {
-      'text': 'More coordinated than a synchronized dance routine!',
-      'emoji': '💃'
-    },
-    {'text': 'You\'re like a well-tuned word orchestra!', 'emoji': '🎻'},
-  ];
-
-  static const List<Map<String, String>> _lowScoreMessages = [
-    {'text': 'Well... at least you tried!', 'emoji': '🤷'},
-    {'text': 'Like two ships passing in the night...', 'emoji': '🚢'},
-    {'text': 'You two are like a broken telephone game!', 'emoji': '📞'},
-    {
-      'text': 'More confused than a cat in a room full of rocking chairs!',
-      'emoji': '😺'
-    },
-    {
-      'text': 'Like trying to solve a Rubik\'s cube in the dark!',
-      'emoji': '🎲'
-    },
-  ];
-
-  static const List<Map<String, String>> _zeroScoreMessages = [
-    {
-      'text':
-          'Not a single word guessed! The conveyor must be playing charades instead!',
-      'emoji': '🎭'
-    },
-    {
-      'text': 'Zero points! Did the conveyor forget how to speak?',
-      'emoji': '🤐'
-    },
-    {
-      'text': 'The guesser\'s mind-reading skills need some serious work!',
-      'emoji': '🧠'
-    },
-    {'text': 'Maybe try using actual words next time?', 'emoji': '📝'},
-    {
-      'text': 'The conveyor and guesser must be speaking different languages!',
-      'emoji': '🌍'
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -200,31 +148,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
       return teamColors[colorIndex % teamColors.length];
     }
     return uiColors[0];
-  }
-
-  String _getPerformanceMessage() {
-    final gameConfig = ref.read(gameSetupProvider);
-    final maxPossibleScore = gameConfig.roundTimeSeconds ~/
-        3; // Rough estimate of max possible score
-    final scorePercentage = widget.correctCount / maxPossibleScore;
-
-    if (scorePercentage >= 0.7) {
-      return _getRandomMessage(_highScoreMessages);
-    } else if (widget.correctCount == 0) {
-      return _getRandomMessage(_zeroScoreMessages);
-    } else {
-      return _getRandomMessage(_lowScoreMessages);
-    }
-  }
-
-  String _getRandomMessage(List<Map<String, String>> messages) {
-    // Use a deterministic seed based on the turn data to avoid constant changes
-    final seed = widget.teamIndex +
-        widget.roundNumber +
-        widget.turnNumber +
-        widget.correctCount;
-    final random = messages[seed % messages.length];
-    return '${random['text']} ${random['emoji']}';
   }
 
   void _onWordDisputed(String word) {
@@ -634,83 +557,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                           .color
                                       : Colors.grey,
                                 ),
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? CategoryRegistry.getCategory(
-                                          widget.category)
-                                      .color
-                                      .withOpacity(0.2)
-                                  : CategoryRegistry.getCategory(
-                                          widget.category)
-                                      .color
-                                      .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? CategoryRegistry.getCategory(
-                                            widget.category)
-                                        .color
-                                        .withOpacity(0.8)
-                                    : CategoryRegistry.getCategory(
-                                            widget.category)
-                                        .color,
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _getPerformanceMessage(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white.withOpacity(0.95)
-                                        : Colors.black,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ] else ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 20),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.red.withOpacity(0.2)
-                                  : Colors.red.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? Colors.red.withOpacity(0.8)
-                                    : Colors.red,
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _getRandomMessage(_zeroScoreMessages),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white.withOpacity(0.95)
-                                        : Colors.black,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
                           ),
                         ],
                         if (widget.wordsSkipped.isNotEmpty) ...[
