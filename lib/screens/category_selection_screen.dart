@@ -52,6 +52,8 @@ class _CategorySelectionScreenState
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
       _spinStateSubscription;
   List<String> _unlockedCategoryIds = []; // Track unlocked categories
+  bool _navigationListenerSetUp =
+      false; // Flag to ensure navigation listener is set up only once
 
   @override
   void initState() {
@@ -81,6 +83,17 @@ class _CategorySelectionScreenState
     // For online games, listen to spin state changes
     if (widget.sessionId != null) {
       _listenToSpinState();
+    }
+
+    // For online games, set up navigation listener after the first frame
+    if (widget.sessionId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        OnlineGameNavigationService.navigate(
+          context: context,
+          ref: ref,
+          sessionId: widget.sessionId!,
+        );
+      });
     }
   }
 
@@ -116,20 +129,16 @@ class _CategorySelectionScreenState
 
       if (categorySpin != null) {
         final isSpinning = categorySpin['isSpinning'] as bool? ?? false;
-        final spinCount = categorySpin['spinCount'] as int? ?? 0;
-        final currentCategory =
-            categorySpin['currentCategory'] as String? ?? '';
         final selectedCategory =
             categorySpin['selectedCategory'] as String? ?? '';
 
         if (mounted) {
           setState(() {
             _isSpinning = isSpinning;
-            _spinCount = spinCount;
-            _currentCategory = currentCategory;
             if (selectedCategory.isNotEmpty) {
               _selectedCategory =
                   CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
+              _currentCategory = selectedCategory;
             }
           });
         }
@@ -267,14 +276,6 @@ class _CategorySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
-    if (widget.sessionId != null) {
-      OnlineGameNavigationService.navigate(
-        context: context,
-        ref: ref,
-        sessionId: widget.sessionId!,
-      );
-    }
-
     // Get the team color for the current team
     final gameState = ref.watch(gameStateProvider);
     TeamColor teamColor;
