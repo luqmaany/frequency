@@ -319,133 +319,69 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 32),
-                        // Team info display with animation
-                        if (_selectedColorIndex != null) ...[
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 4),
-                            child: AnimatedBuilder(
-                              animation: _animation,
-                              builder: (context, child) {
-                                final teamColor =
-                                    teamColors[_selectedColorIndex!];
-                                final teamName =
-                                    _teamNameController.text.trim();
-                                final displayTitle = teamName.isNotEmpty
-                                    ? teamName
-                                    : '${teamColor.name} Team';
-
-                                return Transform.scale(
-                                  scale: 0.9 + (_animation.value * 0.1),
-                                  child: Container(
-                                    height: 80,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? teamColor.border.withOpacity(0.4)
-                                          : teamColor.background,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? teamColor.background
-                                                .withOpacity(0.3)
-                                            : teamColor.border,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Stack(
-                                      children: [
-                                        Center(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                displayTitle,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headlineMedium
-                                                    ?.copyWith(
-                                                      fontSize: 20,
-                                                      color: Theme.of(context)
-                                                                  .brightness ==
-                                                              Brightness.dark
-                                                          ? Colors.white
-                                                              .withOpacity(0.95)
-                                                          : Colors.black,
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '${_player1Controller.text.trim().isNotEmpty ? _player1Controller.text.trim() : "Player 1"} & ${_player2Controller.text.trim().isNotEmpty ? _player2Controller.text.trim() : "Player 2"}',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyLarge
-                                                    ?.copyWith(
-                                                      color: Theme.of(context)
-                                                                  .brightness ==
-                                                              Brightness.dark
-                                                          ? Colors.white
-                                                              .withOpacity(0.8)
-                                                          : Colors.black87,
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
                         // Team Setup Section
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 10),
                         const Text('Team Setup',
                             style: TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 16),
-                        TextField(
-                          controller: _teamNameController,
-                          decoration: const InputDecoration(
-                            labelText: 'Team Name',
-                            border: OutlineInputBorder(),
-                            hintText: 'Enter your team name',
+                        SizedBox(
+                          height: 45,
+                          child: TextField(
+                            controller: _teamNameController,
+                            decoration: const InputDecoration(
+                              labelText: 'Team Name',
+                              border: OutlineInputBorder(),
+                              hintText: 'Enter your team name',
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            ),
+                            onChanged: (value) {
+                              setState(() {});
+                            },
                           ),
-                          onChanged: (value) {
-                            setState(() {});
-                          },
                         ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _player1Controller,
-                          decoration: const InputDecoration(
-                            labelText: 'Player 1 Name',
-                            border: OutlineInputBorder(),
-                            hintText: 'Enter first player name',
-                          ),
-                          onChanged: (value) {
-                            setState(() {});
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _player2Controller,
-                          decoration: const InputDecoration(
-                            labelText: 'Player 2 Name',
-                            border: OutlineInputBorder(),
-                            hintText: 'Enter second player name',
-                          ),
-                          onChanged: (value) {
-                            setState(() {});
-                          },
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: SizedBox(
+                                height: 45,
+                                child: TextField(
+                                  controller: _player1Controller,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Player 1 Name',
+                                    border: OutlineInputBorder(),
+                                    hintText: 'Enter first player name',
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: SizedBox(
+                                height: 45,
+                                child: TextField(
+                                  controller: _player2Controller,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Player 2 Name',
+                                    border: OutlineInputBorder(),
+                                    hintText: 'Enter second player name',
+                                    contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 8),
+                                  ),
+                                  onChanged: (value) {
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 24),
                         const Text('Pick a Team Color:',
