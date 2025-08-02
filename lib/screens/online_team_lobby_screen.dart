@@ -36,7 +36,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   late Future<String> _deviceIdFuture;
   late AnimationController _animationController;
   late Animation<double> _animation;
-
   @override
   void initState() {
     super.initState();
@@ -101,8 +100,9 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   }
 
   bool get _canPickColor =>
-      widget.player1Name.trim().isNotEmpty &&
-      widget.player2Name.trim().isNotEmpty;
+      _teamNameController.text.trim().isNotEmpty &&
+      _player1Controller.text.trim().isNotEmpty &&
+      _player2Controller.text.trim().isNotEmpty;
 
   // Helper to get the current team's color index from Firestore
   Future<int?> _getMyTeamColorIndex(List teams) async {
@@ -115,7 +115,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       // Fallback to player names
       if (t['players'] is List &&
           (t['players'] as List).join(',') ==
-              [widget.player1Name.trim(), widget.player2Name.trim()]
+              [_player1Controller.text.trim(), _player2Controller.text.trim()]
                   .join(',')) {
         return t['colorIndex'] as int?;
       }
@@ -127,13 +127,13 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   Future<Map<String, dynamic>> _getMyTeamDataWithDeviceId() async {
     final deviceId = await _deviceIdFuture;
     return {
-      'teamName': widget.teamName.trim(),
+      'teamName': _teamNameController.text.trim(),
       'colorIndex': _selectedColorIndex,
       'ready': true,
       'deviceId': deviceId, // Add device ID to team data
       'players': [
-        widget.player1Name.trim(),
-        widget.player2Name.trim(),
+        _player1Controller.text.trim(),
+        _player2Controller.text.trim(),
       ],
     };
   }
@@ -156,8 +156,10 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
           t['colorIndex'] == _selectedColorIndex ||
           (t['players'] is List &&
               (t['players'] as List).join(',') ==
-                  [widget.player1Name.trim(), widget.player2Name.trim()]
-                      .join(',')));
+                  [
+                    _player1Controller.text.trim(),
+                    _player2Controller.text.trim()
+                  ].join(',')));
 
       // Add team data with device ID
       final teamDataWithDeviceId = await _getMyTeamDataWithDeviceId();
@@ -188,7 +190,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
         t['deviceId'] == deviceId ||
         (t['players'] is List &&
             (t['players'] as List).join(',') ==
-                [widget.player1Name.trim(), widget.player2Name.trim()]
+                [_player1Controller.text.trim(), _player2Controller.text.trim()]
                     .join(',')) ||
         t['colorIndex'] == _selectedColorIndex);
 
@@ -246,12 +248,18 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   Widget build(BuildContext context) {
     final sessionAsync = ref.watch(sessionStreamProvider(widget.sessionId));
 
-    // Set up navigation listener (this is safe in build because ref.listen handles duplicates)
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: widget.sessionId,
-    );
+    // Set up navigation listener for online games (only once per widget instance)
+    ref.listen(sessionStatusProvider(widget.sessionId), (prev, next) {
+      final status = next.value;
+      if (status != null) {
+        OnlineGameNavigationService.handleNavigation(
+          context: context,
+          ref: ref,
+          sessionId: widget.sessionId,
+          status: status,
+        );
+      }
+    });
 
     return PopScope(
       canPop: true,
@@ -373,7 +381,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                '${widget.player1Name} & ${widget.player2Name}',
+                                                '${_player1Controller.text.trim().isNotEmpty ? _player1Controller.text.trim() : "Player 1"} & ${_player2Controller.text.trim().isNotEmpty ? _player2Controller.text.trim() : "Player 2"}',
                                                 style: Theme.of(context)
                                                     .textTheme
                                                     .bodyLarge
@@ -398,6 +406,48 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                           ),
                           const SizedBox(height: 24),
                         ],
+                        // Team Setup Section
+                        const SizedBox(height: 24),
+                        const Text('Team Setup',
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _teamNameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Team Name',
+                            border: OutlineInputBorder(),
+                            hintText: 'Enter your team name',
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _player1Controller,
+                          decoration: const InputDecoration(
+                            labelText: 'Player 1 Name',
+                            border: OutlineInputBorder(),
+                            hintText: 'Enter first player name',
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _player2Controller,
+                          decoration: const InputDecoration(
+                            labelText: 'Player 2 Name',
+                            border: OutlineInputBorder(),
+                            hintText: 'Enter second player name',
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                        ),
+                        const SizedBox(height: 24),
                         const Text('Pick a Team Color:',
                             style: TextStyle(fontSize: 16)),
                         const SizedBox(height: 8),
@@ -577,6 +627,9 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                             onPressed: (!_ready &&
                                     _canPickColor &&
                                     _selectedColorIndex != null &&
+                                    _teamNameController.text
+                                        .trim()
+                                        .isNotEmpty &&
                                     !_updating)
                                 ? _onReadyPressed
                                 : null,
