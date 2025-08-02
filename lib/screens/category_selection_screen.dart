@@ -10,6 +10,7 @@ import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/online_game_navigation_service.dart';
+import '../providers/session_providers.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -49,11 +50,7 @@ class _CategorySelectionScreenState
   static const int _initialDelay = 25; // Faster initial speed
   static const int _finalDelay = 120; // Smoother final speed
   String? _currentDeviceId; // Add this to track current device
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-      _spinStateSubscription;
   List<String> _unlockedCategoryIds = []; // Track unlocked categories
-  bool _navigationListenerSetUp =
-      false; // Flag to ensure navigation listener is set up only once
 
   @override
   void initState() {
@@ -84,17 +81,6 @@ class _CategorySelectionScreenState
     if (widget.sessionId != null) {
       _listenToSpinState();
     }
-
-    // For online games, set up navigation listener after the first frame
-    if (widget.sessionId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        OnlineGameNavigationService.navigate(
-          context: context,
-          ref: ref,
-          sessionId: widget.sessionId!,
-        );
-      });
-    }
   }
 
   Future<void> _getCurrentDeviceId() async {
@@ -116,32 +102,23 @@ class _CategorySelectionScreenState
   void _listenToSpinState() {
     if (widget.sessionId == null) return;
 
-    _spinStateSubscription = FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(widget.sessionId)
-        .snapshots()
-        .listen((snapshot) {
-      if (!snapshot.exists) return;
+    // Use the provider instead of direct Firestore listener
+    ref.listen(sessionCategorySpinProvider(widget.sessionId!), (prev, next) {
+      final categorySpin = next?.value;
 
-      final data = snapshot.data() as Map<String, dynamic>;
-      final gameState = data['gameState'] as Map<String, dynamic>?;
-      final categorySpin = gameState?['categorySpin'] as Map<String, dynamic>?;
-
-      if (categorySpin != null) {
+      if (categorySpin != null && mounted) {
         final isSpinning = categorySpin['isSpinning'] as bool? ?? false;
         final selectedCategory =
             categorySpin['selectedCategory'] as String? ?? '';
 
-        if (mounted) {
-          setState(() {
-            _isSpinning = isSpinning;
-            if (selectedCategory.isNotEmpty) {
-              _selectedCategory =
-                  CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
-              _currentCategory = selectedCategory;
-            }
-          });
-        }
+        setState(() {
+          _isSpinning = isSpinning;
+          if (selectedCategory.isNotEmpty) {
+            _selectedCategory =
+                CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
+            _currentCategory = selectedCategory;
+          }
+        });
       }
     });
   }
@@ -165,14 +142,12 @@ class _CategorySelectionScreenState
   void dispose() {
     _scaleController.dispose();
     _categoryTimer?.cancel();
-    _spinStateSubscription?.cancel();
 
     // Clean up spin state for online games
     if (widget.sessionId != null) {
       FirestoreService.updateCategorySpinState(
         widget.sessionId!,
         isSpinning: false,
-        currentCategory: '',
         selectedCategory: '',
       );
     }
@@ -191,8 +166,6 @@ class _CategorySelectionScreenState
       await FirestoreService.updateCategorySpinState(
         widget.sessionId!,
         isSpinning: true,
-        spinCount: 0,
-        currentCategory: '',
       );
     } else {
       // For local games, just update local state
@@ -224,7 +197,6 @@ class _CategorySelectionScreenState
             widget.sessionId!,
             isSpinning: false,
             selectedCategory: finalCategoryName,
-            currentCategory: finalCategoryName,
           );
         } else {
           // For local games, just update local state
@@ -240,20 +212,12 @@ class _CategorySelectionScreenState
         return;
       }
 
-      final unlockedCategories =
-          CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
-      final newCategory =
-          unlockedCategories[math.Random().nextInt(unlockedCategories.length)];
-
-      if (widget.sessionId != null) {
-        // For online games, sync the current category
-        await FirestoreService.updateCategorySpinState(
-          widget.sessionId!,
-          currentCategory: newCategory.displayName,
-          spinCount: _spinCount + 1,
-        );
-      } else {
-        // For local games, just update local state
+      // For local games, update the current category display
+      if (widget.sessionId == null) {
+        final unlockedCategories =
+            CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
+        final newCategory = unlockedCategories[
+            math.Random().nextInt(unlockedCategories.length)];
         setState(() {
           _currentCategory = newCategory.displayName;
         });
@@ -276,6 +240,21 @@ class _CategorySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
+    // Set up navigation listener for online games (only once per widget instance)
+    if (widget.sessionId != null) {
+      ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
+        final status = next.value;
+        if (status != null) {
+          OnlineGameNavigationService.handleNavigation(
+            context: context,
+            ref: ref,
+            sessionId: widget.sessionId!,
+            status: status,
+          );
+        }
+      });
+    }
+
     // Get the team color for the current team
     final gameState = ref.watch(gameStateProvider);
     TeamColor teamColor;
@@ -324,7 +303,9 @@ class _CategorySelectionScreenState
                                 color: Colors.orange),
                             const SizedBox(width: 8),
                             Text(
-                              'Waiting for ${widget.displayString} to select category...',
+                              _isSpinning
+                                  ? '${widget.displayString} is selecting a category...'
+                                  : 'Waiting for ${widget.displayString} to select category...',
                               style: const TextStyle(
                                 color: Colors.orange,
                                 fontWeight: FontWeight.w500,
@@ -372,7 +353,9 @@ class _CategorySelectionScreenState
                                   },
                                   child: Text(
                                     _currentCategory.isEmpty
-                                        ? 'TAP TO SPIN\nFOR CATEGORY!'
+                                        ? (_isSpinning && !_isCurrentTeamActive
+                                            ? 'SELECTING\nCATEGORY...'
+                                            : 'TAP TO SPIN\nFOR CATEGORY!')
                                         : _currentCategory,
                                     key: ValueKey<String>(_currentCategory),
                                     textAlign: TextAlign.center,

@@ -112,13 +112,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       if (t['deviceId'] == deviceId) {
         return t['colorIndex'] as int?;
       }
-      // Fallback to player names
-      if (t['players'] is List &&
-          (t['players'] as List).join(',') ==
-              [_player1Controller.text.trim(), _player2Controller.text.trim()]
-                  .join(',')) {
-        return t['colorIndex'] as int?;
-      }
     }
     return null;
   }
@@ -151,15 +144,10 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
               ?.map((e) => Map<String, dynamic>.from(e))
               .toList() ??
           [];
-      // Remove any previous entry for this color or these players
+      final deviceId = await _deviceIdFuture;
+      // Remove any previous entry for this color or device ID
       teams.removeWhere((t) =>
-          t['colorIndex'] == _selectedColorIndex ||
-          (t['players'] is List &&
-              (t['players'] as List).join(',') ==
-                  [
-                    _player1Controller.text.trim(),
-                    _player2Controller.text.trim()
-                  ].join(',')));
+          t['colorIndex'] == _selectedColorIndex || t['deviceId'] == deviceId);
 
       // Add team data with device ID
       final teamDataWithDeviceId = await _getMyTeamDataWithDeviceId();
@@ -187,12 +175,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
     final deviceId = await _deviceIdFuture;
     teams.removeWhere((t) =>
-        t['deviceId'] == deviceId ||
-        (t['players'] is List &&
-            (t['players'] as List).join(',') ==
-                [_player1Controller.text.trim(), _player2Controller.text.trim()]
-                    .join(',')) ||
-        t['colorIndex'] == _selectedColorIndex);
+        t['deviceId'] == deviceId || t['colorIndex'] == _selectedColorIndex);
 
     await FirebaseFirestore.instance
         .collection('sessions')
@@ -210,6 +193,18 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
           _ready = false;
         });
       }
+    }
+    setState(() {});
+  }
+
+  // Watch for changes to team/player names and reset ready state
+  void _onNameChanged() {
+    if (_ready) {
+      // If names changed while ready, remove from Firestore and reset ready
+      _removeTeamFromFirestore();
+      setState(() {
+        _ready = false;
+      });
     }
     setState(() {});
   }
@@ -337,7 +332,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                   horizontal: 12, vertical: 8),
                             ),
                             onChanged: (value) {
-                              setState(() {});
+                              _onNameChanged();
                             },
                           ),
                         ),
@@ -357,7 +352,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                         horizontal: 12, vertical: 8),
                                   ),
                                   onChanged: (value) {
-                                    setState(() {});
+                                    _onNameChanged();
                                   },
                                 ),
                               ),
@@ -376,7 +371,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                         horizontal: 12, vertical: 8),
                                   ),
                                   onChanged: (value) {
-                                    setState(() {});
+                                    _onNameChanged();
                                   },
                                 ),
                               ),

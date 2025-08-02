@@ -9,63 +9,60 @@ import '../screens/online_game_screen.dart';
 import '../screens/online_turn_over_screen.dart';
 
 /// Service for handling navigation in online multiplayer games
-/// Manages automatic screen transitions based on Firestore game state changes
+/// Provides navigation logic that can be called from ref.listen callbacks in screens
 class OnlineGameNavigationService {
   // ============================================================================
   // MAIN NAVIGATION METHOD
   // ============================================================================
 
-  /// Sets up a listener for session changes and handles automatic navigation
-  /// Call this in your widget's initState to handle navigation
-  static void navigate({
+  /// Handles navigation based on the current session status
+  /// This method should be called from the ref.listen callback in each screen
+  static void handleNavigation({
     required BuildContext context,
     required WidgetRef ref,
     required String sessionId,
-  }) {
-    ref.listen(sessionStatusProvider(sessionId), (prev, next) async {
-      final status = next.value;
-      if (status == null) return;
+    required String status,
+  }) async {
+    print(
+        '🧭 NAVIGATION: OnlineGameNavigationService.handleNavigation($sessionId) - status: $status');
 
-      // Get the full session data for navigation
-      final sessionAsync = ref.read(sessionStreamProvider(sessionId));
-      final sessionSnap = sessionAsync.value;
-      final sessionData = sessionSnap?.data();
-      if (sessionData == null) return;
+    // Get the full session data for navigation
+    final sessionAsync = ref.read(sessionStreamProvider(sessionId));
+    final sessionSnap = sessionAsync.value;
+    final sessionData = sessionSnap?.data();
+    if (sessionData == null) return;
 
-      final hostId = sessionData['hostId'] as String?;
-      final deviceId = await StorageService.getDeviceId();
-      final isHost = deviceId == hostId;
+    final hostId = sessionData['hostId'] as String?;
+    final deviceId = await StorageService.getDeviceId();
+    final isHost = deviceId == hostId;
 
-      // Handle different game states
-      if (status == 'settings') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateToGameSettings(context, ref, sessionId, isHost);
-        });
-      }
-      if (status == 'start_game') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateToCategorySelection(
-              context, ref, sessionId, isHost, sessionData);
-        });
-      }
-      if (status == 'role_assignment') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateToRoleAssignment(
-              context, ref, sessionId, isHost, sessionData);
-        });
-      }
-      if (status == 'game') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateToGameScreen(context, ref, sessionId, isHost, sessionData);
-        });
-      }
-      if (status == 'turn_over') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _navigateToTurnOverScreen(
-              context, ref, sessionId, isHost, sessionData);
-        });
-      }
-    });
+    // Handle different game states
+    if (status == 'settings') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToGameSettings(context, ref, sessionId, isHost);
+      });
+    }
+    if (status == 'start_game') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToCategorySelection(
+            context, ref, sessionId, isHost, sessionData);
+      });
+    }
+    if (status == 'role_assignment') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToRoleAssignment(context, ref, sessionId, isHost, sessionData);
+      });
+    }
+    if (status == 'game') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToGameScreen(context, ref, sessionId, isHost, sessionData);
+      });
+    }
+    if (status == 'turn_over') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToTurnOverScreen(context, ref, sessionId, isHost, sessionData);
+      });
+    }
   }
 
   // ============================================================================

@@ -13,6 +13,7 @@ import '../services/storage_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../services/firestore_service.dart';
+import '../providers/session_providers.dart';
 
 class OnlineTurnOverScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -263,11 +264,17 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   Widget build(BuildContext context) {
     // For online games, listen to navigation changes
 
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: widget.sessionId!,
-    );
+    ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
+      final status = next.value;
+      if (status != null) {
+        OnlineGameNavigationService.handleNavigation(
+          context: context,
+          ref: ref,
+          sessionId: widget.sessionId!,
+          status: status,
+        );
+      }
+    });
 
     return Scaffold(
       body: SafeArea(

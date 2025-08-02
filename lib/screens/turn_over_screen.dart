@@ -9,7 +9,6 @@ import '../data/category_registry.dart';
 import '../providers/category_provider.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
-import '../services/online_game_navigation_service.dart';
 
 class TurnOverScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -201,15 +200,6 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // For online games, listen to navigation changes
-    if (widget.sessionId != null) {
-      OnlineGameNavigationService.navigate(
-        context: context,
-        ref: ref,
-        sessionId: widget.sessionId!,
-      );
-    }
-
     return Scaffold(
       body: SafeArea(
         child: Padding(
