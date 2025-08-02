@@ -9,6 +9,7 @@ import '../widgets/team_color_button.dart';
 import '../services/storage_service.dart';
 import '../data/category_registry.dart';
 import '../services/firestore_service.dart';
+import '../providers/session_providers.dart';
 
 class OnlineGameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -152,11 +153,17 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
 
   @override
   Widget build(BuildContext context) {
-    OnlineGameNavigationService.navigate(
-      context: context,
-      ref: ref,
-      sessionId: widget.sessionId!,
-    );
+    ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
+      final status = next.value;
+      if (status != null) {
+        OnlineGameNavigationService.handleNavigation(
+          context: context,
+          ref: ref,
+          sessionId: widget.sessionId!,
+          status: status,
+        );
+      }
+    });
 
     // Show spectator screen for non-active teams in online games
     if (!_isCurrentTeamActive) {

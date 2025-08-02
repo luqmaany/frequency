@@ -9,6 +9,7 @@ import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import '../services/online_game_navigation_service.dart';
+import '../providers/session_providers.dart';
 
 class RoleAssignmentScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -280,11 +281,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
       );
     }
     if (widget.sessionId != null) {
-      OnlineGameNavigationService.navigate(
-        context: context,
-        ref: ref,
-        sessionId: widget.sessionId!,
-      );
+      ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
+        final status = next.value;
+        if (status != null) {
+          OnlineGameNavigationService.handleNavigation(
+            context: context,
+            ref: ref,
+            sessionId: widget.sessionId!,
+            status: status,
+          );
+        }
+      });
     }
 
     // Get the team color for the current team

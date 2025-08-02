@@ -7,24 +7,36 @@ import '../services/online_game_navigation_service.dart';
 import '../services/firestore_service.dart';
 import '../widgets/game_settings.dart';
 import 'package:convey/widgets/team_color_button.dart';
+import '../providers/session_providers.dart';
 
-class GameSettingsScreen extends ConsumerWidget {
+class GameSettingsScreen extends ConsumerStatefulWidget {
   final bool isHost;
   final String? sessionId;
   const GameSettingsScreen({super.key, this.isHost = true, this.sessionId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameSettingsScreen> createState() => _GameSettingsScreenState();
+}
+
+class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
+  @override
+  Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
     final validationState = ref.watch(settingsValidationProvider);
 
-    // Only navigate if sessionId is not null
-    if (sessionId != null) {
-      OnlineGameNavigationService.navigate(
-        context: context,
-        ref: ref,
-        sessionId: sessionId!,
-      );
+    // Set up navigation listener for online games (only once per widget instance)
+    if (widget.sessionId != null) {
+      ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
+        final status = next.value;
+        if (status != null) {
+          OnlineGameNavigationService.handleNavigation(
+            context: context,
+            ref: ref,
+            sessionId: widget.sessionId!,
+            status: status,
+          );
+        }
+      });
     }
 
     return Scaffold(
@@ -55,7 +67,8 @@ class GameSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                GameSettings(readOnly: !isHost, sessionId: sessionId),
+                GameSettings(
+                    readOnly: !widget.isHost, sessionId: widget.sessionId),
               ],
             ),
           ),
@@ -89,28 +102,30 @@ class GameSettingsScreen extends ConsumerWidget {
                     text: 'Start Game',
                     icon: Icons.play_arrow_rounded,
                     color: uiColors[1], // Green
-                    onPressed: isHost && validationState.areAllSettingsValid
-                        ? () async {
-                            FocusScope.of(context).unfocus();
-                            await Future.delayed(
-                                const Duration(milliseconds: 150));
-                            // Initialize game state with current config (local only)
-                            ref
-                                .read(gameStateProvider.notifier)
-                                .initializeGame(gameConfig);
+                    onPressed:
+                        widget.isHost && validationState.areAllSettingsValid
+                            ? () async {
+                                FocusScope.of(context).unfocus();
+                                await Future.delayed(
+                                    const Duration(milliseconds: 150));
+                                // Initialize game state with current config (local only)
+                                ref
+                                    .read(gameStateProvider.notifier)
+                                    .initializeGame(gameConfig);
 
-                            if (sessionId != null) {
-                              // Centralized online game state update
-                              await FirestoreService.startGame(sessionId!);
-                              // Do not navigate directly; let the navigation service handle it
-                            } else {
-                              GameNavigationService.navigateToNextScreen(
-                                context,
-                                ref,
-                              );
-                            }
-                          }
-                        : null,
+                                if (widget.sessionId != null) {
+                                  // Centralized online game state update
+                                  await FirestoreService.startGame(
+                                      widget.sessionId!);
+                                  // Do not navigate directly; let the navigation service handle it
+                                } else {
+                                  GameNavigationService.navigateToNextScreen(
+                                    context,
+                                    ref,
+                                  );
+                                }
+                              }
+                            : null,
                   ),
                 ),
               ],
