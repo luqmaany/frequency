@@ -145,7 +145,7 @@ class FirestoreService {
 
     print('🔥 FIRESTORE WRITE: startGame($sessionId)');
     await _sessions.doc(sessionId).update({
-      'gameState.status': 'start_game',
+      'gameState.status': 'category_selection',
       'gameState.currentTeamIndex': 0,
       'gameState.roundNumber': 1,
       'gameState.turnNumber': 1,
