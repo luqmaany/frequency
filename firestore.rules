@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Sessions collection
+    match /sessions/{sessionId} {
+      // Allow read/write for authenticated users
+      allow read, write: if request.auth != null;
+      
+      // Optimize for batch operations
+      allow create: if request.auth != null 
+        && request.resource.data.keys().hasAll(['sessionId', 'hostId', 'settings', 'teams', 'gameState']);
+      
+      // Allow updates to specific fields
+      allow update: if request.auth != null 
+        && (request.resource.data.diff(resource.data).affectedKeys()
+            .hasAny(['teams', 'gameState', 'settings', 'hostId']));
+    }
+  }
+} 
