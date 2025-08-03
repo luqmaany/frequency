@@ -8,7 +8,6 @@ import '../data/category_registry.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/online_game_navigation_service.dart';
 import '../providers/session_providers.dart';
 
@@ -76,11 +75,6 @@ class _CategorySelectionScreenState
 
     // Load unlocked categories
     _loadUnlockedCategories();
-
-    // For online games, listen to spin state changes
-    if (widget.sessionId != null) {
-      _listenToSpinState();
-    }
   }
 
   Future<void> _getCurrentDeviceId() async {
@@ -95,31 +89,6 @@ class _CategorySelectionScreenState
     final unlockedCategories = await StorageService.getUnlockedCategoryIds();
     setState(() {
       _unlockedCategoryIds = unlockedCategories;
-    });
-  }
-
-  // Listen to spin state changes from Firestore for synchronized animation
-  void _listenToSpinState() {
-    if (widget.sessionId == null) return;
-
-    // Use the provider instead of direct Firestore listener
-    ref.listen(sessionCategorySpinProvider(widget.sessionId!), (prev, next) {
-      final categorySpin = next?.value;
-
-      if (categorySpin != null && mounted) {
-        final isSpinning = categorySpin['isSpinning'] as bool? ?? false;
-        final selectedCategory =
-            categorySpin['selectedCategory'] as String? ?? '';
-
-        setState(() {
-          _isSpinning = isSpinning;
-          if (selectedCategory.isNotEmpty) {
-            _selectedCategory =
-                CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
-            _currentCategory = selectedCategory;
-          }
-        });
-      }
     });
   }
 
@@ -167,15 +136,15 @@ class _CategorySelectionScreenState
         widget.sessionId!,
         isSpinning: true,
       );
-    } else {
-      // For local games, just update local state
-      setState(() {
-        _isSpinning = true;
-        _selectedCategory = null;
-        _spinCount = 0;
-        _currentCategory = '';
-      });
     }
+
+    // Update local state for both local and online games
+    setState(() {
+      _isSpinning = true;
+      _selectedCategory = null;
+      _spinCount = 0;
+      _currentCategory = '';
+    });
 
     // Add a subtle scale animation for feedback
     _scaleController.forward().then((_) => _scaleController.reverse());
@@ -212,16 +181,14 @@ class _CategorySelectionScreenState
         return;
       }
 
-      // For local games, update the current category display
-      if (widget.sessionId == null) {
-        final unlockedCategories =
-            CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
-        final newCategory = unlockedCategories[
-            math.Random().nextInt(unlockedCategories.length)];
-        setState(() {
-          _currentCategory = newCategory.displayName;
-        });
-      }
+      // Update the current category display for both local and online games
+      final unlockedCategories =
+          CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
+      final newCategory =
+          unlockedCategories[math.Random().nextInt(unlockedCategories.length)];
+      setState(() {
+        _currentCategory = newCategory.displayName;
+      });
 
       _spinCount++;
 
@@ -251,6 +218,26 @@ class _CategorySelectionScreenState
             sessionId: widget.sessionId!,
             status: status,
           );
+        }
+      });
+
+      // Listen to spin state changes from Firestore for synchronized animation
+      ref.listen(sessionCategorySpinProvider(widget.sessionId!), (prev, next) {
+        final categorySpin = next.value;
+
+        if (categorySpin != null && mounted) {
+          final isSpinning = categorySpin['isSpinning'] as bool? ?? false;
+          final selectedCategory =
+              categorySpin['selectedCategory'] as String? ?? '';
+
+          setState(() {
+            _isSpinning = isSpinning;
+            if (selectedCategory.isNotEmpty) {
+              _selectedCategory =
+                  CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
+              _currentCategory = selectedCategory;
+            }
+          });
         }
       });
     }

@@ -37,12 +37,20 @@ class GameSettingsState extends ConsumerState<GameSettings> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+        Row(
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+            ),
+            if (widget.readOnly) ...[
+              const SizedBox(width: 8),
+              Icon(Icons.lock, size: 16, color: Colors.grey.shade600),
+            ],
+          ],
         ),
         const SizedBox(height: 8),
         Wrap(
@@ -94,7 +102,38 @@ class GameSettingsState extends ConsumerState<GameSettings> {
       final settingsAsync =
           ref.watch(sessionSettingsProvider(widget.sessionId!));
       if (!settingsAsync.hasValue || settingsAsync.value == null) {
-        return const Center(child: CircularProgressIndicator());
+        // Show fallback settings instead of loading indicator
+        final fallbackSettings = {
+          'roundTimeSeconds': 60,
+          'targetScore': 20,
+          'allowedSkips': 3,
+        };
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildOptionButtons(
+              title: 'Round Time (seconds)',
+              options: timeOptions,
+              currentValue: fallbackSettings['roundTimeSeconds'] ?? 60,
+              settingKey: 'roundTimeSeconds',
+              color: Colors.blue,
+            ),
+            _buildOptionButtons(
+              title: 'Target Score',
+              options: scoreOptions,
+              currentValue: fallbackSettings['targetScore'] ?? 20,
+              settingKey: 'targetScore',
+              color: Colors.green,
+            ),
+            _buildOptionButtons(
+              title: 'Allowed Skips',
+              options: skipOptions,
+              currentValue: fallbackSettings['allowedSkips'] ?? 3,
+              settingKey: 'allowedSkips',
+              color: Colors.orange,
+            ),
+          ],
+        );
       }
       final settings = settingsAsync.value!;
 

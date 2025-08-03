@@ -80,6 +80,10 @@ class FirestoreService {
     });
   }
 
+  // Cache for session streams to avoid multiple listeners to the same document
+  static final Map<String, Stream<DocumentSnapshot<Map<String, dynamic>>>>
+      _sessionStreamCache = {};
+
   /// Listen to session changes in real-time
   /// Uses caching to reduce Firestore reads
   static Stream<DocumentSnapshot<Map<String, dynamic>>> sessionStream(
@@ -89,10 +93,19 @@ class FirestoreService {
       return Stream.empty();
     }
 
-    print('🔥 FIRESTORE READ: sessionStream($sessionId)');
-    return _sessions.doc(sessionId).snapshots(
+    // Return cached stream if it exists
+    if (_sessionStreamCache.containsKey(sessionId)) {
+      return _sessionStreamCache[sessionId]!;
+    }
+
+    final stream = _sessions.doc(sessionId).snapshots(
           includeMetadataChanges: false, // Only listen to actual data changes
         );
+
+    // Cache the stream
+    _sessionStreamCache[sessionId] = stream;
+
+    return stream;
   }
 
   // ============================================================================
@@ -509,5 +522,11 @@ class FirestoreService {
           .doc(sessionId)
           .update({'hostId': newHostTeam['deviceId']});
     }
+  }
+
+  /// Clear cached stream for a session (call when leaving a session)
+  static void clearSessionStreamCache(String sessionId) {
+    _sessionStreamCache.remove(sessionId);
+    print('🗑️ CACHE: Cleared stream cache for session $sessionId');
   }
 }

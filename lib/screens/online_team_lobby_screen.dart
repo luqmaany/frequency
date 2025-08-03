@@ -72,6 +72,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     await _removeTeamFromFirestore();
     final deviceId = await StorageService.getDeviceId();
     await FirestoreService.transferHostIfNeeded(widget.sessionId, deviceId);
+    // Clear the stream cache when leaving
+    FirestoreService.clearSessionStreamCache(widget.sessionId);
   }
 
   Future<void> _initializeColorIndex() async {
@@ -424,6 +426,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                         _updating)
                                     ? null
                                     : () async {
+                                        // Unfocus any active text field
+                                        FocusScope.of(context).unfocus();
                                         setState(() {
                                           _selectedColorIndex = i;
                                         });

@@ -22,7 +22,6 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
-    final validationState = ref.watch(settingsValidationProvider);
 
     // Set up navigation listener for online games (only once per widget instance)
     if (widget.sessionId != null) {
@@ -59,7 +58,9 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
                 const SizedBox(height: 8),
                 Center(
                   child: Text(
-                    'Configure your game settings',
+                    widget.isHost
+                        ? 'Configure your game settings'
+                        : 'Game settings (host only)',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.secondary,
                       fontSize: 12,
@@ -67,6 +68,34 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                if (!widget.isHost) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline,
+                            color: Colors.orange, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Only the host can modify game settings',
+                            style: TextStyle(
+                              color: Colors.orange.shade700,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 GameSettings(
                     readOnly: !widget.isHost, sessionId: widget.sessionId),
               ],
@@ -102,30 +131,29 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
                     text: 'Start Game',
                     icon: Icons.play_arrow_rounded,
                     color: uiColors[1], // Green
-                    onPressed:
-                        widget.isHost && validationState.areAllSettingsValid
-                            ? () async {
-                                FocusScope.of(context).unfocus();
-                                await Future.delayed(
-                                    const Duration(milliseconds: 150));
-                                // Initialize game state with current config (local only)
-                                ref
-                                    .read(gameStateProvider.notifier)
-                                    .initializeGame(gameConfig);
+                    onPressed: widget.isHost
+                        ? () async {
+                            FocusScope.of(context).unfocus();
+                            await Future.delayed(
+                                const Duration(milliseconds: 150));
 
-                                if (widget.sessionId != null) {
-                                  // Centralized online game state update
-                                  await FirestoreService.startGame(
-                                      widget.sessionId!);
-                                  // Do not navigate directly; let the navigation service handle it
-                                } else {
-                                  GameNavigationService.navigateToNextScreen(
-                                    context,
-                                    ref,
-                                  );
-                                }
-                              }
-                            : null,
+                            if (widget.sessionId != null) {
+                              // Online mode: Use Firestore settings
+                              await FirestoreService.startGame(
+                                  widget.sessionId!);
+                              // Do not navigate directly; let the navigation service handle it
+                            } else {
+                              // Local mode: Initialize game state with current config
+                              ref
+                                  .read(gameStateProvider.notifier)
+                                  .initializeGame(gameConfig);
+                              GameNavigationService.navigateToNextScreen(
+                                context,
+                                ref,
+                              );
+                            }
+                          }
+                        : null,
                   ),
                 ),
               ],

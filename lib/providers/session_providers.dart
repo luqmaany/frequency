@@ -7,7 +7,6 @@ import '../services/firestore_service.dart';
 final sessionStreamProvider =
     StreamProvider.family<DocumentSnapshot<Map<String, dynamic>>?, String>(
         (ref, sessionId) {
-  print('📡 PROVIDER: sessionStreamProvider($sessionId) - setting up listener');
   return FirestoreService.sessionStream(sessionId);
 });
 
@@ -24,7 +23,6 @@ final sessionSettingsProvider =
 /// Only triggers when the status field actually changes.
 final sessionStatusProvider =
     StreamProvider.family<String?, String>((ref, sessionId) {
-  print('📡 PROVIDER: sessionStatusProvider($sessionId) - setting up listener');
   return FirestoreService.sessionStream(sessionId)
       .map((doc) => doc.data()?['gameState']?['status'] as String?)
       .distinct(); // Only emit when the value actually changes
@@ -43,8 +41,6 @@ final sessionGameStateProvider =
 /// Only triggers when category spin state actually changes.
 final sessionCategorySpinProvider =
     StreamProvider.family<Map<String, dynamic>?, String>((ref, sessionId) {
-  print(
-      '📡 PROVIDER: sessionCategorySpinProvider($sessionId) - setting up listener');
   return FirestoreService.sessionStream(sessionId)
       .map((doc) =>
           doc.data()?['gameState']?['categorySpin'] as Map<String, dynamic>?)

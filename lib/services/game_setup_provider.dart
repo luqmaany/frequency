@@ -308,9 +308,3 @@ class SettingsValidationNotifier
     );
   }
 }
-
-final settingsValidationProvider =
-    StateNotifierProvider<SettingsValidationNotifier, SettingsValidationState>(
-        (ref) {
-  return SettingsValidationNotifier();
-});
