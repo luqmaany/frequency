@@ -31,6 +31,7 @@ class OnlineTurnOverScreen extends ConsumerStatefulWidget {
   // Online game parameters
   final String? sessionId;
   final Map<String, dynamic>? sessionData;
+  final String? currentTeamDeviceId; // Add device ID for interaction control
 
   const OnlineTurnOverScreen({
     super.key,
@@ -47,6 +48,7 @@ class OnlineTurnOverScreen extends ConsumerStatefulWidget {
     this.guesser,
     this.sessionId,
     this.sessionData,
+    this.currentTeamDeviceId,
   });
 
   @override
@@ -79,6 +81,7 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   Future<void> _getCurrentDeviceId() async {
     final deviceId = await StorageService.getDeviceId();
+    print('🔍 DEVICE INFO: Current device ID: $deviceId');
     setState(() {
       _currentDeviceId = deviceId;
     });
@@ -112,32 +115,13 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
             _confirmedTeams = confirmedTeams;
             _currentTeamIndex = currentTeamIndex;
             _isCurrentTeamActive = _currentDeviceId != null &&
-                _currentDeviceId == _getCurrentTeamDeviceId();
+                _currentDeviceId == widget.currentTeamDeviceId;
+            print(
+                '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
           });
-
-          // Check if all teams have confirmed and advance to next turn
-          final teams = widget.sessionData?['teams'] as List? ?? [];
-          if (confirmedTeams.length >= teams.length && teams.isNotEmpty) {
-            // All teams confirmed, advance to next team
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted && widget.sessionId != null) {
-                FirestoreService.advanceToNextTeam(widget.sessionId!);
-              }
-            });
-          }
         }
       }
     });
-  }
-
-  String? _getCurrentTeamDeviceId() {
-    if (widget.sessionData == null) return null;
-    final teams = widget.sessionData!['teams'] as List? ?? [];
-    if (_currentTeamIndex < teams.length) {
-      final team = teams[_currentTeamIndex] as Map<String, dynamic>?;
-      return team?['deviceId'] as String?;
-    }
-    return null;
   }
 
   TeamColor _getCurrentTeamColor() {
@@ -153,6 +137,8 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   void _onWordDisputed(String word) {
     if (!_isCurrentTeamActive) return; // Only current team can dispute words
+
+    print('🗣️ DISPUTING: Team ${widget.teamIndex} is disputing word "$word"');
 
     setState(() {
       if (_disputedWords.contains(word)) {
@@ -183,9 +169,13 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   void _confirmScore() {
     if (widget.sessionId != null) {
+      print(
+          '🔍 CONFIRM SCORE: Team ${widget.teamIndex}, All confirmed: $_allTeamsConfirmed, Is active: $_isCurrentTeamActive');
       // For online games
       if (_allTeamsConfirmed && _isCurrentTeamActive) {
         // All teams confirmed and current team is active - advance to next turn
+        print(
+            '🚀 ADVANCING: Team ${widget.teamIndex} is advancing to next turn');
         FirestoreService.fromTurnOver(
           widget.sessionId!,
           widget.teamIndex,
@@ -204,6 +194,8 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
         );
       } else {
         // Confirm score for current team
+        print(
+            '✅ CONFIRMING: Team ${widget.teamIndex} is confirming their score');
         FirestoreService.confirmScoreForTeam(
             widget.sessionId!, widget.teamIndex);
       }

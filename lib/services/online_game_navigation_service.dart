@@ -7,6 +7,7 @@ import '../screens/category_selection_screen.dart';
 import '../screens/role_assignment_screen.dart';
 import '../screens/online_game_screen.dart';
 import '../screens/online_turn_over_screen.dart';
+import '../screens/home_screen.dart';
 
 /// Service for handling navigation in online multiplayer games
 /// Provides navigation logic that can be called from ref.listen callbacks in screens
@@ -42,7 +43,7 @@ class OnlineGameNavigationService {
         _navigateToGameSettings(context, ref, sessionId, isHost);
       });
     }
-    if (status == 'start_game') {
+    if (status == 'category_selection') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateToCategorySelection(
             context, ref, sessionId, isHost, sessionData);
@@ -62,12 +63,44 @@ class OnlineGameNavigationService {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _navigateToTurnOverScreen(context, ref, sessionId, isHost, sessionData);
       });
+    } else {
+      _navigateToHomeScreen(context, ref, sessionId, isHost);
     }
   }
 
   // ============================================================================
   // PRIVATE NAVIGATION HELPERS
   // ============================================================================
+
+  /// Helper method to get the current team's device ID from session data
+  static String? _getCurrentTeamDeviceId(Map<String, dynamic> sessionData) {
+    final gameState = sessionData['gameState'] as Map<String, dynamic>?;
+    final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
+    final teams = sessionData['teams'] as List? ?? [];
+
+    if (teams.isNotEmpty && currentTeamIndex < teams.length) {
+      final currentTeam = teams[currentTeamIndex] as Map<String, dynamic>?;
+      final currentTeamDeviceId = currentTeam?['deviceId'] as String?;
+
+      // If no deviceId is stored yet, this might be an older team entry
+      if (currentTeamDeviceId == null) {
+        print(
+            'Warning: Team at index $currentTeamIndex has no deviceId stored');
+      }
+
+      return currentTeamDeviceId;
+    }
+    return null;
+  }
+
+  static void _navigateToHomeScreen(
+      BuildContext context, WidgetRef ref, String sessionId, bool isHost) {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(),
+      ),
+    );
+  }
 
   /// Private helper to navigate to GameSettingsScreen
   /// Uses addPostFrameCallback to ensure safe navigation timing
@@ -83,23 +116,13 @@ class OnlineGameNavigationService {
 
   static void _navigateToCategorySelection(BuildContext context, WidgetRef ref,
       String sessionId, bool isHost, sessionData) {
-    // Get the current team's device ID from the game state
+    // Get the current team's device ID using helper method
+    final currentTeamDeviceId = _getCurrentTeamDeviceId(sessionData);
+
+    // Get other required data
     final gameState = sessionData['gameState'] as Map<String, dynamic>?;
     final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
     final teams = sessionData['teams'] as List? ?? [];
-
-    String? currentTeamDeviceId;
-    if (teams.isNotEmpty && currentTeamIndex < teams.length) {
-      final currentTeam = teams[currentTeamIndex] as Map<String, dynamic>?;
-      currentTeamDeviceId = currentTeam?['deviceId'] as String?;
-
-      // If no deviceId is stored yet, this might be an older team entry
-      // In this case, we'll allow all teams to interact (fallback behavior)
-      if (currentTeamDeviceId == null) {
-        print(
-            'Warning: Team at index $currentTeamIndex has no deviceId stored');
-      }
-    }
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -119,7 +142,10 @@ class OnlineGameNavigationService {
 
   static void _navigateToRoleAssignment(BuildContext context, WidgetRef ref,
       String sessionId, bool isHost, sessionData) {
-    // Get the current team's device ID from the game state
+    // Get the current team's device ID using helper method
+    final currentTeamDeviceId = _getCurrentTeamDeviceId(sessionData);
+
+    // Get other required data
     final gameState = sessionData['gameState'] as Map<String, dynamic>?;
     final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
     final teams = sessionData['teams'] as List? ?? [];
@@ -128,10 +154,8 @@ class OnlineGameNavigationService {
 
     // Get current team data
     Map<String, dynamic>? currentTeam;
-    String? currentTeamDeviceId;
     if (teams.isNotEmpty && currentTeamIndex < teams.length) {
       currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
-      currentTeamDeviceId = currentTeam['deviceId'] as String?;
     }
 
     Navigator.of(context).pushReplacement(
@@ -156,16 +180,18 @@ class OnlineGameNavigationService {
     bool isHost,
     sessionData,
   ) {
+    // Get the current team's device ID using helper method
+    final currentTeamDeviceId = _getCurrentTeamDeviceId(sessionData);
+
+    // Get other required data
     final gameState = sessionData['gameState'] as Map<String, dynamic>?;
     final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
     final teams = sessionData['teams'] as List? ?? [];
 
     // Get current team data
     Map<String, dynamic>? currentTeam;
-    String? currentTeamDeviceId;
     if (teams.isNotEmpty && currentTeamIndex < teams.length) {
       currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
-      currentTeamDeviceId = currentTeam['deviceId'] as String?;
     }
 
     Navigator.of(context).pushReplacement(
@@ -200,10 +226,11 @@ class OnlineGameNavigationService {
       return;
     }
 
-    // Get the current device's team index
+    // Get the current device's team index and current team's device ID
     final deviceId = await StorageService.getDeviceId();
     final teams = sessionData['teams'] as List? ?? [];
     int currentTeamIndex = 0;
+    String? currentTeamDeviceId;
 
     // Find which team this device belongs to
     for (int i = 0; i < teams.length; i++) {
@@ -212,6 +239,14 @@ class OnlineGameNavigationService {
         currentTeamIndex = i;
         break;
       }
+    }
+
+    // Get the current team's device ID (the team whose turn it is)
+    final turnOverState = gameState?['turnOverState'] as Map<String, dynamic>?;
+    final turnOverTeamIndex = turnOverState?['currentTeamIndex'] as int? ?? 0;
+    if (teams.isNotEmpty && turnOverTeamIndex < teams.length) {
+      final turnOverTeam = teams[turnOverTeamIndex] as Map<String, dynamic>?;
+      currentTeamDeviceId = turnOverTeam?['deviceId'] as String?;
     }
 
     Navigator.of(context).pushReplacement(
@@ -234,6 +269,7 @@ class OnlineGameNavigationService {
           guesser: currentTurnRecord['guesser'] as String?,
           sessionId: sessionId,
           sessionData: sessionData,
+          currentTeamDeviceId: currentTeamDeviceId,
         ),
       ),
     );
