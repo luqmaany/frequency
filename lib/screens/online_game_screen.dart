@@ -53,10 +53,12 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
     // Use navigation service to navigate to turn over screen
     print('onTurnEnd');
 
-    // Get the current team players for conveyor and guesser
-    final teamPlayers = _getCurrentTeamPlayers();
-    final conveyor = teamPlayers[0]; // First player is conveyor
-    final guesser = teamPlayers[1]; // Second player is guesser
+    final conveyor = widget.sessionData!['gameState']['currentConveyor']
+        as String; // First player is conveyor
+    print('conveyor: $conveyor');
+    final guesser = widget.sessionData!['gameState']['currentGuesser']
+        as String; // Second player is guesser
+    print('guesser: $guesser');
 
     FirestoreService.fromGameScreen(
       widget.sessionId!,
