@@ -47,6 +47,16 @@ final sessionCategorySpinProvider =
       .distinct(); // Only emit when category spin state actually changes
 });
 
+/// Provides a stream of only the role assignment state for a given session ID.
+/// Only triggers when role assignment state actually changes.
+final sessionRoleAssignmentProvider =
+    StreamProvider.family<Map<String, dynamic>?, String>((ref, sessionId) {
+  return FirestoreService.sessionStream(sessionId)
+      .map((doc) =>
+          doc.data()?['gameState']?['roleAssignment'] as Map<String, dynamic>?)
+      .distinct(); // Only emit when role assignment state actually changes
+});
+
 /// Provides a stream of only the turn over state for a given session ID.
 /// Only triggers when turn over state actually changes.
 final sessionTurnOverProvider =

@@ -98,6 +98,7 @@ class FirestoreService {
       return _sessionStreamCache[sessionId]!;
     }
 
+    print('🔥 FIRESTORE READ: sessionStream($sessionId) - creating new stream');
     final stream = _sessions.doc(sessionId).snapshots(
           includeMetadataChanges: false, // Only listen to actual data changes
         );
@@ -326,7 +327,8 @@ class FirestoreService {
     }
 
     // Create the turn record
-    print('fromGameScreen');
+    print(
+        '🔥 FIRESTORE WRITE: fromGameScreen($sessionId) - teamIndex: $teamIndex, roundNumber: $roundNumber');
     final turnRecord = {
       'teamIndex': teamIndex,
       'roundNumber': roundNumber,
@@ -373,6 +375,8 @@ class FirestoreService {
     }
 
     //create the final turn record
+    print(
+        '🔥 FIRESTORE WRITE: fromTurnOver($sessionId) - teamIndex: $teamIndex, roundNumber: $roundNumber');
     final turnRecord = {
       'teamIndex': teamIndex,
       'roundNumber': roundNumber,
@@ -412,6 +416,8 @@ class FirestoreService {
       throw Exception('Rate limit exceeded for writes');
     }
 
+    print(
+        '🔥 FIRESTORE WRITE: joinSession($sessionId) - teamData: ${teamData['teamId']}');
     await _sessions.doc(sessionId).update({
       'teams': FieldValue.arrayUnion([teamData])
     });
@@ -424,6 +430,7 @@ class FirestoreService {
       throw Exception('Rate limit exceeded');
     }
 
+    print('🔥 FIRESTORE READ: updateTeam($sessionId) - getting current teams');
     final doc = await _sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
@@ -433,6 +440,9 @@ class FirestoreService {
     final idx = teams.indexWhere((t) => t['teamId'] == teamId);
     if (idx == -1) return;
     teams[idx].addAll(updatedFields);
+
+    print(
+        '🔥 FIRESTORE WRITE: updateTeam($sessionId) - teamId: $teamId, updatedFields: $updatedFields');
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 
@@ -442,6 +452,7 @@ class FirestoreService {
       throw Exception('Rate limit exceeded');
     }
 
+    print('🔥 FIRESTORE READ: leaveTeam($sessionId) - getting current teams');
     final doc = await _sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
@@ -451,6 +462,8 @@ class FirestoreService {
     final idx = teams.indexWhere((t) => t['teamId'] == teamId);
     if (idx == -1) return;
     teams[idx]['active'] = false;
+
+    print('🔥 FIRESTORE WRITE: leaveTeam($sessionId) - teamId: $teamId');
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 
@@ -462,6 +475,7 @@ class FirestoreService {
       throw Exception('Rate limit exceeded');
     }
 
+    print('🔥 FIRESTORE READ: rejoinTeam($sessionId) - getting current teams');
     final doc = await _sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
@@ -472,6 +486,9 @@ class FirestoreService {
     if (idx == -1) return;
     teams[idx]['active'] = true;
     teams[idx]['players'] = players;
+
+    print(
+        '🔥 FIRESTORE WRITE: rejoinTeam($sessionId) - teamId: $teamId, players: $players');
     await _sessions.doc(sessionId).update({'teams': teams});
   }
 
@@ -486,6 +503,8 @@ class FirestoreService {
       throw Exception('Rate limit exceeded');
     }
 
+    print(
+        '🔥 FIRESTORE READ: transferHostIfNeeded($sessionId) - leavingDeviceId: $leavingDeviceId');
     final doc = await _sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
@@ -502,6 +521,8 @@ class FirestoreService {
       orElse: () => <String, dynamic>{},
     );
     if (newHostTeam.isNotEmpty && newHostTeam['deviceId'] != null) {
+      print(
+          '🔥 FIRESTORE WRITE: transferHostIfNeeded($sessionId) - new host: ${newHostTeam['deviceId']}');
       await _sessions
           .doc(sessionId)
           .update({'hostId': newHostTeam['deviceId']});
