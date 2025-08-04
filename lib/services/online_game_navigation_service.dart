@@ -38,33 +38,40 @@ class OnlineGameNavigationService {
     final isHost = deviceId == hostId;
 
     // Handle different game states
-    if (status == 'settings') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToGameSettings(context, ref, sessionId, isHost);
-      });
-    }
-    if (status == 'category_selection') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToCategorySelection(
-            context, ref, sessionId, isHost, sessionData);
-      });
-    }
-    if (status == 'role_assignment') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToRoleAssignment(context, ref, sessionId, isHost, sessionData);
-      });
-    }
-    if (status == 'game') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToGameScreen(context, ref, sessionId, isHost, sessionData);
-      });
-    }
-    if (status == 'turn_over') {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _navigateToTurnOverScreen(context, ref, sessionId, isHost, sessionData);
-      });
-    } else {
-      _navigateToHomeScreen(context, ref, sessionId, isHost);
+    switch (status) {
+      case 'settings':
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToGameSettings(context, ref, sessionId, isHost);
+        });
+        break;
+      case 'category_selection':
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToCategorySelection(
+              context, ref, sessionId, isHost, sessionData);
+        });
+        break;
+      case 'role_assignment':
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToRoleAssignment(
+              context, ref, sessionId, isHost, sessionData);
+        });
+        break;
+      case 'game':
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToGameScreen(context, ref, sessionId, isHost, sessionData);
+        });
+        break;
+      case 'turn_over':
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToTurnOverScreen(
+              context, ref, sessionId, isHost, sessionData);
+        });
+        break;
+      default:
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToHomeScreen(context, ref, sessionId, isHost);
+        });
+        break;
     }
   }
 
