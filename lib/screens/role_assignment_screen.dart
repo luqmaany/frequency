@@ -334,6 +334,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       const SizedBox(height: 150),
+                      // TODO: Change spectator text from "Pass the phone to" to something more appropriate for online games
                       Text(
                         'Pass the phone to',
                         style: Theme.of(context).textTheme.headlineMedium,

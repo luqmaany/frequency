@@ -193,35 +193,20 @@ class FirestoreService {
     });
   }
 
-  /// Update the category spin state for synchronized animation across all players
+  /// Update the selected category for synchronized display across all players
   static Future<void> updateCategorySpinState(
     String sessionId, {
-    bool? isSpinning,
-    int? spinCount,
-    String? currentCategory,
-    String? selectedCategory,
+    required String selectedCategory,
   }) async {
     if (!_canWrite(sessionId)) {
       throw Exception('Rate limit exceeded for writes');
     }
 
-    final updates = <String, dynamic>{};
-
-    if (isSpinning != null) {
-      updates['gameState.categorySpin.isSpinning'] = isSpinning;
-    }
-    if (spinCount != null) {
-      updates['gameState.categorySpin.spinCount'] = spinCount;
-    }
-    if (currentCategory != null) {
-      updates['gameState.categorySpin.currentCategory'] = currentCategory;
-    }
-    if (selectedCategory != null) {
-      updates['gameState.categorySpin.selectedCategory'] = selectedCategory;
-    }
-
-    print('🔥 FIRESTORE WRITE: updateCategorySpinState($sessionId) - $updates');
-    await _sessions.doc(sessionId).update(updates);
+    print(
+        '🔥 FIRESTORE WRITE: updateCategorySpinState($sessionId) - selectedCategory: $selectedCategory');
+    await _sessions.doc(sessionId).update({
+      'gameState.categorySpin.selectedCategory': selectedCategory,
+    });
   }
 
   /// Update game state for role assignment with selected category
@@ -238,7 +223,6 @@ class FirestoreService {
     await _sessions.doc(sessionId).update({
       'gameState.status': 'role_assignment',
       'gameState.selectedCategory': selectedCategory,
-      'gameState.categorySpin.isSpinning': false,
       'gameState.categorySpin.selectedCategory': selectedCategory,
     });
   }

@@ -81,7 +81,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   Future<void> _getCurrentDeviceId() async {
     final deviceId = await StorageService.getDeviceId();
-    print('🔍 DEVICE INFO: Current device ID: $deviceId');
     setState(() {
       _currentDeviceId = deviceId;
     });
@@ -138,8 +137,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   void _onWordDisputed(String word) {
     if (!_isCurrentTeamActive) return; // Only current team can dispute words
 
-    print('🗣️ DISPUTING: Team ${widget.teamIndex} is disputing word "$word"');
-
     setState(() {
       if (_disputedWords.contains(word)) {
         _disputedWords.remove(word);
@@ -169,13 +166,9 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   void _confirmScore() {
     if (widget.sessionId != null) {
-      print(
-          '🔍 CONFIRM SCORE: Team ${widget.teamIndex}, All confirmed: $_allTeamsConfirmed, Is active: $_isCurrentTeamActive');
       // For online games
       if (_allTeamsConfirmed && _isCurrentTeamActive) {
         // All teams confirmed and current team is active - advance to next turn
-        print(
-            '🚀 ADVANCING: Team ${widget.teamIndex} is advancing to next turn');
         FirestoreService.fromTurnOver(
           widget.sessionId!,
           widget.teamIndex,
@@ -194,8 +187,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
         );
       } else {
         // Confirm score for current team
-        print(
-            '✅ CONFIRMING: Team ${widget.teamIndex} is confirming their score');
         FirestoreService.confirmScoreForTeam(
             widget.sessionId!, widget.teamIndex);
       }
@@ -248,6 +239,7 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   @override
   void dispose() {
+    print('🗑️ TURN OVER SCREEN: Disposing widget, cleaning up listeners...');
     _turnOverStateSubscription?.cancel();
     super.dispose();
   }
