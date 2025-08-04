@@ -329,7 +329,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                             decoration: const InputDecoration(
                               labelText: 'Team Name',
                               border: OutlineInputBorder(),
-                              hintText: 'Enter your team name',
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 8),
                             ),
@@ -349,7 +348,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                   decoration: const InputDecoration(
                                     labelText: 'Player 1 Name',
                                     border: OutlineInputBorder(),
-                                    hintText: 'Enter first player name',
                                     contentPadding: EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 8),
                                   ),
@@ -368,7 +366,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                   decoration: const InputDecoration(
                                     labelText: 'Player 2 Name',
                                     border: OutlineInputBorder(),
-                                    hintText: 'Enter second player name',
                                     contentPadding: EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 8),
                                   ),

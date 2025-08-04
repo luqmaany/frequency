@@ -155,7 +155,6 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
         },
         'teams': [], // Empty teams array - teams will be added manually
         'gameState': {
-          'status': 'lobby',
           'currentTeamIndex': 0,
           'roundNumber': 1,
           'turnNumber': 1,
