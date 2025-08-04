@@ -112,15 +112,6 @@ class _CategorySelectionScreenState
     _scaleController.dispose();
     _categoryTimer?.cancel();
 
-    // Clean up spin state for online games
-    if (widget.sessionId != null) {
-      FirestoreService.updateCategorySpinState(
-        widget.sessionId!,
-        isSpinning: false,
-        selectedCategory: '',
-      );
-    }
-
     super.dispose();
   }
 
@@ -130,13 +121,7 @@ class _CategorySelectionScreenState
     // Only the active team can trigger the spin
     if (!_isCurrentTeamActive) return;
 
-    // For online games, sync the spin state to Firestore
-    if (widget.sessionId != null) {
-      await FirestoreService.updateCategorySpinState(
-        widget.sessionId!,
-        isSpinning: true,
-      );
-    }
+    // For online games, no need to sync spinning state - keep it local only
 
     // Update local state for both local and online games
     setState(() {
@@ -161,10 +146,9 @@ class _CategorySelectionScreenState
         final finalCategoryName = finalCategory.displayName;
 
         if (widget.sessionId != null) {
-          // For online games, sync the final result
+          // For online games, sync only the final result
           await FirestoreService.updateCategorySpinState(
             widget.sessionId!,
-            isSpinning: false,
             selectedCategory: finalCategoryName,
           );
         } else {
@@ -212,6 +196,8 @@ class _CategorySelectionScreenState
       ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
         final status = next.value;
         if (status != null) {
+          print(
+              '🧭 CATEGORY SELECTION: Status changed to $status, navigating...');
           OnlineGameNavigationService.handleNavigation(
             context: context,
             ref: ref,
@@ -221,23 +207,25 @@ class _CategorySelectionScreenState
         }
       });
 
-      // Listen to spin state changes from Firestore for synchronized animation
+      // Listen to category selection changes from Firestore
       ref.listen(sessionCategorySpinProvider(widget.sessionId!), (prev, next) {
         final categorySpin = next.value;
 
         if (categorySpin != null && mounted) {
-          final isSpinning = categorySpin['isSpinning'] as bool? ?? false;
           final selectedCategory =
               categorySpin['selectedCategory'] as String? ?? '';
 
-          setState(() {
-            _isSpinning = isSpinning;
-            if (selectedCategory.isNotEmpty) {
+          if (selectedCategory.isNotEmpty) {
+            print(
+                '🎯 CATEGORY SELECTION: Received final category: $selectedCategory');
+            setState(() {
               _selectedCategory =
                   CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
               _currentCategory = selectedCategory;
-            }
-          });
+              _isSpinning =
+                  false; // Stop local spinning when category is selected
+            });
+          }
         }
       });
     }
@@ -290,9 +278,7 @@ class _CategorySelectionScreenState
                                 color: Colors.orange),
                             const SizedBox(width: 8),
                             Text(
-                              _isSpinning
-                                  ? '${widget.displayString} is selecting a category...'
-                                  : 'Waiting for ${widget.displayString} to select category...',
+                              'Waiting for ${widget.displayString} to select category...',
                               style: const TextStyle(
                                 color: Colors.orange,
                                 fontWeight: FontWeight.w500,
@@ -340,9 +326,9 @@ class _CategorySelectionScreenState
                                   },
                                   child: Text(
                                     _currentCategory.isEmpty
-                                        ? (_isSpinning && !_isCurrentTeamActive
-                                            ? 'SELECTING\nCATEGORY...'
-                                            : 'TAP TO SPIN\nFOR CATEGORY!')
+                                        ? (_isCurrentTeamActive
+                                            ? 'TAP TO SPIN\nFOR CATEGORY!'
+                                            : 'WAITING...')
                                         : _currentCategory,
                                     key: ValueKey<String>(_currentCategory),
                                     textAlign: TextAlign.center,
