@@ -6,8 +6,6 @@ import 'package:convey/widgets/team_color_button.dart';
 import '../data/category_registry.dart';
 import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:async';
 import '../services/online_game_navigation_service.dart';
 import '../providers/session_providers.dart';
 
@@ -64,8 +62,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   bool _swipeRightDone = false;
   bool _swipeLeftDone = false;
   String? _currentDeviceId;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-      _roleAssignmentSubscription;
 
   // TODO: Make text in swipe tutorial cards smaller to prevent overflow
   final List<_SwipeTutorialStep> _swipeSteps = [
@@ -107,7 +103,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _assignRandomRoles();
       });
-      _listenToRoleAssignment();
     } else {
       // Local game: automatically assign roles at start
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -120,39 +115,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     final deviceId = await StorageService.getDeviceId();
     setState(() {
       _currentDeviceId = deviceId;
-    });
-  }
-
-  // Listen to role assignment changes from Firestore for synchronized viewing
-  void _listenToRoleAssignment() {
-    if (widget.sessionId == null) return;
-
-    _roleAssignmentSubscription = FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(widget.sessionId)
-        .snapshots()
-        .listen((snapshot) {
-      if (!snapshot.exists) return;
-
-      final data = snapshot.data() as Map<String, dynamic>;
-      final gameState = data['gameState'] as Map<String, dynamic>?;
-      final roleAssignment =
-          gameState?['roleAssignment'] as Map<String, dynamic>?;
-
-      if (roleAssignment != null) {
-        final guesser = roleAssignment['guesser'] as String?;
-        final conveyor = roleAssignment['conveyor'] as String?;
-        final isTransitioning =
-            roleAssignment['isTransitioning'] as bool? ?? false;
-
-        if (mounted) {
-          setState(() {
-            _selectedGuesser = guesser;
-            _selectedConveyor = conveyor;
-            _isTransitioning = isTransitioning;
-          });
-        }
-      }
     });
   }
 
@@ -174,7 +136,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    _roleAssignmentSubscription?.cancel();
     super.dispose();
   }
 
@@ -281,6 +242,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         ),
       );
     }
+
+    // Set up navigation listener for online games
     if (widget.sessionId != null) {
       ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
         final status = next.value;
@@ -291,6 +254,24 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
             sessionId: widget.sessionId!,
             status: status,
           );
+        }
+      });
+
+      // Listen to role assignment changes from Firestore for synchronized viewing
+      ref.listen(sessionRoleAssignmentProvider(widget.sessionId!),
+          (prev, next) {
+        final roleAssignment = next.value;
+        if (roleAssignment != null && mounted) {
+          final guesser = roleAssignment['guesser'] as String?;
+          final conveyor = roleAssignment['conveyor'] as String?;
+          final isTransitioning =
+              roleAssignment['isTransitioning'] as bool? ?? false;
+
+          setState(() {
+            _selectedGuesser = guesser;
+            _selectedConveyor = conveyor;
+            _isTransitioning = isTransitioning;
+          });
         }
       });
     }

@@ -219,8 +219,7 @@ class _CategorySelectionScreenState
             print(
                 '🎯 CATEGORY SELECTION: Received final category: $selectedCategory');
             setState(() {
-              _selectedCategory =
-                  CategoryRegistry.getCategoryFromDisplayName(selectedCategory);
+              _selectedCategory = selectedCategory;
               _currentCategory = selectedCategory;
               _isSpinning =
                   false; // Stop local spinning when category is selected
@@ -389,8 +388,7 @@ class _CategorySelectionScreenState
                                     widget.teamIndex,
                                     widget.roundNumber,
                                     widget.turnNumber,
-                                    CategoryRegistry.getCategoryFromDisplayName(
-                                        _selectedCategory!),
+                                    _selectedCategory!,
                                   );
                                 }
                               }
