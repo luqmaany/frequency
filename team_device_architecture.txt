@@ -1,0 +1,334 @@
+CONVEY GAME - TEAM DEVICE ARCHITECTURE PLAN
+================================================
+
+OVERVIEW
+--------
+This document outlines the changes needed to allow devices to join teams with a maximum of 2 devices per team. When a team has 2 devices, the game screen will only be shown to the conveyor device, while the guesser device will show a waiting/spectator screen.
+
+CURRENT STATE ANALYSIS
+---------------------
+The codebase currently supports:
+- Teams with 2 players each (stored in GameConfig.teams as List<List<String>>)
+- Device identification via StorageService.getDeviceId() 
+- Online multiplayer with Firestore backend
+- Role assignment for conveyor/guesser per turn
+- Device-specific interaction controls in screens like OnlineTurnOverScreen and RoleAssignmentScreen
+
+KEY ARCHITECTURAL CHANGES NEEDED
+===============================
+
+1. DATA MODEL UPDATES
+---------------------
+
+A. Team Structure Enhancement
+   - Current: teams are List<List<String>> (just player names)
+   - Needed: Enhanced team model with device associations
+   
+   New Team Model:
+   ```
+   class Team {
+     String teamName;
+     List<String> playerNames;  // 1-2 players
+     List<String> deviceIds;    // 1-2 devices
+     int colorIndex;
+     Map<String, String> playerDeviceMapping; // player -> deviceId
+     bool isComplete; // true if has 2 players/devices
+   }
+   ```
+
+B. Game State Updates
+   - Add device tracking to GameState
+   - Track which device is the "active conveyor device" per turn
+   - Add device role assignments (conveyor device vs guesser device)
+
+C. Firestore Schema Updates
+   ```
+   sessions/{sessionId}: {
+     teams: [
+       {
+         teamName: string,
+         players: [string],     // 1-2 player names
+         deviceIds: [string],   // 1-2 device IDs
+         playerDeviceMapping: {playerName: deviceId},
+         colorIndex: int,
+         active: bool,
+         isComplete: bool       // true if has 2 devices
+       }
+     ],
+     gameState: {
+       currentConveyorDeviceId: string,  // which device shows game
+       currentGuesserDeviceId: string,   // which device shows waiting
+       deviceRoles: {deviceId: "conveyor" | "guesser" | "spectator"}
+     }
+   }
+   ```
+
+2. TEAM JOINING FLOW CHANGES
+---------------------------
+
+A. Enhanced Team Lobby Screen
+   - Show team capacity (1/2 or 2/2)
+   - Allow second device to join existing team
+   - Prevent joining if team already has 2 devices
+   - Display both devices' player names when team is full
+
+B. New Team Search/Join Screen
+   - List available teams (those with < 2 devices)
+   - Show team names and current occupancy
+   - Allow filtering by teams needing members
+   - Quick join functionality
+
+C. Team Management Logic
+   ```
+   Scenarios:
+   1. Device creates new team → Team has 1 device, needs 1 more
+   2. Device joins existing team → Team becomes complete (2 devices)
+   3. Device leaves complete team → Team becomes incomplete again
+   4. Last device leaves → Team is deleted
+   ```
+
+3. GAME SCREEN ROUTING LOGIC
+---------------------------
+
+A. Device Role Determination
+   ```
+   For each turn:
+   1. Determine which player is conveyor/guesser
+   2. Map players to their devices
+   3. Route conveyor device to GameScreen
+   4. Route guesser device to SpectatorScreen
+   5. Handle single-device teams (show game to only device)
+   ```
+
+B. Screen Routing Service Updates
+   ```
+   class DeviceGameNavigationService {
+     static void navigateBasedOnDeviceRole(
+       BuildContext context,
+       String sessionId,
+       String deviceId,
+       String conveyorPlayer,
+       String guesserPlayer,
+       Map<String, String> playerDeviceMapping
+     ) {
+       final conveyorDeviceId = playerDeviceMapping[conveyorPlayer];
+       final guesserDeviceId = playerDeviceMapping[guesserPlayer];
+       
+       if (deviceId == conveyorDeviceId) {
+         // Navigate to game screen
+         Navigator.pushReplacement(context, GameScreen(...));
+       } else if (deviceId == guesserDeviceId) {
+         // Navigate to spectator screen
+         Navigator.pushReplacement(context, SpectatorScreen(...));
+       } else {
+         // Device not involved in current turn
+         Navigator.pushReplacement(context, WaitingScreen(...));
+       }
+     }
+   }
+   ```
+
+4. NEW SCREEN IMPLEMENTATIONS
+----------------------------
+
+A. SpectatorScreen (for guesser device)
+   ```
+   Features:
+   - Shows current word being guessed (after conveyor sees it)
+   - Shows timer countdown
+   - Shows current score
+   - Shows "You are the guesser" message
+   - Shows conveyor device status
+   - No interaction allowed - read-only view
+   - Real-time updates when words are guessed/skipped
+   ```
+
+B. Enhanced GameScreen (for conveyor device)
+   ```
+   Added features:
+   - Indicator showing this is "conveyor view"
+   - Display guesser device player name
+   - Status indicator for guesser device connection
+   ```
+
+C. TeamSpectatorScreen (for uninvolved devices)
+   ```
+   Features:
+   - Shows which team is currently playing
+   - Shows current scores
+   - Shows timer
+   - "Your turn is coming up" message
+   - Read-only spectator view
+   ```
+
+5. REAL-TIME SYNCHRONIZATION OPTIMIZATIONS
+==========================================
+
+A. Firestore Write Reduction Strategies
+   ```
+   1. Batch Updates:
+      - Combine game state + device role updates in single write
+      - Use Firestore transactions for consistency
+   
+   2. Selective Field Updates:
+      - Only update changed fields, not entire documents
+      - Use FieldValue.serverTimestamp() for auto-timestamps
+   
+   3. Local State Caching:
+      - Cache device roles locally to reduce reads
+      - Only fetch updates when roles change
+   
+   4. Connection Pooling:
+      - Reuse Firestore listeners across screens
+      - Implement listener cleanup on screen disposal
+   ```
+
+B. Optimized Data Flow
+   ```
+   Write Operations (Priority Order):
+   1. Game state changes (word guessed/skipped) - HIGH
+   2. Turn completion - HIGH  
+   3. Role assignments - MEDIUM
+   4. Score updates - MEDIUM
+   5. Device status updates - LOW
+   
+   Read Operations (Caching Strategy):
+   1. Device roles - Cache locally, update on role change
+   2. Team compositions - Cache until team changes
+   3. Game state - Real-time listener required
+   4. Scores - Real-time listener required
+   ```
+
+C. Rate Limiting Enhancements
+   ```
+   Current: 30 writes/min, 100 reads/min per session
+   Proposed: 
+   - Separate limits per operation type
+   - Higher limits for critical game operations
+   - Lower limits for status updates
+   - Implement exponential backoff for rate limit hits
+   ```
+
+6. SERVICE LAYER CHANGES
+=======================
+
+A. Enhanced FirestoreService Methods
+   ```
+   - updateDeviceRoles(sessionId, deviceRoles)
+   - assignConveyorDevice(sessionId, teamIndex, deviceId)
+   - getTeamDevices(sessionId, teamIndex)
+   - updateTeamComposition(sessionId, teamIndex, devices)
+   - getDeviceRole(sessionId, deviceId)
+   ```
+
+B. New DeviceTeamService
+   ```
+   - joinTeam(sessionId, teamIndex, deviceId, playerName)
+   - leaveTeam(sessionId, deviceId)
+   - getAvailableTeams(sessionId)
+   - isTeamFull(sessionId, teamIndex)
+   - getMyTeammates(sessionId, deviceId)
+   ```
+
+C. Enhanced OnlineGameNavigationService
+   ```
+   - navigateBasedOnRole(context, sessionId, deviceId)
+   - determineDeviceRole(sessionId, deviceId, currentTurn)
+   - handleRoleTransition(sessionId, fromRole, toRole)
+   ```
+
+7. ERROR HANDLING & EDGE CASES
+=============================
+
+A. Device Disconnection Scenarios
+   ```
+   1. Conveyor device disconnects during turn:
+      - Pause game for 30 seconds
+      - Show "waiting for conveyor" message
+      - If no reconnection, transfer conveyor role to guesser
+   
+   2. Guesser device disconnects:
+      - Game continues normally
+      - Show "teammate disconnected" indicator
+   
+   3. Both devices disconnect:
+      - Mark team as inactive
+      - Skip their turn if game is in progress
+   ```
+
+B. Team Management Edge Cases
+   ```
+   1. Device tries to join full team:
+      - Show "team is full" error
+      - Suggest alternative teams
+   
+   2. Last device leaves team during game:
+      - Mark team as forfeited
+      - Continue game with remaining teams
+   
+   3. Device switches teams mid-game:
+      - Prevent team switching during active games
+      - Only allow during lobby phase
+   ```
+
+8. IMPLEMENTATION PHASES
+=======================
+
+Phase 1: Data Model & Team Management
+- Update Team model and Firestore schema
+- Implement enhanced team joining flow
+- Add device-team association logic
+
+Phase 2: Game Screen Routing
+- Implement device role determination
+- Create SpectatorScreen and TeamSpectatorScreen
+- Update GameScreen with role indicators
+
+Phase 3: Real-time Sync Optimization
+- Implement batched updates
+- Add local caching for device roles
+- Optimize Firestore read/write patterns
+
+Phase 4: Error Handling & Polish
+- Add disconnection handling
+- Implement edge case management
+- Performance testing and optimization
+
+9. TESTING STRATEGY
+==================
+
+A. Multi-Device Testing
+   ```
+   Test Scenarios:
+   1. Two devices join same team
+   2. Conveyor device gets game screen, guesser gets spectator
+   3. Role switching between turns
+   4. Device disconnection/reconnection
+   5. Team leaving/joining during different game phases
+   ```
+
+B. Performance Testing
+   ```
+   Metrics to Monitor:
+   1. Firestore read/write counts per game
+   2. Screen transition latency
+   3. Real-time sync delay between devices
+   4. Memory usage with multiple device streams
+   ```
+
+10. ESTIMATED IMPLEMENTATION EFFORT
+=================================
+
+Development Time Estimates:
+- Data model updates: 2-3 days
+- Team management UI: 3-4 days  
+- Game screen routing logic: 2-3 days
+- New spectator screens: 2-3 days
+- Real-time sync optimization: 3-4 days
+- Testing & bug fixes: 3-4 days
+
+Total: 15-21 days (3-4 weeks)
+
+CONCLUSION
+==========
+This architecture provides a scalable foundation for device-based teams while maintaining optimal performance through strategic caching and batched updates. The separation of concerns between team management, game flow, and device synchronization ensures maintainable and testable code.
