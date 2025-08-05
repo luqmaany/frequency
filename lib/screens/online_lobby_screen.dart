@@ -30,6 +30,8 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
     });
     try {
       final deviceId = await StorageService.getDeviceId();
+      print(
+          '🔥 FIRESTORE READ: _joinSession($code) - checking session existence');
       final doc = await FirebaseFirestore.instance
           .collection('sessions')
           .doc(code)
@@ -95,6 +97,8 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
 
   Future<bool> _sessionExists(String code) async {
     try {
+      print(
+          '🔥 FIRESTORE READ: _sessionExists($code) - checking session existence');
       final docSnap = await FirebaseFirestore.instance
           .collection('sessions')
           .doc(code)
@@ -145,6 +149,8 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       final hostId = await StorageService.getDeviceId();
 
       // Create session with all initial data in one operation
+      print(
+          '🔥 FIRESTORE WRITE: _createSession($newCode) - creating new session');
       await FirebaseFirestore.instance.collection('sessions').doc(newCode).set({
         'sessionId': newCode,
         'hostId': hostId,
