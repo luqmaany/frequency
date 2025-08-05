@@ -1,18 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/game_setup_provider.dart';
-import '../services/game_state_provider.dart';
-import '../services/game_navigation_service.dart';
-import '../models/game_state.dart';
 import '../data/category_registry.dart';
-import '../providers/category_provider.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
 import '../services/online_game_navigation_service.dart';
 import '../services/storage_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
-import '../services/firestore_service.dart';
 import '../providers/session_providers.dart';
 
 class OnlineTurnOverScreen extends ConsumerStatefulWidget {
@@ -59,7 +53,6 @@ class OnlineTurnOverScreen extends ConsumerStatefulWidget {
 class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   Set<String> _disputedWords = {};
   List<int> _confirmedTeams = [];
-  int _currentTeamIndex = 0;
   bool _isCurrentTeamActive = false;
   String? _currentDeviceId;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
@@ -106,13 +99,11 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
             List<String>.from(turnOverState['disputedWords'] as List? ?? []);
         final confirmedTeams =
             List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
-        final currentTeamIndex = turnOverState['currentTeamIndex'] as int? ?? 0;
 
         if (mounted) {
           setState(() {
             _disputedWords = Set.from(disputedWords);
             _confirmedTeams = confirmedTeams;
-            _currentTeamIndex = currentTeamIndex;
             _isCurrentTeamActive = _currentDeviceId != null &&
                 _currentDeviceId == widget.currentTeamDeviceId;
             print(
@@ -165,75 +156,27 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   }
 
   void _confirmScore() {
-    if (widget.sessionId != null) {
-      // For online games
-      if (_allTeamsConfirmed && _isCurrentTeamActive) {
-        // All teams confirmed and current team is active - advance to next turn
-        FirestoreService.fromTurnOver(
-          widget.sessionId!,
-          widget.teamIndex,
-          widget.roundNumber,
-          widget.turnNumber,
-          widget.category,
-          _disputedScore, // Use disputed score instead of original correctCount
-          widget.skipsLeft,
-          widget.wordsGuessed
-              .where((word) => !_disputedWords.contains(word))
-              .toList(), // Filter out disputed words
-          widget.wordsSkipped,
-          _disputedWords,
-          widget.conveyor ?? '',
-          widget.guesser ?? '',
-        );
-      } else {
-        // Confirm score for current team
-        FirestoreService.confirmScoreForTeam(
-            widget.sessionId!, widget.teamIndex);
-      }
+    if (_allTeamsConfirmed && _isCurrentTeamActive) {
+      // All teams confirmed and current team is active - advance to next turn
+      FirestoreService.fromTurnOver(
+        widget.sessionId!,
+        widget.teamIndex,
+        widget.roundNumber,
+        widget.turnNumber,
+        widget.category,
+        _disputedScore, // Use disputed score instead of original correctCount
+        widget.skipsLeft,
+        widget.wordsGuessed
+            .where((word) => !_disputedWords.contains(word))
+            .toList(), // Filter out disputed words
+        widget.wordsSkipped,
+        _disputedWords,
+        widget.conveyor ?? '',
+        widget.guesser ?? '',
+      );
     } else {
-      // For local games, use the existing logic
-      final currentTeamPlayers = ref.read(currentTeamPlayersProvider);
-      if (currentTeamPlayers.length >= 2) {
-        final turnRecord = TurnRecord(
-          teamIndex: widget.teamIndex,
-          roundNumber: widget.roundNumber,
-          turnNumber: widget.turnNumber,
-          conveyor: currentTeamPlayers[0],
-          guesser: currentTeamPlayers[1],
-          category: CategoryRegistry.getCategory(widget.category).displayName,
-          score: _disputedScore,
-          skipsUsed:
-              ref.read(gameSetupProvider).allowedSkips - widget.skipsLeft,
-          wordsGuessed: widget.wordsGuessed
-              .where((word) => !_disputedWords.contains(word))
-              .toList(),
-          wordsSkipped: widget.wordsSkipped,
-        );
-
-        ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
-
-        // TODO: Update word statistics using CategoryProvider
-        final categoryNotifier = ref.read(categoryProvider.notifier);
-
-        // Increment appearance count for all words that appeared in this turn
-        for (final word in widget.wordsGuessed) {
-          categoryNotifier.incrementWordAppearance(widget.category, word);
-        }
-        for (final word in widget.wordsSkipped) {
-          categoryNotifier.incrementWordAppearance(widget.category, word);
-        }
-
-        // Increment guessed count only for words that were not disputed
-        for (final word in widget.wordsGuessed) {
-          if (!_disputedWords.contains(word)) {
-            categoryNotifier.incrementWordGuessed(widget.category, word);
-          }
-        }
-
-        // Use navigation service to navigate to next screen
-        GameNavigationService.navigateToNextScreen(context, ref,
-            teamIndex: widget.teamIndex);
-      }
+      // Confirm score for current team
+      FirestoreService.confirmScoreForTeam(widget.sessionId!, widget.teamIndex);
     }
   }
 
