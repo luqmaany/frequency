@@ -35,7 +35,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   bool _updating = false;
   late Future<String> _deviceIdFuture;
   late AnimationController _animationController;
-  late Animation<double> _animation;
   @override
   void initState() {
     super.initState();
@@ -49,9 +48,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-    );
-    _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
 
