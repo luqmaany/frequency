@@ -9,7 +9,7 @@ class FirestoreService {
   static final Map<String, List<DateTime>> _writeTimestamps = {};
   static final Map<String, List<DateTime>> _readTimestamps = {};
   static const int _maxWritesPerMinute = 30;
-  static const int _maxReadsPerMinute = 100;
+  static const int _maxReadsPerMinute = 70;
   static const Duration _rateLimitWindow = Duration(minutes: 1);
 
   // ============================================================================

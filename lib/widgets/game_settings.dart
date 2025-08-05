@@ -24,6 +24,8 @@ class GameSettingsState extends ConsumerState<GameSettings> {
     if (widget.sessionId == null) return;
     final doc =
         FirebaseFirestore.instance.collection('sessions').doc(widget.sessionId);
+    print(
+        '🔥 FIRESTORE WRITE: updateFirestoreSetting(${widget.sessionId}) - key: $key, value: $value');
     await doc.update({'settings.$key': value});
   }
 

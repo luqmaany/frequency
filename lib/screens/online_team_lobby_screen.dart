@@ -74,6 +74,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
   Future<void> _initializeColorIndex() async {
     try {
+      print(
+          '🔥 FIRESTORE READ: _initializeColorIndex(${widget.sessionId}) - getting session data');
       final doc = await FirebaseFirestore.instance
           .collection('sessions')
           .doc(widget.sessionId)
@@ -132,6 +134,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   // Add or update team in Firestore
   Future<void> _syncTeamToFirestore() async {
     if (_canPickColor && _selectedColorIndex != null) {
+      print(
+          '🔥 FIRESTORE READ: _syncTeamToFirestore(${widget.sessionId}) - getting current teams');
       final doc = await FirebaseFirestore.instance
           .collection('sessions')
           .doc(widget.sessionId)
@@ -151,6 +155,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       final teamDataWithDeviceId = await _getMyTeamDataWithDeviceId();
       teams.add(teamDataWithDeviceId);
 
+      print(
+          '🔥 FIRESTORE WRITE: _syncTeamToFirestore(${widget.sessionId}) - updating teams');
       await FirebaseFirestore.instance
           .collection('sessions')
           .doc(widget.sessionId)
@@ -160,6 +166,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
   // Remove team from Firestore
   Future<void> _removeTeamFromFirestore() async {
+    print(
+        '🔥 FIRESTORE READ: _removeTeamFromFirestore(${widget.sessionId}) - getting current teams');
     final doc = await FirebaseFirestore.instance
         .collection('sessions')
         .doc(widget.sessionId)
@@ -175,6 +183,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     teams.removeWhere((t) =>
         t['deviceId'] == deviceId || t['colorIndex'] == _selectedColorIndex);
 
+    print(
+        '🔥 FIRESTORE WRITE: _removeTeamFromFirestore(${widget.sessionId}) - updating teams');
     await FirebaseFirestore.instance
         .collection('sessions')
         .doc(widget.sessionId)
@@ -216,6 +226,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
   // Ensure all teams have deviceIds before starting the game
   Future<void> _ensureAllTeamsHaveDeviceIds() async {
+    print(
+        '🔥 FIRESTORE READ: _ensureAllTeamsHaveDeviceIds(${widget.sessionId}) - getting teams');
     final doc = await FirebaseFirestore.instance
         .collection('sessions')
         .doc(widget.sessionId)
@@ -524,6 +536,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                             onPressed: () async {
                               // Ensure all teams have deviceIds before starting
                               await _ensureAllTeamsHaveDeviceIds();
+                              print(
+                                  '🔥 FIRESTORE WRITE: Start Game button(${widget.sessionId}) - updating gameState.status to settings');
                               await FirebaseFirestore.instance
                                   .collection('sessions')
                                   .doc(widget.sessionId)

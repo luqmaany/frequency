@@ -82,6 +82,8 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   void _listenToTurnOverState() {
     if (widget.sessionId == null) return;
 
+    print(
+        '🔥 FIRESTORE READ: _listenToTurnOverState(${widget.sessionId}) - creating snapshots listener');
     _turnOverStateSubscription = FirebaseFirestore.instance
         .collection('sessions')
         .doc(widget.sessionId)
