@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/storage_service.dart';
 import '../providers/session_providers.dart';
 import '../services/online_game_navigation_service.dart';
@@ -74,16 +73,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
   Future<void> _initializeColorIndex() async {
     try {
-      print(
-          '🔥 FIRESTORE READ: _initializeColorIndex(${widget.sessionId}) - getting session data');
-      final doc = await FirebaseFirestore.instance
-          .collection('sessions')
-          .doc(widget.sessionId)
-          .get();
-      if (!doc.exists) return;
-
-      final data = doc.data() as Map<String, dynamic>;
-      final teams = (data['teams'] as List?) ?? [];
+      final teams =
+          await ref.read(sessionTeamsProvider(widget.sessionId).future);
 
       // Find our team and set the color index
       final colorIndex = await _getMyTeamColorIndex(teams);
@@ -134,18 +125,9 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   // Add or update team in Firestore
   Future<void> _syncTeamToFirestore() async {
     if (_canPickColor && _selectedColorIndex != null) {
-      print(
-          '🔥 FIRESTORE READ: _syncTeamToFirestore(${widget.sessionId}) - getting current teams');
-      final doc = await FirebaseFirestore.instance
-          .collection('sessions')
-          .doc(widget.sessionId)
-          .get();
-      if (!doc.exists) return;
-      final data = doc.data() as Map<String, dynamic>;
-      final teams = (data['teams'] as List?)
-              ?.map((e) => Map<String, dynamic>.from(e))
-              .toList() ??
-          [];
+      final teams =
+          await ref.read(sessionTeamsProvider(widget.sessionId).future);
+
       final deviceId = await _deviceIdFuture;
       // Remove any previous entry for this color or device ID
       teams.removeWhere((t) =>
@@ -155,40 +137,25 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
       final teamDataWithDeviceId = await _getMyTeamDataWithDeviceId();
       teams.add(teamDataWithDeviceId);
 
-      print(
-          '🔥 FIRESTORE WRITE: _syncTeamToFirestore(${widget.sessionId}) - updating teams');
-      await FirebaseFirestore.instance
-          .collection('sessions')
-          .doc(widget.sessionId)
-          .update({'teams': teams});
+      await ref.read(updateTeamsProvider({
+        'sessionId': widget.sessionId,
+        'teams': teams,
+      }).future);
     }
   }
 
   // Remove team from Firestore
   Future<void> _removeTeamFromFirestore() async {
-    print(
-        '🔥 FIRESTORE READ: _removeTeamFromFirestore(${widget.sessionId}) - getting current teams');
-    final doc = await FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(widget.sessionId)
-        .get();
-    if (!doc.exists) return;
-    final data = doc.data() as Map<String, dynamic>;
-    final teams = (data['teams'] as List?)
-            ?.map((e) => Map<String, dynamic>.from(e))
-            .toList() ??
-        [];
+    final teams = await ref.read(sessionTeamsProvider(widget.sessionId).future);
 
     final deviceId = await _deviceIdFuture;
     teams.removeWhere((t) =>
         t['deviceId'] == deviceId || t['colorIndex'] == _selectedColorIndex);
 
-    print(
-        '🔥 FIRESTORE WRITE: _removeTeamFromFirestore(${widget.sessionId}) - updating teams');
-    await FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(widget.sessionId)
-        .update({'teams': teams});
+    await ref.read(updateTeamsProvider({
+      'sessionId': widget.sessionId,
+      'teams': teams,
+    }).future);
   }
 
   // Watch for changes to color and sync
@@ -226,19 +193,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
   // Ensure all teams have deviceIds before starting the game
   Future<void> _ensureAllTeamsHaveDeviceIds() async {
-    print(
-        '🔥 FIRESTORE READ: _ensureAllTeamsHaveDeviceIds(${widget.sessionId}) - getting teams');
-    final doc = await FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(widget.sessionId)
-        .get();
-    if (!doc.exists) return;
-
-    final data = doc.data() as Map<String, dynamic>;
-    final teams = (data['teams'] as List?)
-            ?.map((e) => Map<String, dynamic>.from(e))
-            .toList() ??
-        [];
+    final teams = await ref.read(sessionTeamsProvider(widget.sessionId).future);
 
     for (final team in teams) {
       if (team['deviceId'] == null) {
@@ -536,14 +491,10 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                             onPressed: () async {
                               // Ensure all teams have deviceIds before starting
                               await _ensureAllTeamsHaveDeviceIds();
-                              print(
-                                  '🔥 FIRESTORE WRITE: Start Game button(${widget.sessionId}) - updating gameState.status to settings');
-                              await FirebaseFirestore.instance
-                                  .collection('sessions')
-                                  .doc(widget.sessionId)
-                                  .update({
-                                'gameState.status': 'settings'
-                              }); // <-- update gameState.status
+                              await ref.read(updateGameStateStatusProvider({
+                                'sessionId': widget.sessionId,
+                                'status': 'settings',
+                              }).future);
                             },
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             iconSize: 28,
