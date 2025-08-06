@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:math';
 import '../services/storage_service.dart';
+import '../providers/session_providers.dart';
 import 'online_team_lobby_screen.dart';
+import 'dart:math';
 
-class OnlineLobbyScreen extends StatefulWidget {
+class OnlineLobbyScreen extends ConsumerStatefulWidget {
   const OnlineLobbyScreen({Key? key}) : super(key: key);
 
   @override
-  State<OnlineLobbyScreen> createState() => _OnlineLobbyScreenState();
+  ConsumerState<OnlineLobbyScreen> createState() => _OnlineLobbyScreenState();
 }
 
-class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
+class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   final TextEditingController _joinCodeController = TextEditingController();
   String? _error;
   bool _loading = false;
@@ -30,22 +32,17 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
     });
     try {
       final deviceId = await StorageService.getDeviceId();
-      print(
-          '🔥 FIRESTORE READ: _joinSession($code) - checking session existence');
-      final doc = await FirebaseFirestore.instance
-          .collection('sessions')
-          .doc(code)
-          .get();
+
+      // Check if session exists using provider
+      final sessionExists = await ref.read(sessionExistsProvider(code).future);
       if (!mounted) return;
-      if (!doc.exists) {
+      if (!sessionExists) {
         setState(() => _error = 'Session not found.');
         return;
       }
 
-      final teams = (doc.data()?['teams'] as List?)
-              ?.map((e) => Map<String, dynamic>.from(e))
-              .toList() ??
-          [];
+      // Get teams using provider
+      final teams = await ref.read(sessionTeamsProvider(code).future);
 
       // Check if this device already has a team in this session
       final myTeam = teams.firstWhere(
@@ -97,13 +94,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
 
   Future<bool> _sessionExists(String code) async {
     try {
-      print(
-          '🔥 FIRESTORE READ: _sessionExists($code) - checking session existence');
-      final docSnap = await FirebaseFirestore.instance
-          .collection('sessions')
-          .doc(code)
-          .get();
-      final exists = docSnap.exists;
+      final exists = await ref.read(sessionExistsProvider(code).future);
       print('🔍 Checking session $code: exists=$exists');
       return exists;
     } catch (e) {
@@ -149,9 +140,7 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
       final hostId = await StorageService.getDeviceId();
 
       // Create session with all initial data in one operation
-      print(
-          '🔥 FIRESTORE WRITE: _createSession($newCode) - creating new session');
-      await FirebaseFirestore.instance.collection('sessions').doc(newCode).set({
+      final sessionData = {
         'sessionId': newCode,
         'hostId': hostId,
         'settings': {
@@ -166,7 +155,9 @@ class _OnlineLobbyScreenState extends State<OnlineLobbyScreen> {
           'turnNumber': 1,
         },
         'createdAt': FieldValue.serverTimestamp(),
-      });
+      };
+
+      await ref.read(createSessionProvider(sessionData).future);
 
       // Navigate to a team setup screen or show instructions
       Navigator.of(context).push(
