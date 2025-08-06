@@ -5,8 +5,6 @@ import 'package:convey/widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
 import '../services/online_game_navigation_service.dart';
 import '../services/storage_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:async';
 import '../providers/session_providers.dart';
 
 class OnlineTurnOverScreen extends ConsumerStatefulWidget {
@@ -55,8 +53,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   List<int> _confirmedTeams = [];
   bool _isCurrentTeamActive = false;
   String? _currentDeviceId;
-  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>?
-      _turnOverStateSubscription;
 
   @override
   void initState() {
@@ -82,36 +78,25 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   void _listenToTurnOverState() {
     if (widget.sessionId == null) return;
 
-    print(
-        '🔥 FIRESTORE READ: _listenToTurnOverState(${widget.sessionId}) - creating snapshots listener');
-    _turnOverStateSubscription = FirebaseFirestore.instance
-        .collection('sessions')
-        .doc(widget.sessionId)
-        .snapshots()
-        .listen((snapshot) {
-      if (!snapshot.exists) return;
+    // Use the session turn over provider instead of direct Firestore calls
+    ref.listen(sessionTurnOverProvider(widget.sessionId!), (previous, next) {
+      if (next == null || !next.hasValue || next.value == null) return;
 
-      final data = snapshot.data() as Map<String, dynamic>;
-      final gameState = data['gameState'] as Map<String, dynamic>?;
-      final turnOverState =
-          gameState?['turnOverState'] as Map<String, dynamic>?;
+      final turnOverState = next.value!;
+      final disputedWords =
+          List<String>.from(turnOverState['disputedWords'] as List? ?? []);
+      final confirmedTeams =
+          List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
 
-      if (turnOverState != null) {
-        final disputedWords =
-            List<String>.from(turnOverState['disputedWords'] as List? ?? []);
-        final confirmedTeams =
-            List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
-
-        if (mounted) {
-          setState(() {
-            _disputedWords = Set.from(disputedWords);
-            _confirmedTeams = confirmedTeams;
-            _isCurrentTeamActive = _currentDeviceId != null &&
-                _currentDeviceId == widget.currentTeamDeviceId;
-            print(
-                '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _disputedWords = Set.from(disputedWords);
+          _confirmedTeams = confirmedTeams;
+          _isCurrentTeamActive = _currentDeviceId != null &&
+              _currentDeviceId == widget.currentTeamDeviceId;
+          print(
+              '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
+        });
       }
     });
   }
@@ -185,7 +170,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   @override
   void dispose() {
     print('🗑️ TURN OVER SCREEN: Disposing widget, cleaning up listeners...');
-    _turnOverStateSubscription?.cancel();
     super.dispose();
   }
 
