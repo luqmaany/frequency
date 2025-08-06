@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../providers/session_providers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class GameSettings extends ConsumerStatefulWidget {
   final bool readOnly;
@@ -22,11 +20,11 @@ class GameSettingsState extends ConsumerState<GameSettings> {
 
   void _updateFirestoreSetting(String key, int value) async {
     if (widget.sessionId == null) return;
-    final doc =
-        FirebaseFirestore.instance.collection('sessions').doc(widget.sessionId);
-    print(
-        '🔥 FIRESTORE WRITE: updateFirestoreSetting(${widget.sessionId}) - key: $key, value: $value');
-    await doc.update({'settings.$key': value});
+    await ref.read(updateSettingsProvider({
+      'sessionId': widget.sessionId!,
+      'key': key,
+      'value': value,
+    }).future);
   }
 
   Widget _buildOptionButtons({
