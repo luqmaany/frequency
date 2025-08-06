@@ -80,7 +80,7 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
     // Use the session turn over provider instead of direct Firestore calls
     ref.listen(sessionTurnOverProvider(widget.sessionId!), (previous, next) {
-      if (next == null || !next.hasValue || next.value == null) return;
+      if (!next.hasValue || next.value == null) return;
 
       final turnOverState = next.value!;
       final disputedWords =
