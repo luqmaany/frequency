@@ -39,9 +39,80 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   @override
   void initState() {
     super.initState();
-    _teamNameController = TextEditingController(text: widget.teamName);
-    _player1Controller = TextEditingController(text: widget.player1Name);
-    _player2Controller = TextEditingController(text: widget.player2Name);
+
+    // Generate random names for testing if the provided names are empty
+    String teamName = widget.teamName;
+    String player1Name = widget.player1Name;
+    String player2Name = widget.player2Name;
+
+    if (teamName.isEmpty) {
+      final randomNames = [
+        'Thunder',
+        'Lightning',
+        'Storm',
+        'Blaze',
+        'Phoenix',
+        'Dragon',
+        'Eagle',
+        'Lion',
+        'Tiger',
+        'Wolf',
+        'Shark',
+        'Bear',
+        'Fox',
+        'Hawk',
+        'Falcon'
+      ];
+      teamName = randomNames[DateTime.now().millisecond % randomNames.length];
+    }
+
+    if (player1Name.isEmpty) {
+      final randomNames = [
+        'Alex',
+        'Jordan',
+        'Taylor',
+        'Casey',
+        'Riley',
+        'Morgan',
+        'Quinn',
+        'Avery',
+        'Parker',
+        'Drew',
+        'Blake',
+        'Cameron',
+        'Jamie',
+        'Reese',
+        'Dakota'
+      ];
+      player1Name =
+          randomNames[DateTime.now().millisecond % randomNames.length];
+    }
+
+    if (player2Name.isEmpty) {
+      final randomNames = [
+        'Sam',
+        'Kai',
+        'Rowan',
+        'Sage',
+        'River',
+        'Skyler',
+        'Phoenix',
+        'Indigo',
+        'Wren',
+        'Aspen',
+        'Cedar',
+        'Juniper',
+        'Willow',
+        'Oak',
+        'Maple'
+      ];
+      player2Name =
+          randomNames[(DateTime.now().millisecond + 1) % randomNames.length];
+    }
+
+    _teamNameController = TextEditingController(text: teamName);
+    _player1Controller = TextEditingController(text: player1Name);
+    _player2Controller = TextEditingController(text: player2Name);
     _selectedColorIndex = null;
     _deviceIdFuture = StorageService.getDeviceId();
 
