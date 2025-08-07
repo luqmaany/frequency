@@ -49,6 +49,15 @@ final sessionCategorySpinProvider =
       .distinct(); // Only emit when category spin state actually changes
 });
 
+/// Provides a stream of only the selected category for a given session ID.
+/// Only triggers when selected category actually changes.
+final sessionSelectedCategoryProvider =
+    StreamProvider.family<String?, String>((ref, sessionId) {
+  return FirestoreService.sessionStream(sessionId)
+      .map((doc) => doc.data()?['gameState']?['selectedCategory'] as String?)
+      .distinct(); // Only emit when selected category actually changes
+});
+
 /// Provides a stream of only the role assignment state for a given session ID.
 /// Only triggers when role assignment state actually changes.
 final sessionRoleAssignmentProvider =
@@ -78,10 +87,7 @@ final sessionExistsProvider =
     FutureProvider.family<bool, String>((ref, sessionId) async {
   print(
       '🔥 FIRESTORE READ: sessionExistsProvider($sessionId) - checking session existence');
-  final doc = await FirebaseFirestore.instance
-      .collection('sessions')
-      .doc(sessionId)
-      .get();
+  final doc = await FirestoreService.sessions.doc(sessionId).get();
   return doc.exists;
 });
 
@@ -92,10 +98,7 @@ final createSessionProvider =
   final sessionId = sessionData['sessionId'] as String;
   print(
       '🔥 FIRESTORE WRITE: createSessionProvider($sessionId) - creating new session');
-  await FirebaseFirestore.instance
-      .collection('sessions')
-      .doc(sessionId)
-      .set(sessionData);
+  await FirestoreService.sessions.doc(sessionId).set(sessionData);
   return sessionId;
 });
 
@@ -108,10 +111,7 @@ final sessionTeamsProvider =
     FutureProvider.family<List<Map<String, dynamic>>, String>(
         (ref, sessionId) async {
   print('🔥 FIRESTORE READ: sessionTeamsProvider($sessionId) - getting teams');
-  final doc = await FirebaseFirestore.instance
-      .collection('sessions')
-      .doc(sessionId)
-      .get();
+  final doc = await FirestoreService.sessions.doc(sessionId).get();
   if (!doc.exists) return [];
   final data = doc.data() as Map<String, dynamic>;
   return (data['teams'] as List?)
@@ -126,10 +126,7 @@ final updateTeamsProvider =
   final sessionId = params['sessionId'] as String;
   final teams = params['teams'] as List<Map<String, dynamic>>;
   print('🔥 FIRESTORE WRITE: updateTeamsProvider($sessionId) - updating teams');
-  await FirebaseFirestore.instance
-      .collection('sessions')
-      .doc(sessionId)
-      .update({'teams': teams});
+  await FirestoreService.sessions.doc(sessionId).update({'teams': teams});
 });
 
 /// Provider for updating settings in a session
@@ -140,8 +137,7 @@ final updateSettingsProvider =
   final value = params['value'];
   print(
       '🔥 FIRESTORE WRITE: updateSettingsProvider($sessionId) - key: $key, value: $value');
-  await FirebaseFirestore.instance
-      .collection('sessions')
+  await FirestoreService.sessions
       .doc(sessionId)
       .update({'settings.$key': value});
 });
@@ -153,8 +149,7 @@ final updateGameStateStatusProvider =
   final status = params['status'] as String;
   print(
       '🔥 FIRESTORE WRITE: updateGameStateStatusProvider($sessionId) - status: $status');
-  await FirebaseFirestore.instance
-      .collection('sessions')
+  await FirestoreService.sessions
       .doc(sessionId)
       .update({'gameState.status': status});
 });

@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 /// Service for handling all Firestore database operations
 /// Manages sessions, teams, game state, and host transfers for online multiplayer
 class FirestoreService {
-  static final _sessions = FirebaseFirestore.instance.collection('sessions');
+  static final sessions = FirebaseFirestore.instance.collection('sessions');
 
   // Rate limiting
   static final Map<String, List<DateTime>> _writeTimestamps = {};
@@ -74,7 +74,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE WRITE: createSession($sessionId)');
-    await _sessions.doc(sessionId).set({
+    await sessions.doc(sessionId).set({
       ...sessionData,
       'gameState': gameState,
     });
@@ -99,7 +99,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE READ: sessionStream($sessionId) - creating new stream');
-    final stream = _sessions.doc(sessionId).snapshots(
+    final stream = sessions.doc(sessionId).snapshots(
           includeMetadataChanges: false, // Only listen to actual data changes
         );
 
@@ -121,7 +121,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE WRITE: setGameState($sessionId)');
-    await _sessions.doc(sessionId).update({'gameState': gameState});
+    await sessions.doc(sessionId).update({'gameState': gameState});
   }
 
   /// Get the gameState object for a session (one-time fetch)
@@ -131,7 +131,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE READ: getGameState($sessionId)');
-    final doc = await _sessions.doc(sessionId).get();
+    final doc = await sessions.doc(sessionId).get();
     if (!doc.exists) return null;
     final data = doc.data() as Map<String, dynamic>;
     return data['gameState'] as Map<String, dynamic>?;
@@ -145,7 +145,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE WRITE: startGame($sessionId)');
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'gameState.status': 'category_selection',
       'gameState.currentTeamIndex': 0,
       'gameState.roundNumber': 1,
@@ -162,7 +162,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE READ: advanceToNextTeam($sessionId) - getting current state');
-    final doc = await _sessions.doc(sessionId).get();
+    final doc = await sessions.doc(sessionId).get();
     if (!doc.exists) return;
 
     final data = doc.data() as Map<String, dynamic>;
@@ -185,7 +185,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: advanceToNextTeam($sessionId) - updating to next team');
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'gameState.currentTeamIndex': nextTeamIndex,
       'gameState.roundNumber': nextRound,
       'gameState.turnNumber': 1, // Each team has 1 turn per round
@@ -205,8 +205,8 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: updateCategorySpinState($sessionId) - selectedCategory: $selectedCategory');
-    await _sessions.doc(sessionId).update({
-      'gameState.categorySpin.selectedCategory': selectedCategory,
+    await sessions.doc(sessionId).update({
+      'gameState.selectedCategory': selectedCategory,
     });
   }
 
@@ -221,10 +221,9 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: fromCategorySelection($sessionId) - selectedCategory: $selectedCategory');
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'gameState.status': 'role_assignment',
       'gameState.selectedCategory': selectedCategory,
-      'gameState.categorySpin.selectedCategory': selectedCategory,
     });
   }
 
@@ -252,7 +251,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE WRITE: updateRoleAssignment($sessionId) - $updates');
-    await _sessions.doc(sessionId).update(updates);
+    await sessions.doc(sessionId).update(updates);
   }
 
   /// Transition from role assignment to game screen
@@ -267,7 +266,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: fromRoleAssignment($sessionId) - guesser: $guesser, conveyor: $conveyor');
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'gameState.status': 'game',
       'gameState.currentGuesser': guesser,
       'gameState.currentConveyor': conveyor,
@@ -286,7 +285,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: updateDisputedWords($sessionId) - disputedWords: $disputedWords');
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'gameState.turnOverState.disputedWords': disputedWords,
     });
   }
@@ -302,7 +301,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: confirmScoreForTeam($sessionId) - teamIndex: $teamIndex');
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'gameState.turnOverState.confirmedTeams':
           FieldValue.arrayUnion([teamIndex]),
     });
@@ -344,7 +343,7 @@ class FirestoreService {
       'guesser': guesser,
     };
 
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'gameState.status': 'turn_over',
       'gameState.currentTurnRecord':
           turnRecord, // Store current turn for easy access
@@ -391,7 +390,7 @@ class FirestoreService {
       'guesser': guesser,
     };
 
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       //put the final turn record into the turn history field in the gameState
       'gameState.turnHistory': FieldValue.arrayUnion([turnRecord]),
       'gameState.currentTurnRecord': turnRecord,
@@ -418,7 +417,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: joinSession($sessionId) - teamData: ${teamData['teamId']}');
-    await _sessions.doc(sessionId).update({
+    await sessions.doc(sessionId).update({
       'teams': FieldValue.arrayUnion([teamData])
     });
   }
@@ -431,7 +430,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE READ: updateTeam($sessionId) - getting current teams');
-    final doc = await _sessions.doc(sessionId).get();
+    final doc = await sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
     final teams = (data['teams'] as List)
@@ -443,7 +442,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: updateTeam($sessionId) - teamId: $teamId, updatedFields: $updatedFields');
-    await _sessions.doc(sessionId).update({'teams': teams});
+    await sessions.doc(sessionId).update({'teams': teams});
   }
 
   /// Mark a team as inactive (team leaves the game)
@@ -453,7 +452,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE READ: leaveTeam($sessionId) - getting current teams');
-    final doc = await _sessions.doc(sessionId).get();
+    final doc = await sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
     final teams = (data['teams'] as List)
@@ -464,7 +463,7 @@ class FirestoreService {
     teams[idx]['active'] = false;
 
     print('🔥 FIRESTORE WRITE: leaveTeam($sessionId) - teamId: $teamId');
-    await _sessions.doc(sessionId).update({'teams': teams});
+    await sessions.doc(sessionId).update({'teams': teams});
   }
 
   /// Mark a team as active (team rejoins the game)
@@ -476,7 +475,7 @@ class FirestoreService {
     }
 
     print('🔥 FIRESTORE READ: rejoinTeam($sessionId) - getting current teams');
-    final doc = await _sessions.doc(sessionId).get();
+    final doc = await sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
     final teams = (data['teams'] as List)
@@ -489,7 +488,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE WRITE: rejoinTeam($sessionId) - teamId: $teamId, players: $players');
-    await _sessions.doc(sessionId).update({'teams': teams});
+    await sessions.doc(sessionId).update({'teams': teams});
   }
 
   // ============================================================================
@@ -505,7 +504,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE READ: transferHostIfNeeded($sessionId) - leavingDeviceId: $leavingDeviceId');
-    final doc = await _sessions.doc(sessionId).get();
+    final doc = await sessions.doc(sessionId).get();
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
     final currentHostId = data['hostId'] as String?;
@@ -523,9 +522,7 @@ class FirestoreService {
     if (newHostTeam.isNotEmpty && newHostTeam['deviceId'] != null) {
       print(
           '🔥 FIRESTORE WRITE: transferHostIfNeeded($sessionId) - new host: ${newHostTeam['deviceId']}');
-      await _sessions
-          .doc(sessionId)
-          .update({'hostId': newHostTeam['deviceId']});
+      await sessions.doc(sessionId).update({'hostId': newHostTeam['deviceId']});
     }
   }
 
