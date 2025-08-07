@@ -6,6 +6,8 @@ import '../services/storage_service.dart';
 import '../providers/session_providers.dart';
 import '../services/online_game_navigation_service.dart';
 
+// TODO: Fix issue where changing colors prevents ready/start game functionality
+// The color change logic is interfering with the ready state and team synchronization
 class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
   final String sessionId;
   final String teamName;
