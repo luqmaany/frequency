@@ -208,23 +208,21 @@ class _CategorySelectionScreenState
       });
 
       // Listen to category selection changes from Firestore
-      ref.listen(sessionCategorySpinProvider(widget.sessionId!), (prev, next) {
-        final categorySpin = next.value;
+      ref.listen(sessionSelectedCategoryProvider(widget.sessionId!),
+          (prev, next) {
+        final selectedCategory = next.value;
 
-        if (categorySpin != null && mounted) {
-          final selectedCategory =
-              categorySpin['selectedCategory'] as String? ?? '';
-
-          if (selectedCategory.isNotEmpty) {
-            print(
-                '🎯 CATEGORY SELECTION: Received final category: $selectedCategory');
-            setState(() {
-              _selectedCategory = selectedCategory;
-              _currentCategory = selectedCategory;
-              _isSpinning =
-                  false; // Stop local spinning when category is selected
-            });
-          }
+        if (selectedCategory != null &&
+            selectedCategory.isNotEmpty &&
+            mounted) {
+          print(
+              '🎯 CATEGORY SELECTION: Received final category: $selectedCategory');
+          setState(() {
+            _selectedCategory = selectedCategory;
+            _currentCategory = selectedCategory;
+            _isSpinning =
+                false; // Stop local spinning when category is selected
+          });
         }
       });
     }
