@@ -8,10 +8,25 @@ import '../screens/role_assignment_screen.dart';
 import '../screens/online_game_screen.dart';
 import '../screens/online_turn_over_screen.dart';
 import '../screens/home_screen.dart';
+import '../data/category_registry.dart';
 
 /// Service for handling navigation in online multiplayer games
 /// Provides navigation logic that can be called from ref.listen callbacks in screens
 class OnlineGameNavigationService {
+  // ============================================================================
+  // HELPER METHODS
+  // ============================================================================
+
+  /// Convert category display name to category ID
+  static String _convertDisplayNameToCategoryId(String displayName) {
+    try {
+      return CategoryRegistry.getCategoryFromDisplayName(displayName);
+    } catch (e) {
+      // Fallback to lowercase version if category not found
+      return displayName.toLowerCase();
+    }
+  }
+
   // ============================================================================
   // MAIN NAVIGATION METHOD
   // ============================================================================
@@ -207,7 +222,8 @@ class OnlineGameNavigationService {
           teamIndex: currentTeamIndex,
           roundNumber: gameState?['roundNumber'] as int? ?? 1,
           turnNumber: gameState?['turnNumber'] as int? ?? 1,
-          category: gameState?['selectedCategory'] as String? ?? 'Person',
+          category: _convertDisplayNameToCategoryId(
+              gameState?['selectedCategory'] as String? ?? 'Person'),
           currentTeamDeviceId: currentTeamDeviceId,
           sessionId: sessionId,
           onlineTeam: currentTeam,
