@@ -94,21 +94,11 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         curve: Curves.easeInOut,
       ),
     );
-
+    _selectedConveyor = widget.onlineTeam?['players']?[0];
+    _selectedGuesser = widget.onlineTeam?['players']?[1];
     // Get current device ID
     _getCurrentDeviceId();
-
-    // For online games, listen to role assignment changes
-    if (widget.sessionId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _assignRandomRoles();
-      });
-    } else {
-      // Local game: automatically assign roles at start
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _assignRandomRoles();
-      });
-    }
+    _assignRandomRoles();
   }
 
   Future<void> _getCurrentDeviceId() async {
@@ -142,12 +132,11 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   void _assignRandomRoles() {
     List<String> teamPlayers = [];
 
-    // Check if this is an online game
-    if (widget.sessionId != null && widget.onlineTeam != null) {
-      // Online game: get team data from online teams
-      final team = widget.onlineTeam;
-      final players = team?['players'] as List?;
-      if (players != null) {
+    // Always get team players from the widget
+    if (widget.onlineTeam != null) {
+      // Online game: get team data from widget
+      final players = widget.onlineTeam!['players'] as List?;
+      if (players != null && players.length >= 2) {
         teamPlayers = players.map((p) => p.toString()).toList();
       }
     } else {
@@ -160,8 +149,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
       }
     }
 
+    // Throw error if we don't have enough players
     if (teamPlayers.length < 2) {
-      return;
+      throw Exception(
+          'Cannot determine team players. Expected at least 2 players, but got ${teamPlayers.length}');
     }
 
     final random = teamPlayers.toList()..shuffle();
