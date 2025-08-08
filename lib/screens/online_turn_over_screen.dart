@@ -67,6 +67,9 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
     final deviceId = await StorageService.getDeviceId();
     setState(() {
       _currentDeviceId = deviceId;
+      // Enable tapping immediately if this device is the active team
+      _isCurrentTeamActive = _currentDeviceId != null &&
+          _currentDeviceId == widget.currentTeamDeviceId;
     });
   }
 
@@ -172,15 +175,26 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
               List<String>.from(turnOverState['disputedWords'] as List? ?? []);
           final confirmedTeams =
               List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
+          // Derive the current active team's deviceId from live session data
+          final teams = sessionData['teams'] as List? ?? [];
+          final turnOverTeamIndex =
+              turnOverState['currentTeamIndex'] as int? ?? 0;
+          String? currentTeamDeviceId;
+          if (teams.isNotEmpty && turnOverTeamIndex < teams.length) {
+            final turnOverTeam =
+                teams[turnOverTeamIndex] as Map<String, dynamic>?;
+            currentTeamDeviceId = turnOverTeam?['deviceId'] as String?;
+          }
 
           if (mounted) {
             setState(() {
               _disputedWords = Set.from(disputedWords);
               _confirmedTeams = confirmedTeams;
               _isCurrentTeamActive = _currentDeviceId != null &&
-                  _currentDeviceId == widget.currentTeamDeviceId;
+                  _currentDeviceId ==
+                      (currentTeamDeviceId ?? widget.currentTeamDeviceId);
               print(
-                  '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
+                  '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${currentTeamDeviceId ?? widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
             });
           }
         }

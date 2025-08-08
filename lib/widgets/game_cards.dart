@@ -136,7 +136,8 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                                   setState(() {
                                     _leftSwipeProgress =
                                         (-horizontalThresholdPercentage)
-                                            .clamp(0.0, 1.0) as double;
+                                            .clamp(0.0, 1.0)
+                                            .toDouble();
                                   });
                                 }
                               });
@@ -155,8 +156,9 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                                 if (mounted) {
                                   setState(() {
                                     _rightSwipeProgress =
-                                        horizontalThresholdPercentage.clamp(
-                                            0.0, 1.0) as double;
+                                        horizontalThresholdPercentage
+                                            .clamp(0.0, 1.0)
+                                            .toDouble();
                                   });
                                 }
                               });
@@ -247,7 +249,8 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                                   setState(() {
                                     _bottomLeftSwipeProgress =
                                         (-horizontalThresholdPercentage)
-                                            .clamp(0.0, 1.0) as double;
+                                            .clamp(0.0, 1.0)
+                                            .toDouble();
                                   });
                                 }
                               });
@@ -266,8 +269,9 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                                 if (mounted) {
                                   setState(() {
                                     _bottomRightSwipeProgress =
-                                        horizontalThresholdPercentage.clamp(
-                                            0.0, 1.0) as double;
+                                        horizontalThresholdPercentage
+                                            .clamp(0.0, 1.0)
+                                            .toDouble();
                                   });
                                 }
                               });
