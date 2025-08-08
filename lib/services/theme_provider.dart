@@ -104,6 +104,7 @@ final lightThemeProvider = Provider<ThemeData>((ref) {
 
 // Provider for dark theme
 final darkThemeProvider = Provider<ThemeData>((ref) {
+  const Color darkBg = Color(0xFF0B1020); // Match HomeScreen background
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
       seedColor: const Color(0xFF9C27B0), // Purple
@@ -111,7 +112,9 @@ final darkThemeProvider = Provider<ThemeData>((ref) {
     ),
     useMaterial3: true,
     // Customize dark theme colors - softer palette
-    scaffoldBackgroundColor: const Color(0xFF2A2A2A), // Lighter dark background
+    scaffoldBackgroundColor: darkBg,
+    canvasColor: darkBg,
+    dialogBackgroundColor: darkBg,
     appBarTheme: const AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,

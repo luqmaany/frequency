@@ -147,6 +147,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
           'roundTimeSeconds': 60,
           'targetScore': 20,
           'allowedSkips': 3,
+          'tiebreakerTimeSeconds': 30,
         },
         'teams': [], // Empty teams array - teams will be added manually
         'gameState': {

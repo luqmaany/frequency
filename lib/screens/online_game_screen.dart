@@ -44,6 +44,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   bool _isCountdownActive = true;
   String? _currentDeviceId;
   bool _isCurrentTeamActive = false;
+  bool _isTiebreakerActive = false;
 
   @override
   String get categoryId => widget.category;
@@ -116,8 +117,19 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
     // Online game: get configuration from session data
     final settings = widget.sessionData!['settings'] as Map<String, dynamic>?;
     if (settings != null) {
+      final gameState =
+          widget.sessionData!['gameState'] as Map<String, dynamic>?;
+      final tiebreaker = gameState != null
+          ? (gameState['tiebreaker'] as Map<String, dynamic>?)
+          : null;
+      _isTiebreakerActive = tiebreaker?['active'] == true;
+
+      final int baseTime = settings['roundTimeSeconds'] as int? ?? 60;
+      final int tieTime =
+          settings['tiebreakerTimeSeconds'] as int? ?? (baseTime ~/ 2);
+
       return {
-        'roundTimeSeconds': settings['roundTimeSeconds'] as int? ?? 60,
+        'roundTimeSeconds': _isTiebreakerActive ? tieTime : baseTime,
         'allowedSkips': settings['allowedSkips'] as int? ?? 3,
       };
     }
@@ -301,7 +313,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                     timeLeft: timeLeft,
                     categoryId: categoryId,
                     skipsLeft: skipsLeft,
-                    isTiebreaker: false,
+                    isTiebreaker: _isTiebreakerActive,
                   ),
 
                   // Word cards with swiping mechanics
