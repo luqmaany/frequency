@@ -98,7 +98,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     _selectedGuesser = widget.onlineTeam?['players']?[1];
     // Get current device ID
     _getCurrentDeviceId();
-    _assignRandomRoles();
   }
 
   Future<void> _getCurrentDeviceId() async {
@@ -190,14 +189,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   }
 
   void _showTransitionScreen() {
+    // Immediately show transition UI locally to avoid flicker
+    setState(() {
+      _isTransitioning = true;
+    });
+
     if (widget.sessionId != null) {
       // Online game: update Firestore
       _updateRoleAssignment(_selectedGuesser!, _selectedConveyor!, true);
     } else {
       // Local game: update local state
-      setState(() {
-        _isTransitioning = true;
-      });
+      // already set above
     }
   }
 
@@ -261,7 +263,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
           setState(() {
             _selectedGuesser = guesser;
             _selectedConveyor = conveyor;
-            _isTransitioning = isTransitioning;
+            // Once transitioning, keep it true to prevent flicker back to the role UI
+            _isTransitioning = _isTransitioning || isTransitioning;
           });
         }
       });
@@ -302,32 +305,57 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
             children: [
               Expanded(
                 child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 150),
-                      // TODO: Change spectator text from "Pass the phone to" to something more appropriate for online games
-                      Text(
-                        'Pass the phone to',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        _selectedConveyor!,
-                        style: Theme.of(context).textTheme.displayLarge,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Conveyor',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(
-                              color: Theme.of(context).colorScheme.secondary,
+                  child: _isCurrentTeamActive
+                      ? Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 150),
+                            // TODO: Change spectator text from "Pass the phone to" to something more appropriate for online games
+                            Text(
+                              'Pass the phone to',
+                              style: Theme.of(context).textTheme.headlineMedium,
                             ),
-                      ),
-                    ],
-                  ),
+                            const SizedBox(height: 24),
+                            Text(
+                              _selectedConveyor!,
+                              style: Theme.of(context).textTheme.displayLarge,
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Conveyor',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 150),
+                            Text(
+                              "${(widget.onlineTeam?['teamName'] as String?) ?? 'Current team'} is getting ready",
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(
+                                    color:
+                                        Theme.of(context).colorScheme.secondary,
+                                  ),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Please wait while they get set to start the round.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
                 ),
               ),
               // No extra space above the card now

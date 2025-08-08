@@ -194,45 +194,120 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
       appBar: AppBar(
         title: const Text('Online Lobby'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: _joinCodeController,
-              decoration: InputDecoration(
-                labelText: 'Join Code',
-                border: const OutlineInputBorder(),
-                errorText: _error,
-              ),
-              textCapitalization: TextCapitalization.characters,
-              maxLength: 6,
-              enabled: !_loading,
+      body: Align(
+        alignment: const Alignment(0, -0.25),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Create session first
+                TeamColorButton(
+                  text: 'Create New Session',
+                  icon: Icons.add,
+                  color: teamColors[1],
+                  onPressed: _createSession,
+                ),
+                const SizedBox(height: 28),
+                // Higher-frequency wave divider
+                const WaveDivider(),
+                const SizedBox(height: 28),
+                // Join section below
+                TextField(
+                  controller: _joinCodeController,
+                  decoration: InputDecoration(
+                    labelText: 'Join Code',
+                    border: const OutlineInputBorder(),
+                    errorText: _error,
+                  ),
+                  textCapitalization: TextCapitalization.characters,
+                  maxLength: 6,
+                  enabled: !_loading,
+                ),
+                const SizedBox(height: 16),
+                if (_loading)
+                  const Center(child: CircularProgressIndicator())
+                else
+                  TeamColorButton(
+                    text: 'Join Session',
+                    icon: Icons.login_rounded,
+                    color: teamColors[0],
+                    onPressed: _joinSession,
+                  ),
+              ],
             ),
-            const SizedBox(height: 16),
-            if (_loading) const Center(child: CircularProgressIndicator()),
-            if (!_loading) ...[
-              TeamColorButton(
-                text: 'Join Session',
-                icon: Icons.login_rounded,
-                color: teamColors[0],
-                onPressed: _joinSession,
-              ),
-              const SizedBox(height: 32),
-              const Divider(),
-              const SizedBox(height: 32),
-              TeamColorButton(
-                text: 'Create New Session',
-                icon: Icons.add,
-                color: teamColors[1],
-                onPressed: _createSession,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
+  }
+}
+
+class WaveDivider extends StatelessWidget {
+  final double height;
+  final double strokeWidth;
+  final Color? color;
+
+  const WaveDivider({
+    super.key,
+    this.height = 44,
+    this.strokeWidth = 2.0,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Color effective =
+        color ?? Theme.of(context).dividerColor.withOpacity(0.6);
+    return SizedBox(
+      height: height,
+      width: double.infinity,
+      child: CustomPaint(
+        painter:
+            _WaveDividerPainter(color: effective, strokeWidth: strokeWidth),
+      ),
+    );
+  }
+}
+
+class _WaveDividerPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+
+  _WaveDividerPainter({required this.color, required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
+
+    final path = Path();
+    final double baseY = size.height / 2;
+    final double amplitude = size.height * 0.15; // reduced wave height
+    // Increase frequency by using smaller wavelength (more cycles)
+    final int cycles = max(4, (size.width / 80).round());
+    final double wavelength = size.width / cycles;
+
+    path.moveTo(0, baseY);
+    const int steps = 240;
+    for (int i = 0; i <= steps; i++) {
+      final double x = size.width * (i / steps);
+      final double y = baseY + amplitude * sin(2 * pi * x / wavelength);
+      path.lineTo(x, y);
+    }
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WaveDividerPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
   }
 }
