@@ -144,10 +144,17 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // For online games, listen to navigation changes
-    ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
-      final status = next.value;
-      if (status != null) {
+    // Combined listener for both navigation and turn over data
+    ref.listen(sessionStreamProvider(widget.sessionId!), (prev, next) {
+      final sessionData = next.value?.data();
+      if (sessionData == null) return;
+
+      final gameState = sessionData['gameState'] as Map<String, dynamic>?;
+      if (gameState == null) return;
+
+      // Handle navigation
+      final status = gameState['status'] as String?;
+      if (status != null && status != 'turn_over') {
         OnlineGameNavigationService.handleNavigation(
           context: context,
           ref: ref,
@@ -155,31 +162,30 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
           status: status,
         );
       }
-    });
 
-    // Listen to turn over state changes
-    if (widget.sessionId != null) {
-      ref.listen(sessionTurnOverProvider(widget.sessionId!), (previous, next) {
-        if (!next.hasValue || next.value == null) return;
+      // Handle turn over data (only if we're still on turn_over status)
+      if (status == 'turn_over') {
+        final turnOverState =
+            gameState['turnOverState'] as Map<String, dynamic>?;
+        if (turnOverState != null) {
+          final disputedWords =
+              List<String>.from(turnOverState['disputedWords'] as List? ?? []);
+          final confirmedTeams =
+              List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
 
-        final turnOverState = next.value!;
-        final disputedWords =
-            List<String>.from(turnOverState['disputedWords'] as List? ?? []);
-        final confirmedTeams =
-            List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
-
-        if (mounted) {
-          setState(() {
-            _disputedWords = Set.from(disputedWords);
-            _confirmedTeams = confirmedTeams;
-            _isCurrentTeamActive = _currentDeviceId != null &&
-                _currentDeviceId == widget.currentTeamDeviceId;
-            print(
-                '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
-          });
+          if (mounted) {
+            setState(() {
+              _disputedWords = Set.from(disputedWords);
+              _confirmedTeams = confirmedTeams;
+              _isCurrentTeamActive = _currentDeviceId != null &&
+                  _currentDeviceId == widget.currentTeamDeviceId;
+              print(
+                  '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
+            });
+          }
         }
-      });
-    }
+      }
+    });
 
     return Scaffold(
       body: SafeArea(
