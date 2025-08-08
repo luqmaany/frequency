@@ -254,7 +254,6 @@ class HomeScreen extends ConsumerWidget {
                     Icons.play_arrow_rounded,
                     () => GameNavigationService.navigateToGameSetup(context),
                     buttonColors[0],
-                    bgColor,
                   ),
                   const SizedBox(height: 16),
                   _buildMenuButton(
@@ -271,7 +270,6 @@ class HomeScreen extends ConsumerWidget {
                     buttonColors.length > 5
                         ? buttonColors[5 % buttonColors.length]
                         : buttonColors[1],
-                    bgColor,
                   ),
                   const SizedBox(height: 16),
                   // Removed 'Stats & History' button
@@ -282,7 +280,6 @@ class HomeScreen extends ConsumerWidget {
                     () => GameNavigationService.navigateToWordListsManager(
                         context),
                     buttonColors[3],
-                    bgColor,
                   ),
                   const SizedBox(height: 16),
                   _buildMenuButton(
@@ -291,7 +288,6 @@ class HomeScreen extends ConsumerWidget {
                     Icons.settings_rounded,
                     () => GameNavigationService.navigateToSettings(context),
                     buttonColors[2],
-                    bgColor,
                   ),
                   const Spacer(),
                 ],
@@ -309,10 +305,11 @@ class HomeScreen extends ConsumerWidget {
     IconData icon,
     VoidCallback onPressed,
     Color color,
-    Color backgroundColor,
   ) {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color buttonColor = backgroundColor; // exact home screen background
+    final HSLColor hsl = HSLColor.fromColor(color);
+    final double darkerLightness = (hsl.lightness * 0.25).clamp(0.0, 1.0);
+    final Color buttonColor = hsl.withLightness(darkerLightness).toColor();
     final Color borderColor = isDark ? color.withOpacity(0.7) : color;
     final Color iconColor = borderColor;
     final Color textColor = const Color(0xFFE6EEF8);

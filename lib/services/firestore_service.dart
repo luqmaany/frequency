@@ -174,17 +174,38 @@ class FirestoreService {
     final currentTeamIndex = gameState['currentTeamIndex'] as int? ?? 0;
     final currentRound = gameState['roundNumber'] as int? ?? 1;
 
-    // Calculate next team index
-    final nextTeamIndex = (currentTeamIndex + 1) % teams.length;
+    // Tiebreaker state (if any)
+    final Map<String, dynamic> tiebreakerState =
+        (gameState['tiebreaker'] as Map<String, dynamic>?) ?? {};
+    final bool isTiebreakerActive = tiebreakerState['active'] == true;
+    final List<dynamic> eligibleRaw =
+        (tiebreakerState['eligibleTeamIndices'] as List?) ?? const [];
+    final List<int> eligibleTeamIndices =
+        eligibleRaw.map((e) => (e as num).toInt()).toList();
 
-    // If we've gone through all teams, advance to next round
-    final nextRound = nextTeamIndex == 0 ? currentRound + 1 : currentRound;
+    int nextTeamIndex;
+    bool isLastTeamInRound;
+    if (isTiebreakerActive && eligibleTeamIndices.isNotEmpty) {
+      // Advance only among eligible teams
+      final int currentPos = eligibleTeamIndices.indexOf(currentTeamIndex);
+      final int nextPos =
+          currentPos == -1 ? 0 : (currentPos + 1) % eligibleTeamIndices.length;
+      nextTeamIndex = eligibleTeamIndices[nextPos];
+      isLastTeamInRound =
+          currentPos != -1 && currentPos == eligibleTeamIndices.length - 1;
+    } else {
+      // Normal round rotation across all teams
+      nextTeamIndex = (currentTeamIndex + 1) % teams.length;
+      isLastTeamInRound = nextTeamIndex == 0;
+    }
 
-    // Check if this is the last team in the round
-    final isLastTeamInRound = nextTeamIndex == 0;
+    // If we've gone through all relevant teams, advance to next round
+    final nextRound = isLastTeamInRound ? currentRound + 1 : currentRound;
 
-    // Determine if the game should end at end of round based on target score
+    // Determine round transition outcome (game over, tiebreaker, or next round)
     bool isGameOver = false;
+    bool shouldStartOrContinueTiebreaker = false;
+    List<int> newEligible = eligibleTeamIndices;
     if (isLastTeamInRound) {
       final settings = (data['settings'] as Map<String, dynamic>?) ?? {};
       final int targetScore = (settings['targetScore'] as int?) ?? 20;
@@ -196,24 +217,86 @@ class FirestoreService {
       // Sum scores by team
       final Map<int, int> teamTotals = {};
       for (final tr in turnHistory) {
-        final int teamIndex = (tr['teamIndex'] as int?) ?? 0;
+        final int tIdx = (tr['teamIndex'] as int?) ?? 0;
         final int score = (tr['correctCount'] as int?) ?? 0;
-        teamTotals[teamIndex] = (teamTotals[teamIndex] ?? 0) + score;
+        teamTotals[tIdx] = (teamTotals[tIdx] ?? 0) + score;
       }
 
-      isGameOver = teamTotals.values.any((s) => s >= targetScore);
+      if (isTiebreakerActive) {
+        // Evaluate winners only among eligible teams
+        final scores = eligibleTeamIndices
+            .map((idx) => MapEntry(idx, teamTotals[idx] ?? 0))
+            .toList();
+        if (scores.isNotEmpty) {
+          final int top =
+              scores.map((e) => e.value).fold<int>(0, (a, b) => a > b ? a : b);
+          final List<int> leaders =
+              scores.where((e) => e.value == top).map((e) => e.key).toList();
+          if (leaders.length == 1) {
+            isGameOver = true; // Unique leader wins
+            newEligible = leaders;
+          } else {
+            // Continue tiebreaker with only tied leaders
+            shouldStartOrContinueTiebreaker = true;
+            newEligible = leaders;
+          }
+        } else {
+          // Fallback: no scores? end game to avoid loop
+          isGameOver = true;
+        }
+      } else {
+        // Normal round end: check if multiple teams reached or exceeded target
+        final List<int> overTargetTeams = teamTotals.entries
+            .where((e) => e.value >= targetScore)
+            .map((e) => e.key)
+            .toList();
+        if (overTargetTeams.length >= 2) {
+          // Start tiebreaker
+          shouldStartOrContinueTiebreaker = true;
+          newEligible = overTargetTeams;
+        } else {
+          // Single team can win immediately
+          isGameOver = overTargetTeams.length == 1;
+        }
+      }
     }
 
     print(
         '🔥 FIRESTORE WRITE: advanceToNextTeam($sessionId) - updating to next team');
-    await sessions.doc(sessionId).update({
+    final Map<String, dynamic> updates = {
       'gameState.currentTeamIndex': nextTeamIndex,
       'gameState.roundNumber': nextRound,
       'gameState.turnNumber': 1, // Each team has 1 turn per round
       'gameState.status': isLastTeamInRound
           ? (isGameOver ? 'game_over' : 'round_end')
           : 'category_selection',
-    });
+    };
+
+    // Manage tiebreaker state transitions
+    if (isLastTeamInRound) {
+      if (isGameOver) {
+        updates['gameState.tiebreaker'] = {
+          'active': false,
+          'eligibleTeamIndices': newEligible,
+        };
+      } else if (shouldStartOrContinueTiebreaker) {
+        // Ensure next team index starts with first eligible in next cycle
+        final int startIdx = newEligible.isNotEmpty ? newEligible.first : 0;
+        updates['gameState.currentTeamIndex'] = startIdx;
+        updates['gameState.tiebreaker'] = {
+          'active': true,
+          'eligibleTeamIndices': newEligible,
+        };
+      } else if (isTiebreakerActive) {
+        // Keep tiebreaker inactive if resolved during mid-round (unlikely)
+        updates['gameState.tiebreaker'] = {
+          'active': false,
+          'eligibleTeamIndices': [],
+        };
+      }
+    }
+
+    await sessions.doc(sessionId).update(updates);
   }
 
   /// Update the selected category for synchronized display across all players
