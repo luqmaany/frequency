@@ -6,8 +6,8 @@ import '../services/storage_service.dart';
 import '../providers/session_providers.dart';
 import '../services/online_game_navigation_service.dart';
 
-// TODO: Fix issue where changing colors prevents ready/start game functionality
-// The color change logic is interfering with the ready state and team synchronization
+// Note: Color change logic updated to not interfere with ready/start game
+// Prevents color changes from unready-ing other teams and enforces unique colors
 class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
   final String sessionId;
   final String teamName;
@@ -202,47 +202,45 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
           await ref.read(sessionTeamsProvider(widget.sessionId).future);
 
       final deviceId = await _deviceIdFuture;
-      // Remove any previous entry for this color or device ID
-      teams.removeWhere((t) =>
-          t['colorIndex'] == _selectedColorIndex || t['deviceId'] == deviceId);
+      // If another device already owns this color, do not override it
+      final bool colorTakenByOther = teams.any((t) =>
+          t['colorIndex'] == _selectedColorIndex && t['deviceId'] != deviceId);
+      if (colorTakenByOther) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('That color is already taken')),
+        );
+        return;
+      }
 
-      // Add team data with device ID
+      // Atomic upsert via service to avoid race conditions
       final teamDataWithDeviceId = await _getMyTeamDataWithDeviceId();
-      teams.add(teamDataWithDeviceId);
-
-      await ref.read(updateTeamsProvider({
-        'sessionId': widget.sessionId,
-        'teams': teams,
-      }).future);
+      try {
+        await FirestoreService.upsertTeamByDeviceId(
+            widget.sessionId, teamDataWithDeviceId);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
     }
   }
 
   // Remove team from Firestore
   Future<void> _removeTeamFromFirestore() async {
-    final teams = await ref.read(sessionTeamsProvider(widget.sessionId).future);
-
     final deviceId = await _deviceIdFuture;
-    teams.removeWhere((t) =>
-        t['deviceId'] == deviceId || t['colorIndex'] == _selectedColorIndex);
-
-    await ref.read(updateTeamsProvider({
-      'sessionId': widget.sessionId,
-      'teams': teams,
-    }).future);
+    await FirestoreService.removeTeamByDeviceId(widget.sessionId, deviceId);
   }
 
   // Watch for changes to color and sync
   void _onColorChanged() {
-    if (_ready) {
-      // If ready, but color becomes invalid, remove from Firestore and reset ready
-      if (_selectedColorIndex == null) {
-        _removeTeamFromFirestore();
-        setState(() {
-          _ready = false;
-        });
-      }
+    // Do not mutate Firestore here to avoid race conditions affecting other teams
+    if (_ready && _selectedColorIndex == null) {
+      setState(() {
+        _ready = false;
+      });
+    } else {
+      setState(() {});
     }
-    setState(() {});
   }
 
   // Watch for changes to team/player names and reset ready state
@@ -422,7 +420,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: teamColors.length,
                           itemBuilder: (context, i) {
-                            final myColorIndex = _getMyTeamColorIndex(teams);
                             final isSelected = _selectedColorIndex == i;
                             final teamColor = teamColors[i];
                             // Find the team (if any) that owns this color
@@ -431,6 +428,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                               orElse: () => null,
                             );
                             final colorTaken = teamForColor != null;
+                            final takenByOther = colorTaken &&
+                                (teamForColor['deviceId'] != deviceId);
                             final teamIsReady =
                                 colorTaken && (teamForColor['ready'] == true);
                             String infoText = '';
@@ -453,10 +452,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(12),
-                                onTap: (colorTaken &&
-                                            (!isSelected ||
-                                                myColorIndex != i) ||
-                                        _updating)
+                                onTap: (takenByOther || _updating)
                                     ? null
                                     : () async {
                                         // Unfocus any active text field

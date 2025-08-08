@@ -491,6 +491,76 @@ class FirestoreService {
     await sessions.doc(sessionId).update({'teams': teams});
   }
 
+  /// Upsert a team by deviceId atomically to avoid clobbering other teams
+  static Future<void> upsertTeamByDeviceId(
+      String sessionId, Map<String, dynamic> teamData) async {
+    if (!_canWrite(sessionId)) {
+      throw Exception('Rate limit exceeded for writes');
+    }
+
+    final deviceId = teamData['deviceId'];
+    if (deviceId == null) {
+      throw Exception('teamData.deviceId is required');
+    }
+
+    print(
+        '🔥 FIRESTORE TX: upsertTeamByDeviceId($sessionId) - deviceId: $deviceId');
+    await FirebaseFirestore.instance.runTransaction((txn) async {
+      final docRef = sessions.doc(sessionId);
+      final snapshot = await txn.get(docRef);
+      if (!snapshot.exists) {
+        throw Exception('Session not found');
+      }
+      final data = snapshot.data() as Map<String, dynamic>;
+      final List<Map<String, dynamic>> teams = (data['teams'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          [];
+
+      // Enforce unique color: if another device already has this color, abort
+      final int? desiredColor = teamData['colorIndex'] as int?;
+      if (desiredColor != null) {
+        final conflict = teams.any((t) =>
+            t['colorIndex'] == desiredColor && t['deviceId'] != deviceId);
+        if (conflict) {
+          throw Exception('Color already taken');
+        }
+      }
+
+      // Remove previous entry for this device and add the new one
+      teams.removeWhere((t) => t['deviceId'] == deviceId);
+      teams.add(teamData);
+
+      txn.update(docRef, {'teams': teams});
+    });
+  }
+
+  /// Remove a team by deviceId atomically
+  static Future<void> removeTeamByDeviceId(
+      String sessionId, String deviceId) async {
+    if (!_canWrite(sessionId)) {
+      throw Exception('Rate limit exceeded for writes');
+    }
+
+    print(
+        '🔥 FIRESTORE TX: removeTeamByDeviceId($sessionId) - deviceId: $deviceId');
+    await FirebaseFirestore.instance.runTransaction((txn) async {
+      final docRef = sessions.doc(sessionId);
+      final snapshot = await txn.get(docRef);
+      if (!snapshot.exists) {
+        return;
+      }
+      final data = snapshot.data() as Map<String, dynamic>;
+      final List<Map<String, dynamic>> teams = (data['teams'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e))
+              .toList() ??
+          [];
+
+      teams.removeWhere((t) => t['deviceId'] == deviceId);
+      txn.update(docRef, {'teams': teams});
+    });
+  }
+
   // ============================================================================
   // HOST MANAGEMENT
   // ============================================================================
