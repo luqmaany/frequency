@@ -8,7 +8,7 @@ class FirestoreService {
   // Rate limiting
   static final Map<String, List<DateTime>> _writeTimestamps = {};
   static final Map<String, List<DateTime>> _readTimestamps = {};
-  static const int _maxWritesPerMinute = 30;
+  static const int _maxWritesPerMinute = 100;
   static const int _maxReadsPerMinute = 70;
   static const Duration _rateLimitWindow = Duration(minutes: 1);
 
@@ -183,14 +183,36 @@ class FirestoreService {
     // Check if this is the last team in the round
     final isLastTeamInRound = nextTeamIndex == 0;
 
+    // Determine if the game should end at end of round based on target score
+    bool isGameOver = false;
+    if (isLastTeamInRound) {
+      final settings = (data['settings'] as Map<String, dynamic>?) ?? {};
+      final int targetScore = (settings['targetScore'] as int?) ?? 20;
+      final List<dynamic> rawHistory =
+          (gameState['turnHistory'] as List?) ?? const [];
+      final List<Map<String, dynamic>> turnHistory =
+          rawHistory.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+
+      // Sum scores by team
+      final Map<int, int> teamTotals = {};
+      for (final tr in turnHistory) {
+        final int teamIndex = (tr['teamIndex'] as int?) ?? 0;
+        final int score = (tr['correctCount'] as int?) ?? 0;
+        teamTotals[teamIndex] = (teamTotals[teamIndex] ?? 0) + score;
+      }
+
+      isGameOver = teamTotals.values.any((s) => s >= targetScore);
+    }
+
     print(
         '🔥 FIRESTORE WRITE: advanceToNextTeam($sessionId) - updating to next team');
     await sessions.doc(sessionId).update({
       'gameState.currentTeamIndex': nextTeamIndex,
       'gameState.roundNumber': nextRound,
       'gameState.turnNumber': 1, // Each team has 1 turn per round
-      'gameState.status':
-          isLastTeamInRound ? 'round_end' : 'category_selection',
+      'gameState.status': isLastTeamInRound
+          ? (isGameOver ? 'game_over' : 'round_end')
+          : 'category_selection',
     });
   }
 
@@ -402,6 +424,18 @@ class FirestoreService {
     });
     //advance to next team
     await advanceToNextTeam(sessionId);
+  }
+
+  /// Proceed from round end (scoreboard) to the next round's category selection
+  static Future<void> fromRoundEnd(String sessionId) async {
+    if (!_canWrite(sessionId)) {
+      throw Exception('Rate limit exceeded for writes');
+    }
+
+    print('🔥 FIRESTORE WRITE: fromRoundEnd($sessionId)');
+    await sessions.doc(sessionId).update({
+      'gameState.status': 'category_selection',
+    });
   }
 
   // ============================================================================

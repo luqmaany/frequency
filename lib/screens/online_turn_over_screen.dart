@@ -479,17 +479,17 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                             _isCurrentTeamActive
                                 ? 'Tap words to contest them'
                                 : 'Only the current team can contest words',
+                            textAlign: TextAlign.center,
                             style: Theme.of(context)
                                 .textTheme
                                 .titleLarge
                                 ?.copyWith(
-                                  color: _isCurrentTeamActive
-                                      ? CategoryRegistry.getCategory(
-                                              widget.category)
-                                          .color
-                                      : Colors.grey,
+                                  color: CategoryRegistry.getCategory(
+                                          widget.category)
+                                      .color,
                                 ),
                           ),
+                          const SizedBox(height: 16),
                         ],
                         if (widget.wordsSkipped.isNotEmpty) ...[
                           const SizedBox(height: 24),

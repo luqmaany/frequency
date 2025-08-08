@@ -145,19 +145,19 @@ class _CategorySelectionScreenState
             math.Random().nextInt(unlockedCategories.length)];
         final finalCategoryName = finalCategory.displayName;
 
+        // Always update local state so the active team sees Next immediately
+        setState(() {
+          _isSpinning = false;
+          _selectedCategory = finalCategory.displayName;
+          _currentCategory = finalCategoryName;
+        });
+
         if (widget.sessionId != null) {
           // For online games, sync only the final result
           await FirestoreService.updateCategorySpinState(
             widget.sessionId!,
             selectedCategory: finalCategoryName,
           );
-        } else {
-          // For local games, just update local state
-          setState(() {
-            _isSpinning = false;
-            _selectedCategory = finalCategory.displayName;
-            _currentCategory = finalCategoryName;
-          });
         }
 
         // Add a celebration animation

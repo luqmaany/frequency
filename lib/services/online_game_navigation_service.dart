@@ -9,6 +9,8 @@ import '../screens/online_game_screen.dart';
 import '../screens/online_turn_over_screen.dart';
 import '../screens/home_screen.dart';
 import '../data/category_registry.dart';
+import '../screens/online_scoreboard_screen.dart';
+import '../screens/online_game_over_screen.dart';
 
 /// Service for handling navigation in online multiplayer games
 /// Provides navigation logic that can be called from ref.listen callbacks in screens
@@ -79,6 +81,18 @@ class OnlineGameNavigationService {
       case 'turn_over':
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _navigateToTurnOverScreen(
+              context, ref, sessionId, isHost, sessionData);
+        });
+        break;
+      case 'game_over':
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToOnlineGameOver(
+              context, ref, sessionId, isHost, sessionData);
+        });
+        break;
+      case 'round_end':
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _navigateToOnlineScoreboard(
               context, ref, sessionId, isHost, sessionData);
         });
         break;
@@ -294,6 +308,34 @@ class OnlineGameNavigationService {
           sessionData: sessionData,
           currentTeamDeviceId: currentTeamDeviceId,
         ),
+      ),
+    );
+  }
+
+  static void _navigateToOnlineScoreboard(
+    BuildContext context,
+    WidgetRef ref,
+    String sessionId,
+    bool isHost,
+    sessionData,
+  ) async {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => OnlineScoreboardScreen(sessionId: sessionId),
+      ),
+    );
+  }
+
+  static void _navigateToOnlineGameOver(
+    BuildContext context,
+    WidgetRef ref,
+    String sessionId,
+    bool isHost,
+    sessionData,
+  ) async {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => OnlineGameOverScreen(sessionId: sessionId),
       ),
     );
   }
