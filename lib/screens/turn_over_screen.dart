@@ -362,7 +362,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                             ),
                                             if (_disputedWords.contains(
                                                 widget.wordsGuessed[i]))
-                                              Icon(
+                                              const Icon(
                                                 Icons.close,
                                                 color: Colors.red,
                                                 size: 20,
@@ -459,7 +459,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                   if (_disputedWords.contains(
                                                       widget
                                                           .wordsGuessed[i + 1]))
-                                                    Icon(
+                                                    const Icon(
                                                       Icons.close,
                                                       color: Colors.red,
                                                       size: 20,

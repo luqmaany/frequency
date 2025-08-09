@@ -79,7 +79,7 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline,
+                        const Icon(Icons.info_outline,
                             color: Colors.orange, size: 20),
                         const SizedBox(width: 8),
                         Expanded(

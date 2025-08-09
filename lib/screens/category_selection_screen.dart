@@ -328,7 +328,7 @@ class _CategorySelectionScreenState
                                   margin: const EdgeInsets.only(top: 0),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Color(0xFF0A0F1E),
+                                    color: const Color(0xFF0A0F1E),
                                     border: Border.all(
                                       color: _currentCategory.isNotEmpty
                                           ? CategoryRegistry

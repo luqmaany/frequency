@@ -363,7 +363,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                 child: Center(
                   child: (_swipeRightDone && _swipeLeftDone) ||
                           !_isCurrentTeamActive
-                      ? SizedBox.shrink()
+                      ? const SizedBox.shrink()
                       : Dismissible(
                           key: ValueKey(_swipeStep),
                           direction: _swipeSteps[_swipeStep].direction,
@@ -397,7 +397,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                 BoxShadow(
                                   color: cardShadow,
                                   blurRadius: 8,
-                                  offset: Offset(0, 4),
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
@@ -405,9 +405,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 if (_swipeStep == 1)
-                                  Icon(Icons.arrow_back,
+                                  const Icon(Icons.arrow_back,
                                       color: Colors.red, size: 32),
-                                if (_swipeStep == 1) SizedBox(width: 12),
+                                if (_swipeStep == 1) const SizedBox(width: 12),
                                 Text(
                                   _swipeSteps[_swipeStep].text,
                                   style: TextStyle(
@@ -416,9 +416,9 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                if (_swipeStep == 0) SizedBox(width: 12),
+                                if (_swipeStep == 0) const SizedBox(width: 12),
                                 if (_swipeStep == 0)
-                                  Icon(Icons.arrow_forward,
+                                  const Icon(Icons.arrow_forward,
                                       color: Colors.green, size: 32),
                               ],
                             ),

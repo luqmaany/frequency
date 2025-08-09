@@ -363,7 +363,7 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                             ),
                                             if (_disputedWords.contains(
                                                 widget.wordsGuessed[i]))
-                                              Icon(
+                                              const Icon(
                                                 Icons.close,
                                                 color: Colors.red,
                                                 size: 20,
@@ -460,7 +460,7 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                                   if (_disputedWords.contains(
                                                       widget
                                                           .wordsGuessed[i + 1]))
-                                                    Icon(
+                                                    const Icon(
                                                       Icons.close,
                                                       color: Colors.red,
                                                       size: 20,
@@ -613,7 +613,7 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                       ),
                                     ),
                                     child: isConfirmed
-                                        ? Icon(
+                                        ? const Icon(
                                             Icons.check,
                                             color: Colors.white,
                                             size: 16,

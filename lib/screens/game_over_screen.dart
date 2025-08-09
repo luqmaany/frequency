@@ -25,7 +25,7 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(''),
+        title: const Text(''),
         automaticallyImplyLeading: false,
       ),
       body: Column(

@@ -207,10 +207,11 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   // Get allowed swipe direction based on skips left
   AllowedSwipeDirection getAllowedSwipeDirection() {
     if (_skipsLeft > 0) {
-      return AllowedSwipeDirection.symmetric(horizontal: true, vertical: false);
+      return const AllowedSwipeDirection.symmetric(
+          horizontal: true, vertical: false);
     } else {
       // Only allow right swipes when no skips are left
-      return AllowedSwipeDirection.only(right: true);
+      return const AllowedSwipeDirection.only(right: true);
     }
   }
 }

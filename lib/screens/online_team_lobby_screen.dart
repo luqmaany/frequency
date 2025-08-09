@@ -33,7 +33,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   late TextEditingController _player2Controller;
   int? _selectedColorIndex;
   bool _ready = false;
-  bool _updating = false;
+  final bool _updating = false;
   late Future<String> _deviceIdFuture;
   late AnimationController _animationController;
   @override
@@ -518,7 +518,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                           ),
                                           if (teamIsReady) ...[
                                             const SizedBox(width: 8),
-                                            Icon(Icons.check_circle,
+                                            const Icon(Icons.check_circle,
                                                 color: Colors.green, size: 22),
                                           ],
                                         ],

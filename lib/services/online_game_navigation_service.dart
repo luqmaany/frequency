@@ -133,7 +133,7 @@ class OnlineGameNavigationService {
       BuildContext context, WidgetRef ref, String sessionId, bool isHost) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => HomeScreen(),
+        builder: (context) => const HomeScreen(),
       ),
     );
   }

@@ -147,11 +147,11 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                       : null,
                 );
               },
-              onWillAccept: (player) => true,
-              onAccept: (player) {
+              onWillAcceptWithDetails: (player) => true,
+              onAcceptWithDetails: (details) {
                 _dropAcceptedByTeam =
                     true; // Prevent onDragEnd from removing the player
-                ref.read(gameSetupProvider.notifier).removePlayer(player);
+                ref.read(gameSetupProvider.notifier).removePlayer(details.data);
               },
             ),
           ),
@@ -282,13 +282,13 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                       ),
                                     );
                                   },
-                                  onWillAccept: (draggedPlayer) =>
-                                      draggedPlayer != player,
-                                  onAccept: (draggedPlayer) {
+                                  onWillAcceptWithDetails: (details) =>
+                                      details.data != player,
+                                  onAcceptWithDetails: (details) {
                                     _dropAcceptedByTeam = true;
                                     ref
                                         .read(gameSetupProvider.notifier)
-                                        .swapPlayers(draggedPlayer, player);
+                                        .swapPlayers(details.data, player);
                                   },
                                 );
                               }).toList(),

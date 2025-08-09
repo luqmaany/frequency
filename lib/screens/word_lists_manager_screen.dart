@@ -124,7 +124,7 @@ class WordsNotifier extends StateNotifier<List<Word>> {
         .map((word) => Word(
               text: word.text,
               categoryId: word.categoryId,
-              stats: WordStats(
+              stats: const WordStats(
                 appearanceCount: 0,
                 skipCount: 0,
                 guessedCount: 0,

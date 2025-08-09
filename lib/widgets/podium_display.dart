@@ -86,7 +86,7 @@ class _PodiumDisplayState extends State<PodiumDisplay>
           ),
 
         // Main podium
-        Container(
+        SizedBox(
           height: 400,
           child: AnimatedBuilder(
             animation: _fadeAnimation,

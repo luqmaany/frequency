@@ -161,7 +161,7 @@ class _RadialRipplesPainter extends CustomPainter {
         final HSLColor hsl = HSLColor.fromColor(base);
         final double hueDrift =
             (math.sin(i * 0.33 + t * math.pi * 2 * 1.0) * 2.0);
-        final double lightness = targetLightness;
+        const double lightness = targetLightness;
         final double radialFade =
             (1.0 - (r / (maxRadius + baseSpacing)).clamp(0.0, 1.0)) * 0.6 +
                 0.25;

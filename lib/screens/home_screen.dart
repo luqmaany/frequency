@@ -175,16 +175,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Palette aligned with the animated background hues
-    final List<Color> buttonColors = const [
-      Color(0xFF5EB1FF), // blue
-      Color(0xFF7A5CFF), // purple
-      Color(0xFFFF6680), // pink/red
-      Color(0xFFFFA14A), // orange
-      Color(0xFF4CD295), // green
-    ];
-
-    final Color bgColor = const Color(0xFF0B1020);
+    const Color bgColor = Color(0xFF0B1020);
     return Scaffold(
       // Dark base so the waves pop
       backgroundColor: bgColor,
@@ -223,7 +214,7 @@ class HomeScreen extends ConsumerWidget {
                             children: [
                               // Purple outline behind
                               Text(
-                                'FREQUENCY',
+                                '',
                                 textAlign: TextAlign.center,
                                 style: baseStyle?.copyWith(
                                   foreground: (Paint()
@@ -235,7 +226,7 @@ class HomeScreen extends ConsumerWidget {
                               ),
                               // Fill that matches the background color on top
                               Text(
-                                'FREQUENCY',
+                                '',
                                 textAlign: TextAlign.center,
                                 style: baseStyle?.copyWith(
                                   color: bgColor,
@@ -248,106 +239,11 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   const Spacer(),
-                  _buildMenuButton(
-                    context,
-                    'Start Game',
-                    Icons.play_arrow_rounded,
-                    () => GameNavigationService.navigateToGameSetup(context),
-                    buttonColors[0],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    'Online',
-                    Icons.public_rounded,
-                    () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const OnlineLobbyScreen(),
-                        ),
-                      );
-                    },
-                    buttonColors.length > 5
-                        ? buttonColors[5 % buttonColors.length]
-                        : buttonColors[1],
-                  ),
-                  const SizedBox(height: 16),
-                  // Removed 'Stats & History' button
-                  _buildMenuButton(
-                    context,
-                    'Categories',
-                    Icons.list_alt_rounded,
-                    () => GameNavigationService.navigateToWordListsManager(
-                        context),
-                    buttonColors[3],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    'Settings',
-                    Icons.settings_rounded,
-                    () => GameNavigationService.navigateToSettings(context),
-                    buttonColors[2],
-                  ),
-                  const Spacer(),
                 ],
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMenuButton(
-    BuildContext context,
-    String text,
-    IconData icon,
-    VoidCallback onPressed,
-    Color color,
-  ) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final HSLColor hsl = HSLColor.fromColor(color);
-    final double darkerLightness = (hsl.lightness * 0.25).clamp(0.0, 1.0);
-    final Color buttonColor = hsl.withLightness(darkerLightness).toColor();
-    final Color borderColor = isDark ? color.withOpacity(0.7) : color;
-    final Color iconColor = borderColor;
-    final Color textColor = const Color(0xFFE6EEF8);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-          decoration: BoxDecoration(
-            color: buttonColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: borderColor.withOpacity(0.08),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 24, color: iconColor),
-              const SizedBox(width: 12),
-              Text(
-                text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

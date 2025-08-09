@@ -83,10 +83,11 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
 
   AllowedSwipeDirection _getAllowedSwipeDirection() {
     if (widget.skipsLeft > 0) {
-      return AllowedSwipeDirection.symmetric(horizontal: true, vertical: false);
+      return const AllowedSwipeDirection.symmetric(
+          horizontal: true, vertical: false);
     } else {
       // Only allow right swipes when no skips are left
-      return AllowedSwipeDirection.only(right: true);
+      return const AllowedSwipeDirection.only(right: true);
     }
   }
 

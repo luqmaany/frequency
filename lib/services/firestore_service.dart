@@ -90,7 +90,7 @@ class FirestoreService {
       String sessionId) {
     if (!_canRead(sessionId)) {
       // Return empty stream if rate limited
-      return Stream.empty();
+      return const Stream.empty();
     }
 
     // Return cached stream if it exists
@@ -695,8 +695,9 @@ class FirestoreService {
     if (!doc.exists) return;
     final data = doc.data() as Map<String, dynamic>;
     final currentHostId = data['hostId'] as String?;
-    if (currentHostId != leavingDeviceId)
+    if (currentHostId != leavingDeviceId) {
       return; // Only transfer if the host is leaving
+    }
 
     final teams = (data['teams'] as List)
         .map((e) => Map<String, dynamic>.from(e))
