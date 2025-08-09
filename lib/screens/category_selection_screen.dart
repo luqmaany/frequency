@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderBox;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math' as math;
 import 'dart:async';
@@ -40,6 +41,42 @@ class _CategorySelectionScreenState
     with TickerProviderStateMixin {
   late AnimationController _scaleController;
   late Animation<double> _scaleAnimation;
+
+  // Keys and alignment to keep background ripples centered to the circle
+  final GlobalKey _stackKey = GlobalKey();
+  final GlobalKey _circleKey = GlobalKey();
+  Alignment _bgCenterAlignment = Alignment.center;
+
+  void _updateBackgroundCenter() {
+    if (!mounted) return;
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final circleBox =
+        _circleKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null || circleBox == null) return;
+
+    final Offset stackOriginGlobal = stackBox.localToGlobal(Offset.zero);
+    final Offset circleOriginGlobal = circleBox.localToGlobal(Offset.zero);
+    final Size circleSize = circleBox.size;
+    final Offset circleCenterGlobal = circleOriginGlobal +
+        Offset(circleSize.width / 2, circleSize.height / 2);
+
+    // Convert to stack-local coordinates
+    final Offset circleCenterLocal = circleCenterGlobal - stackOriginGlobal;
+    final Size stackSize = stackBox.size;
+    if (stackSize.width == 0 || stackSize.height == 0) return;
+
+    final double xFraction =
+        (circleCenterLocal.dx / stackSize.width).clamp(0.0, 1.0);
+    final double yFraction =
+        (circleCenterLocal.dy / stackSize.height).clamp(0.0, 1.0);
+    final Alignment computed = Alignment(xFraction * 2 - 1, yFraction * 2 - 1);
+
+    if (_bgCenterAlignment != computed) {
+      setState(() {
+        _bgCenterAlignment = computed;
+      });
+    }
+  }
 
   bool _isSpinning = false;
   String? _selectedCategory;
@@ -192,6 +229,9 @@ class _CategorySelectionScreenState
 
   @override
   Widget build(BuildContext context) {
+    // After layout, measure circle position and align background center to it
+    WidgetsBinding.instance
+        .addPostFrameCallback((_) => _updateBackgroundCenter());
     // Set up navigation listener for online games (only once per widget instance)
     if (widget.sessionId != null) {
       ref.listen(sessionStatusProvider(widget.sessionId!), (prev, next) {
@@ -244,11 +284,17 @@ class _CategorySelectionScreenState
 
     return Scaffold(
       body: Stack(
+        key: _stackKey,
         children: [
-          const Positioned.fill(
+          Positioned.fill(
             child: RadialRippleBackground(
-              centerAlignment: Alignment.center,
-              duration: Duration(seconds: 12),
+              centerAlignment: _bgCenterAlignment,
+              duration: const Duration(seconds: 100),
+              ringColor: _selectedCategory != null
+                  ? CategoryRegistry.getCategoryByDisplayName(
+                          _selectedCategory!)
+                      .color
+                  : null,
             ),
           ),
           SafeArea(
@@ -266,38 +312,8 @@ class _CategorySelectionScreenState
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 40),
-                        // Show waiting message for non-active teams in online games
-                        if (widget.sessionId != null && !_isCurrentTeamActive) ...[
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            margin: const EdgeInsets.only(bottom: 20),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color: Colors.orange.withOpacity(0.3)),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.hourglass_empty,
-                                    color: Colors.orange),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Waiting for ${widget.displayString} to select category...',
-                                  style: const TextStyle(
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                         GestureDetector(
-                          onTap: (_isCurrentTeamActive &&
-                                  !_isSpinning &&
-                                  _selectedCategory == null)
+                          onTap: (_isCurrentTeamActive && !_isSpinning)
                               ? _spinCategories
                               : null,
                           child: AnimatedBuilder(
@@ -306,10 +322,13 @@ class _CategorySelectionScreenState
                               return Transform.scale(
                                 scale: _scaleAnimation.value,
                                 child: Container(
+                                  key: _circleKey,
                                   width: 300,
                                   height: 300,
+                                  margin: const EdgeInsets.only(top: 0),
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
+                                    color: Color(0xFF0A0F1E),
                                     border: Border.all(
                                       color: _currentCategory.isNotEmpty
                                           ? CategoryRegistry
@@ -337,8 +356,7 @@ class _CategorySelectionScreenState
                                                 ? 'TAP TO SPIN\nFOR CATEGORY!'
                                                 : 'WAITING...')
                                             : _currentCategory,
-                                        key: ValueKey<String>(
-                                            _currentCategory),
+                                        key: ValueKey<String>(_currentCategory),
                                         textAlign: TextAlign.center,
                                         style: Theme.of(context)
                                             .textTheme
@@ -350,10 +368,9 @@ class _CategorySelectionScreenState
                                                               _currentCategory)
                                                       .color
                                                   : teamColor.text,
-                                              fontSize:
-                                                  _currentCategory.isEmpty
-                                                      ? 32
-                                                      : null,
+                                              fontSize: _currentCategory.isEmpty
+                                                  ? 32
+                                                  : null,
                                             ),
                                       ),
                                     ),
@@ -385,7 +402,8 @@ class _CategorySelectionScreenState
                                 ? () async {
                                     if (widget.sessionId != null) {
                                       // For online games, update game state with selected category and change status
-                                      await FirestoreService.fromCategorySelection(
+                                      await FirestoreService
+                                          .fromCategorySelection(
                                         widget.sessionId!,
                                         selectedCategory: _selectedCategory!,
                                       );
