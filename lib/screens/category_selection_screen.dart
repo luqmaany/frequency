@@ -10,6 +10,7 @@ import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
 import '../services/online_game_navigation_service.dart';
 import '../providers/session_providers.dart';
+import '../widgets/radial_ripple_background.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -242,163 +243,176 @@ class _CategorySelectionScreenState
     }
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      widget.displayString,
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 40),
-                    // Show waiting message for non-active teams in online games
-                    if (widget.sessionId != null && !_isCurrentTeamActive) ...[
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 20),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border:
-                              Border.all(color: Colors.orange.withOpacity(0.3)),
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: RadialRippleBackground(
+              centerAlignment: Alignment.center,
+              duration: Duration(seconds: 12),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.displayString,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                          textAlign: TextAlign.center,
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.hourglass_empty,
-                                color: Colors.orange),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Waiting for ${widget.displayString} to select category...',
-                              style: const TextStyle(
-                                color: Colors.orange,
-                                fontWeight: FontWeight.w500,
-                              ),
+                        const SizedBox(height: 40),
+                        // Show waiting message for non-active teams in online games
+                        if (widget.sessionId != null && !_isCurrentTeamActive) ...[
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: Colors.orange.withOpacity(0.3)),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    GestureDetector(
-                      onTap: (_isCurrentTeamActive &&
-                              !_isSpinning &&
-                              _selectedCategory == null)
-                          ? _spinCategories
-                          : null,
-                      child: AnimatedBuilder(
-                        animation: _scaleController,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: _scaleAnimation.value,
-                            child: Container(
-                              width: 300,
-                              height: 300,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: _currentCategory.isNotEmpty
-                                      ? CategoryRegistry
-                                              .getCategoryByDisplayName(
-                                                  _currentCategory)
-                                          .color
-                                      : teamColor.text,
-                                  width: 2,
-                                ),
-                              ),
-                              child: Center(
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 150),
-                                  transitionBuilder: (Widget child,
-                                      Animation<double> animation) {
-                                    return FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    );
-                                  },
-                                  child: Text(
-                                    _currentCategory.isEmpty
-                                        ? (_isCurrentTeamActive
-                                            ? 'TAP TO SPIN\nFOR CATEGORY!'
-                                            : 'WAITING...')
-                                        : _currentCategory,
-                                    key: ValueKey<String>(_currentCategory),
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .displayLarge
-                                        ?.copyWith(
-                                          color: _currentCategory.isNotEmpty
-                                              ? CategoryRegistry
-                                                      .getCategoryByDisplayName(
-                                                          _currentCategory)
-                                                  .color
-                                              : teamColor.text,
-                                          fontSize: _currentCategory.isEmpty
-                                              ? 32
-                                              : null,
-                                        ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.hourglass_empty,
+                                    color: Colors.orange),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Waiting for ${widget.displayString} to select category...',
+                                  style: const TextStyle(
+                                    color: Colors.orange,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ],
+                        GestureDetector(
+                          onTap: (_isCurrentTeamActive &&
+                                  !_isSpinning &&
+                                  _selectedCategory == null)
+                              ? _spinCategories
+                              : null,
+                          child: AnimatedBuilder(
+                            animation: _scaleController,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _scaleAnimation.value,
+                                child: Container(
+                                  width: 300,
+                                  height: 300,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: _currentCategory.isNotEmpty
+                                          ? CategoryRegistry
+                                                  .getCategoryByDisplayName(
+                                                      _currentCategory)
+                                              .color
+                                          : teamColor.text,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Center(
+                                    child: AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 150),
+                                      transitionBuilder: (Widget child,
+                                          Animation<double> animation) {
+                                        return FadeTransition(
+                                          opacity: animation,
+                                          child: child,
+                                        );
+                                      },
+                                      child: Text(
+                                        _currentCategory.isEmpty
+                                            ? (_isCurrentTeamActive
+                                                ? 'TAP TO SPIN\nFOR CATEGORY!'
+                                                : 'WAITING...')
+                                            : _currentCategory,
+                                        key: ValueKey<String>(
+                                            _currentCategory),
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .displayLarge
+                                            ?.copyWith(
+                                              color: _currentCategory.isNotEmpty
+                                                  ? CategoryRegistry
+                                                          .getCategoryByDisplayName(
+                                                              _currentCategory)
+                                                      .color
+                                                  : teamColor.text,
+                                              fontSize:
+                                                  _currentCategory.isEmpty
+                                                      ? 32
+                                                      : null,
+                                            ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 40),
+                      ],
                     ),
-                    const SizedBox(height: 40),
-                  ],
+                  ),
                 ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: AnimatedOpacity(
-                opacity: _selectedCategory != null ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TeamColorButton(
-                        text: 'Next',
-                        icon: Icons.arrow_forward,
-                        color: uiColors[1], // Green
-                        onPressed: (_isCurrentTeamActive &&
-                                _selectedCategory != null)
-                            ? () async {
-                                if (widget.sessionId != null) {
-                                  // For online games, update game state with selected category and change status
-                                  await FirestoreService.fromCategorySelection(
-                                    widget.sessionId!,
-                                    selectedCategory: _selectedCategory!,
-                                  );
-                                } else {
-                                  // For local games, use the existing navigation service
-                                  GameNavigationService
-                                      .navigateFromCategorySelection(
-                                    context,
-                                    ref,
-                                    widget.teamIndex,
-                                    widget.roundNumber,
-                                    widget.turnNumber,
-                                    _selectedCategory!,
-                                  );
-                                }
-                              }
-                            : null,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: AnimatedOpacity(
+                    opacity: _selectedCategory != null ? 1.0 : 0.0,
+                    duration: const Duration(milliseconds: 300),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TeamColorButton(
+                            text: 'Next',
+                            icon: Icons.arrow_forward,
+                            color: uiColors[1], // Green
+                            onPressed: (_isCurrentTeamActive &&
+                                    _selectedCategory != null)
+                                ? () async {
+                                    if (widget.sessionId != null) {
+                                      // For online games, update game state with selected category and change status
+                                      await FirestoreService.fromCategorySelection(
+                                        widget.sessionId!,
+                                        selectedCategory: _selectedCategory!,
+                                      );
+                                    } else {
+                                      // For local games, use the existing navigation service
+                                      GameNavigationService
+                                          .navigateFromCategorySelection(
+                                        context,
+                                        ref,
+                                        widget.teamIndex,
+                                        widget.roundNumber,
+                                        widget.turnNumber,
+                                        _selectedCategory!,
+                                      );
+                                    }
+                                  }
+                                : null,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
