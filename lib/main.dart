@@ -38,11 +38,13 @@ class _MyAppState extends ConsumerState<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    final currentTheme = ref.watch(currentThemeProvider);
+    final darkTheme = ref.watch(darkThemeProvider);
 
     return MaterialApp(
       title: 'Convey',
-      theme: currentTheme,
+      theme: darkTheme,
+      darkTheme: darkTheme,
+      themeMode: ThemeMode.dark,
       home: const HomeScreen(),
     );
   }

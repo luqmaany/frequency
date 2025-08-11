@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../services/game_navigation_service.dart';
 import 'online_lobby_screen.dart';
 
@@ -175,10 +176,18 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    const Color bgColor = Color(0xFF0B1020);
+    // Palette aligned with the animated background hues
+    const List<Color> buttonColors = [
+      Color(0xFF5EB1FF), // blue
+      Color(0xFF7A5CFF), // purple
+      Color(0xFFFF6680), // pink/red
+      Color(0xFFFFA14A), // orange
+      Color(0xFF4CD295), // green
+    ];
+
     return Scaffold(
       // Dark base so the waves pop
-      backgroundColor: bgColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Animated waves
@@ -198,45 +207,57 @@ class HomeScreen extends ConsumerWidget {
                         final double width = constraints.maxWidth;
                         final double computed = width * 0.16; // 16% of width
                         final double fontSize = computed.clamp(44.0, 96.0);
-                        final baseStyle = Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontSize: fontSize,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 2,
-                            );
-                        return Transform(
-                          alignment: Alignment.center,
-                          transform: Matrix4.diagonal3Values(1.0, 1.5, 1.0),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Purple outline behind
-                              Text(
-                                '',
-                                textAlign: TextAlign.center,
-                                style: baseStyle?.copyWith(
-                                  foreground: (Paint()
-                                    ..style = PaintingStyle.stroke
-                                    ..strokeWidth = 3.0
-                                    ..color =
-                                        const Color.fromARGB(255, 255, 56, 56)),
-                                ),
-                              ),
-                              // Fill that matches the background color on top
-                              Text(
-                                '',
-                                textAlign: TextAlign.center,
-                                style: baseStyle?.copyWith(
-                                  color: bgColor,
-                                ),
-                              ),
-                            ],
-                          ),
+                        final textStyle = GoogleFonts.kanit(
+                          fontSize: fontSize,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2,
+                          color: Colors.white,
+                        );
+                        return Text(
+                          'FREQUENCY',
+                          textAlign: TextAlign.center,
+                          style: textStyle,
                         );
                       },
                     ),
+                  ),
+                  const Spacer(),
+                  _buildMenuButton(
+                    context,
+                    'Start Game',
+                    () => GameNavigationService.navigateToGameSetup(context),
+                    buttonColors[0],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuButton(
+                    context,
+                    'Online',
+                    () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const OnlineLobbyScreen(),
+                        ),
+                      );
+                    },
+                    buttonColors.length > 5
+                        ? buttonColors[5 % buttonColors.length]
+                        : buttonColors[1],
+                  ),
+                  const SizedBox(height: 16),
+                  // Removed 'Stats & History' button
+                  _buildMenuButton(
+                    context,
+                    'Categories',
+                    () => GameNavigationService.navigateToWordListsManager(
+                        context),
+                    buttonColors[3],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuButton(
+                    context,
+                    'Settings',
+                    () => GameNavigationService.navigateToSettings(context),
+                    buttonColors[2],
                   ),
                   const Spacer(),
                 ],
@@ -244,6 +265,54 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMenuButton(
+    BuildContext context,
+    String text,
+    VoidCallback onPressed,
+    Color color,
+  ) {
+    final HSLColor hsl = HSLColor.fromColor(color);
+    final double darkerLightness = (hsl.lightness * 0.25).clamp(0.0, 1.0);
+    final Color buttonColor = hsl.withLightness(darkerLightness).toColor();
+    final Color borderColor = color.withOpacity(0.7);
+    const Color textColor = Color(0xFFE6EEF8);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onPressed,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+          decoration: BoxDecoration(
+            color: buttonColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: borderColor.withOpacity(0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                    ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

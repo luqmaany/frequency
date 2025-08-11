@@ -89,15 +89,10 @@ class _TeamColorButtonState extends State<TeamColorButton> {
   @override
   Widget build(BuildContext context) {
     final bool enabled = widget.onPressed != null;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // Adjust colors for dark mode
-    final Color background =
-        isDark ? widget.color.border.withOpacity(0.4) : widget.color.background;
-    final Color border =
-        isDark ? widget.color.background.withOpacity(0.3) : widget.color.border;
-    final Color text =
-        isDark ? Colors.white.withOpacity(0.92) : widget.color.text;
+    // Dark mode palette
+    final Color background = widget.color.border.withOpacity(0.4);
+    final Color border = widget.color.background.withOpacity(0.3);
+    final Color text = Colors.white.withOpacity(0.92);
     final Color iconColor = enabled ? border : Colors.grey.shade400;
 
     return Padding(

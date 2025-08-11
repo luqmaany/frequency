@@ -112,13 +112,9 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       children: [
         Builder(
           builder: (context) {
-            final isDark = Theme.of(context).brightness == Brightness.dark;
-            final fillColor =
-                isDark ? Colors.blueGrey.shade900 : Colors.blue.shade50;
-            final borderColor =
-                isDark ? Colors.blueGrey.shade700 : Colors.blue.shade300;
-            final focusedBorderColor =
-                isDark ? Colors.blue.shade200 : Colors.blue;
+            final fillColor = Colors.blueGrey.shade900;
+            final borderColor = Colors.blueGrey.shade700;
+            final focusedBorderColor = Colors.blue.shade200;
             return TextField(
               controller: _controller,
               focusNode: _focusNode,
@@ -192,11 +188,10 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   }
 
   Widget _buildChip(String suggestion, GameConfig gameConfig) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ActionChip(
-        backgroundColor: isDark ? Colors.grey[850] : Colors.white,
+        backgroundColor: Colors.grey[850],
         label: Text(suggestion),
         onPressed: gameConfig.playerNames.length >= 12
             ? null

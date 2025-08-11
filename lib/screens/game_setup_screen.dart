@@ -260,11 +260,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                         child: Chip(
                                           label: Text(player),
                                           backgroundColor:
-                                              Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? color.background
-                                                      .withOpacity(0.2)
-                                                  : color.background,
+                                              color.background.withOpacity(0.2),
                                           side: BorderSide(color: color.border),
                                         ),
                                         onDragStarted: () {

@@ -68,9 +68,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _saveSettings();
   }
 
-  void _updateDarkMode(bool value) {
-    ref.read(themeProvider.notifier).setTheme(value);
-  }
+  // Dark mode is forced globally; keep infra in provider but no toggle here.
 
   @override
   Widget build(BuildContext context) {
@@ -133,15 +131,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Colors.green,
                         ),
                         const SizedBox(height: 16),
-                        _buildSettingTile(
-                          context,
-                          'Dark Mode',
-                          Icons.dark_mode_rounded,
-                          'Switch to dark theme',
-                          ref.watch(themeProvider),
-                          _updateDarkMode,
-                          Colors.purple,
-                        ),
+                        // Dark mode is forced; hide toggle but keep code infrastructure
                         const SizedBox(height: 48),
                         const Text(
                           'Data Management',
@@ -229,10 +219,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFFE0E0E0)
-                                    : Colors.black,
+                            color: const Color(0xFFE0E0E0),
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
                           ),
@@ -240,11 +227,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFFB0B0B0)
-                            : Colors.grey[600],
+                        color: Color(0xFFB0B0B0),
                       ),
                     ),
                   ],
@@ -306,10 +291,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color:
-                                Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFFE0E0E0)
-                                    : Colors.black,
+                            color: const Color(0xFFE0E0E0),
                             fontWeight: FontWeight.w600,
                             fontSize: 18,
                           ),
@@ -317,11 +299,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 14,
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? const Color(0xFFB0B0B0)
-                            : Colors.grey[600],
+                        color: Color(0xFFB0B0B0),
                       ),
                     ),
                   ],

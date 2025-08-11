@@ -4,7 +4,7 @@ import 'storage_service.dart';
 
 // Theme provider that manages dark mode state
 class ThemeNotifier extends StateNotifier<bool> {
-  ThemeNotifier() : super(false) {
+  ThemeNotifier() : super(true) {
     _loadThemePreference();
   }
 
@@ -12,10 +12,10 @@ class ThemeNotifier extends StateNotifier<bool> {
   Future<void> _loadThemePreference() async {
     try {
       final preferences = await StorageService.loadAppPreferences();
-      state = preferences['darkMode'] ?? false;
+      state = preferences['darkMode'] ?? true;
     } catch (e) {
-      // Default to light mode if there's an error
-      state = false;
+      // Default to dark mode if there's an error
+      state = true;
     }
   }
 

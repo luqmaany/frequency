@@ -151,14 +151,10 @@ class OnlineScoreboardScreen extends ConsumerWidget {
                               teamColors[colorIndex % teamColors.length];
 
                           final Color backgroundColor =
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? colorDef.border.withOpacity(0.4)
-                                  : colorDef.background;
+                              colorDef.border.withOpacity(0.4);
                           final Color borderColor =
-                              Theme.of(context).brightness == Brightness.dark
-                                  ? colorDef.background.withOpacity(0.3)
-                                  : colorDef.border;
-                          final Color textColor = colorDef.text;
+                              colorDef.background.withOpacity(0.3);
+                          // Text color unified in dark mode; retained for future light mode
 
                           return Container(
                             margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -183,19 +179,13 @@ class OnlineScoreboardScreen extends ConsumerWidget {
                                         ?.copyWith(
                                           fontSize: 22,
                                           fontWeight: FontWeight.bold,
-                                          color: Theme.of(context).brightness ==
-                                                  Brightness.dark
-                                              ? Colors.white.withOpacity(0.95)
-                                              : textColor,
+                                          color: Colors.white.withOpacity(0.95),
                                         ),
                                   ),
                                 ),
                                 CircleAvatar(
                                   backgroundColor:
-                                      Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? colorDef.border.withOpacity(0.8)
-                                          : colorDef.border,
+                                      colorDef.border.withOpacity(0.8),
                                   radius: 18,
                                   child: Text(
                                     totalScore.toString(),

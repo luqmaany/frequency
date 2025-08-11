@@ -15,12 +15,10 @@ class TeamDisplayBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color background =
-        isDark ? color.border.withOpacity(0.4) : color.background;
-    final Color border =
-        isDark ? color.background.withOpacity(0.3) : color.border;
-    final Color text = isDark ? Colors.white.withOpacity(0.95) : color.text;
+    // Dark mode palette
+    final Color background = color.border.withOpacity(0.4);
+    final Color border = color.background.withOpacity(0.3);
+    final Color text = Colors.white.withOpacity(0.95);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),

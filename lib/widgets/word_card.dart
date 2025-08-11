@@ -12,20 +12,14 @@ class WordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final category = CategoryRegistry.getCategory(word.categoryId);
     final Color categoryColor = category.color;
 
     // Theme-aware colors
-    final Color background = isDark
-        ? categoryColor.withOpacity(0.2)
-        : categoryColor.withOpacity(0.1);
-    final Color border =
-        isDark ? categoryColor.withOpacity(0.8) : categoryColor;
-    final Color text = isDark ? Colors.white.withOpacity(0.95) : Colors.black;
-    final Color shadow = isDark
-        ? categoryColor.withOpacity(0.3)
-        : categoryColor.withOpacity(0.2);
+    final Color background = categoryColor.withOpacity(0.2);
+    final Color border = categoryColor.withOpacity(0.8);
+    final Color text = Colors.white.withOpacity(0.95);
+    final Color shadow = categoryColor.withOpacity(0.3);
 
     return Container(
       margin: const EdgeInsets.all(16),
