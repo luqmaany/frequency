@@ -6,7 +6,7 @@ import '../screens/game_over_screen.dart';
 import '../screens/scoreboard_screen.dart';
 import '../screens/game_settings_screen.dart';
 import '../screens/role_assignment_screen.dart';
-import '../screens/online_game_screen.dart';
+import '../screens/game_screen.dart';
 import '../screens/turn_over_screen.dart';
 import '../screens/game_setup_screen.dart';
 import '../screens/word_lists_manager_screen.dart';
@@ -111,13 +111,11 @@ class GameNavigationService {
   }) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (context) => OnlineGameScreen(
+        builder: (context) => GameScreen(
           teamIndex: teamIndex,
           roundNumber: roundNumber,
           turnNumber: turnNumber,
           category: category,
-          sessionId: sessionId,
-          currentTeamDeviceId: currentTeamDeviceId,
         ),
       ),
     );

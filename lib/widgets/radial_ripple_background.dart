@@ -75,7 +75,7 @@ class _RadialRipplesPainter extends CustomPainter {
       size.height * (0.5 + 0.5 * centerAlignment.y),
     );
 
-    final double maxRadius = _maxDistanceToCorners(center, size);
+    final double maxRadius = 2 * _maxDistanceToCorners(center, size);
 
     // Base palette aligned with HomeScreen hues
     const List<Color> baseColors = [
@@ -129,7 +129,9 @@ class _RadialRipplesPainter extends CustomPainter {
     // Draw outward-moving concentric rings (seamless loop)
     final Paint ringPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3;
+      ..isAntiAlias = true
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 2.0;
 
     // Cap the number of rings conservatively for performance
     for (int i = 0; i < 120; i++) {

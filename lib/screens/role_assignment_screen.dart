@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/game_navigation_service.dart';
 import 'package:convey/widgets/team_color_button.dart';
-import 'package:convey/widgets/radial_ripple_background.dart';
+import 'package:convey/widgets/static_radial_circles_background.dart';
+// import 'package:convey/widgets/radial_ripple_background.dart';
 import '../data/category_registry.dart';
 import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
@@ -318,11 +319,14 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
       return Scaffold(
         body: Stack(
           children: [
-            const Positioned.fill(
+            Positioned.fill(
               child: Opacity(
                 opacity: 0.22,
-                child: RadialRippleBackground(
-                  centerAlignment: Alignment(0, -0.2),
+                child: StaticRadialCirclesBackground(
+                  centerAlignment: const Alignment(0, -0.3),
+                  ringColor: teamColor.border,
+                  fullCircles: true,
+                  maxRings: 60,
                 ),
               ),
             ),
@@ -332,38 +336,152 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Invisible header placeholders to match role selection layout spacing
+                    const SizedBox(height: 24),
+                    Opacity(
+                      opacity: 0.0,
+                      child: Text(
+                        'Choose Roles',
+                        style: Theme.of(context).textTheme.headlineLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Opacity(
+                      opacity: 0.0,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? CategoryRegistry.getCategory(
+                                            widget.categoryId)
+                                        .color
+                                        .withOpacity(0.3)
+                                    : CategoryRegistry.getCategory(
+                                            widget.categoryId)
+                                        .color
+                                        .withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? CategoryRegistry.getCategory(
+                                          widget.categoryId)
+                                      .color
+                                      .withOpacity(0.8)
+                                  : CategoryRegistry.getCategory(
+                                          widget.categoryId)
+                                      .color,
+                              width: 2,
+                            ),
+                          ),
+                          child: Text(
+                            CategoryRegistry.getCategory(widget.categoryId)
+                                .displayName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.white.withOpacity(0.95)
+                                      : Colors.black,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (widget.sessionId != null &&
+                        widget.onlineTeam != null) ...[
+                      const SizedBox(height: 8),
+                      Opacity(
+                        opacity: 0.0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color:
+                                Theme.of(context).brightness == Brightness.dark
+                                    ? teamColor.border.withOpacity(0.2)
+                                    : teamColor.background.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: teamColor.border.withOpacity(0.5),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            _isCurrentTeamActive
+                                ? 'Your turn to assign roles'
+                                : '${widget.onlineTeam!['teamName'] ?? 'Team'}\'s turn',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(
+                                  color: teamColor.text,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 50),
                     Expanded(
                       child: Center(
                         child: _isCurrentTeamActive
                             ? Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  const SizedBox(height: 150),
-                                  // TODO: Change spectator text from "Pass the phone to" to something more appropriate for online games
-                                  Text(
-                                    'Pass the phone to',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineMedium,
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.only(bottom: 10.0),
+                                    child: Text(
+                                      'Transmitter',
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall
+                                          ?.copyWith(
+                                            fontSize: 26,
+                                            color:
+                                                Colors.white.withOpacity(0.9),
+                                          ),
+                                    ),
                                   ),
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    _selectedConveyor!,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .displayLarge,
-                                  ),
-                                  const SizedBox(height: 24),
-                                  Text(
-                                    'Transmitter',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall
-                                        ?.copyWith(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .secondary,
-                                        ),
+                                  // Keep the card structure but make it fully transparent; keep the name visible
+                                  SizedBox(
+                                    height: 90,
+                                    child: AnimatedBuilder(
+                                      animation: _animation,
+                                      builder: (context, child) {
+                                        return Transform.scale(
+                                          scale: 1 + (_animation.value * 0.03),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
+                                              border: Border.all(
+                                                color: Colors.transparent,
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Text(
+                                              _selectedConveyor!,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .displayLarge,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ),
                                 ],
                               )
@@ -452,7 +570,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                         style: TextStyle(
                                           color: _swipeSteps[_swipeStep].color,
                                           fontSize: 22,
-                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                       if (_swipeStep == 0)
@@ -507,11 +624,12 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(
+          Positioned.fill(
             child: Opacity(
               opacity: 0.22,
-              child: RadialRippleBackground(
-                centerAlignment: Alignment(0, -0.2),
+              child: StaticRadialCirclesBackground(
+                centerAlignment: const Alignment(0, -0.3),
+                ringColor: teamColor.border,
               ),
             ),
           ),
@@ -560,7 +678,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                       Brightness.dark
                                   ? Colors.white.withOpacity(0.95)
                                   : Colors.black,
-                              fontWeight: FontWeight.w600,
                             ),
                         textAlign: TextAlign.center,
                       ),
@@ -587,10 +704,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         _isCurrentTeamActive
                             ? 'Your turn to assign roles'
                             : '${widget.onlineTeam!['teamName'] ?? 'Team'}\'s turn',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: teamColor.text,
-                              fontWeight: FontWeight.w600,
-                            ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  color: teamColor.text,
+                                ),
                         textAlign: TextAlign.center,
                       ),
                     ),
@@ -614,7 +731,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                       .headlineSmall
                                       ?.copyWith(
                                         fontSize: 26,
-                                        fontWeight: FontWeight.bold,
                                         color: Colors.white.withOpacity(0.9),
                                       ),
                                 ),
@@ -628,13 +744,20 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                       scale: 1 + (_animation.value * 0.03),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          color:
-                                              teamColor.border.withOpacity(0.3),
+                                          color: Color.alphaBlend(
+                                            teamColor.border.withOpacity(0.3),
+                                            Theme.of(context)
+                                                .scaffoldBackgroundColor,
+                                          ),
                                           borderRadius:
                                               BorderRadius.circular(16),
                                           border: Border.all(
-                                            color: teamColor.background
-                                                .withOpacity(0.25),
+                                            color: Color.alphaBlend(
+                                              teamColor.background
+                                                  .withOpacity(0.25),
+                                              Theme.of(context)
+                                                  .scaffoldBackgroundColor,
+                                            ),
                                             width: 1.5,
                                           ),
                                         ),
@@ -643,12 +766,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                           _selectedConveyor!,
                                           style: Theme.of(context)
                                               .textTheme
-                                              .headlineMedium
-                                              ?.copyWith(
-                                                fontSize: 32,
-                                                color: Colors.white
-                                                    .withOpacity(0.95),
-                                              ),
+                                              .displayLarge,
                                         ),
                                       ),
                                     );
@@ -687,13 +805,20 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                       scale: 1.0 + (_animation.value * 0.03),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          color:
-                                              teamColor.border.withOpacity(0.3),
+                                          color: Color.alphaBlend(
+                                            teamColor.border.withOpacity(0.3),
+                                            Theme.of(context)
+                                                .scaffoldBackgroundColor,
+                                          ),
                                           borderRadius:
                                               BorderRadius.circular(16),
                                           border: Border.all(
-                                            color: teamColor.background
-                                                .withOpacity(0.25),
+                                            color: Color.alphaBlend(
+                                              teamColor.background
+                                                  .withOpacity(0.25),
+                                              Theme.of(context)
+                                                  .scaffoldBackgroundColor,
+                                            ),
                                             width: 1.5,
                                           ),
                                         ),
@@ -702,12 +827,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                           _selectedGuesser!,
                                           style: Theme.of(context)
                                               .textTheme
-                                              .headlineMedium
-                                              ?.copyWith(
-                                                fontSize: 32,
-                                                color: Colors.white
-                                                    .withOpacity(0.95),
-                                              ),
+                                              .displayLarge,
                                         ),
                                       ),
                                     );
@@ -723,7 +843,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     .headlineSmall
                                     ?.copyWith(
                                       fontSize: 26,
-                                      fontWeight: FontWeight.bold,
                                       color: Colors.white.withOpacity(0.9),
                                     ),
                               ),
