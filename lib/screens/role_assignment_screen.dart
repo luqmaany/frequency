@@ -595,7 +595,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                       ),
                     ),
                   ],
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 50),
                   Expanded(
                     child: Column(
                       children: [
@@ -658,7 +658,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                             ],
                           ),
                         ),
-                        const SizedBox(height: 0),
                         // Switch Button (no background, larger icon) centered between cards
                         Center(
                           child: IconButton(
