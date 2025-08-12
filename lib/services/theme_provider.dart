@@ -77,6 +77,17 @@ final lightThemeProvider = Provider<ThemeData>((ref) {
         borderRadius: BorderRadius.circular(12),
       ),
     ),
+    // Global page transitions
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+        TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+        TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+        TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: ZoomPageTransitionsBuilder(),
+      },
+    ),
     // Text theme
     textTheme: const TextTheme(
       headlineLarge: TextStyle(
@@ -124,6 +135,17 @@ final darkThemeProvider = Provider<ThemeData>((ref) {
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
+    ),
+    // Global page transitions
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: ZoomPageTransitionsBuilder(),
+        TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+        TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+        TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+        TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+        TargetPlatform.fuchsia: ZoomPageTransitionsBuilder(),
+      },
     ),
     // Card theme for consistent styling
     cardTheme: CardThemeData(

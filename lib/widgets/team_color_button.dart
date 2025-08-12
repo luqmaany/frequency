@@ -18,16 +18,18 @@ final List<TeamColor> uiColors = [
 ];
 
 final List<TeamColor> teamColors = [
+  // From turquoise (cyan) → indigo (blue) → violet (purple) → magenta (pink-red)
+  // → coral (orange) → olive (yellow-green)
   TeamColor('Turquoise', const Color.fromARGB(255, 153, 229, 210),
       const Color(0xFF00BFAE), const Color(0xFF00695C)),
+  TeamColor(
+      'Indigo', Colors.indigo.shade100, Colors.indigo, Colors.indigo.shade900),
+  TeamColor(
+      'Violet', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
   TeamColor('Magenta', const Color(0xFFF8BBD0), const Color(0xFFE91E63),
       const Color(0xFF880E4F)),
   TeamColor(
-      'Violet', Colors.purple.shade100, Colors.purple, Colors.purple.shade900),
-  TeamColor(
       'Coral', Colors.orange.shade100, Colors.orange, Colors.orange.shade900),
-  TeamColor(
-      'Indigo', Colors.indigo.shade100, Colors.indigo, Colors.indigo.shade900),
   TeamColor('Olive', const Color.fromARGB(255, 227, 224, 158),
       const Color(0xFF808000), const Color(0xFF556B2F)),
 ];

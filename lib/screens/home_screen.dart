@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/game_navigation_service.dart';
@@ -99,24 +100,31 @@ class WaveBackground extends StatefulWidget {
 
 class _WaveBackgroundState extends State<WaveBackground>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _ctrl =
-      AnimationController(vsync: this, duration: const Duration(seconds: 10))
-        ..repeat();
+  late final Ticker _ticker;
+  static const Duration _loop = Duration(seconds: 10);
+  
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((_) => setState(() {}))..start();
+  }
 
   @override
   void dispose() {
-    _ctrl.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Absolute-time phase 0..1 so there is no visual jump across navigation
+    final int nowMs = DateTime.now().millisecondsSinceEpoch;
+    final double t = ((nowMs % _loop.inMilliseconds) / _loop.inMilliseconds)
+        .clamp(0.0, 1.0);
+
     return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _ctrl,
-        builder: (_, __) => CustomPaint(
-          painter: _WavesPainter(t: _ctrl.value),
-        ),
+      child: CustomPaint(
+        painter: _WavesPainter(t: t),
       ),
     );
   }

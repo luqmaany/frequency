@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 class RadialRippleBackground extends StatefulWidget {
   final Alignment centerAlignment;
@@ -19,26 +20,32 @@ class RadialRippleBackground extends StatefulWidget {
 
 class _RadialRippleBackgroundState extends State<RadialRippleBackground>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: widget.duration)..repeat();
+  late final Ticker _ticker;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
   @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((_) => setState(() {}))..start();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final int nowMs = DateTime.now().millisecondsSinceEpoch;
+    final int loopMs = widget.duration.inMilliseconds;
+    final double t = ((nowMs % loopMs) / loopMs).clamp(0.0, 1.0);
+
     return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (_, __) => CustomPaint(
-          painter: _RadialRipplesPainter(
-            t: _controller.value,
-            centerAlignment: widget.centerAlignment,
-            ringColor: widget.ringColor,
-          ),
+      child: CustomPaint(
+        painter: _RadialRipplesPainter(
+          t: t,
+          centerAlignment: widget.centerAlignment,
+          ringColor: widget.ringColor,
         ),
       ),
     );

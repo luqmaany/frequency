@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 /// Parallel sine-wave background with a moving pulse highlight.
 ///
@@ -68,35 +69,42 @@ class ParallelPulseWavesBackground extends StatefulWidget {
 class _ParallelPulseWavesBackgroundState
     extends State<ParallelPulseWavesBackground>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller =
-      AnimationController(vsync: this, duration: widget.duration)..repeat();
+  late final Ticker _ticker;
 
   @override
   void dispose() {
-    _controller.dispose();
+    _ticker.dispose();
     super.dispose();
   }
 
   @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker((_) => setState(() {}))..start();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Absolute-time phase to avoid jumps across navigation
+    final int nowMs = DateTime.now().millisecondsSinceEpoch;
+    final int loopMs = widget.duration.inMilliseconds;
+    final double t = ((nowMs % loopMs) / loopMs).clamp(0.0, 1.0);
+
     return RepaintBoundary(
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (_, __) => CustomPaint(
-          painter: _ParallelWavesPainter(
-            t: _controller.value,
-            centerAlignment: widget.centerAlignment,
-            waveColor: widget.waveColor,
-            baseSpacing: widget.baseSpacing,
-            strokeWidth: widget.strokeWidth,
-            amplitude: widget.amplitude,
-            wavelength: widget.wavelength,
-            perRowPhaseOffset: widget.perRowPhaseOffset,
-            cyclesPerLoop: widget.cyclesPerLoop,
-            pulseSpanWaves: widget.pulseSpanWaves,
-            baseOpacity: widget.baseOpacity,
-            highlightOpacity: widget.highlightOpacity,
-          ),
+      child: CustomPaint(
+        painter: _ParallelWavesPainter(
+          t: t,
+          centerAlignment: widget.centerAlignment,
+          waveColor: widget.waveColor,
+          baseSpacing: widget.baseSpacing,
+          strokeWidth: widget.strokeWidth,
+          amplitude: widget.amplitude,
+          wavelength: widget.wavelength,
+          perRowPhaseOffset: widget.perRowPhaseOffset,
+          cyclesPerLoop: widget.cyclesPerLoop,
+          pulseSpanWaves: widget.pulseSpanWaves,
+          baseOpacity: widget.baseOpacity,
+          highlightOpacity: widget.highlightOpacity,
         ),
       ),
     );
