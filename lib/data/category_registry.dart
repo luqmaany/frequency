@@ -67,6 +67,17 @@ class CategoryRegistry {
       type: CategoryType.free,
       isUnlocked: true,
     ),
+    'anime': Category(
+      id: 'anime',
+      displayName: 'Anime',
+      color: Colors.yellow,
+      icon: Icons.movie, // fallback icon if image fails
+      description: 'Anime characters, shows, and terms',
+      words: const <Word>[], // placeholder list; populate later
+      type: CategoryType.premium,
+      isUnlocked: false,
+      imageAsset: 'assets/images/categories/naruto.png',
+    ),
   };
 
   // Get all categories

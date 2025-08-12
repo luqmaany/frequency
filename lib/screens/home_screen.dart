@@ -255,10 +255,17 @@ class HomeScreen extends ConsumerWidget {
                   // Removed 'Stats & History' button
                   _buildMenuButton(
                     context,
+                    'Decks',
+                    () => GameNavigationService.navigateToDecksStore(context),
+                    buttonColors[3],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuButton(
+                    context,
                     'Categories',
                     () => GameNavigationService.navigateToWordListsManager(
                         context),
-                    buttonColors[3],
+                    buttonColors[4 % buttonColors.length],
                   ),
                   const SizedBox(height: 16),
                   _buildMenuButton(

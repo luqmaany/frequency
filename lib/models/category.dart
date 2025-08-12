@@ -16,6 +16,7 @@ class Category {
   final List<Word> words;
   final CategoryType type;
   final bool isUnlocked;
+  final String? imageAsset;
 
   const Category({
     required this.id,
@@ -26,6 +27,7 @@ class Category {
     required this.words,
     required this.type,
     this.isUnlocked = false,
+    this.imageAsset,
   });
 
   // Convenience getters

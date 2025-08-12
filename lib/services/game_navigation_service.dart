@@ -13,6 +13,7 @@ import '../screens/word_lists_manager_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/game_state_provider.dart';
 import '../screens/home_screen.dart';
+import '../screens/decks_store_screen.dart';
 
 class GameNavigationService {
   // ============================================================================
@@ -67,6 +68,15 @@ class GameNavigationService {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const SettingsScreen(),
+      ),
+    );
+  }
+
+  /// Navigate from home screen to decks/store
+  static void navigateToDecksStore(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const DecksStoreScreen(),
       ),
     );
   }
