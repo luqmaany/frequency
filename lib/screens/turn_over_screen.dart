@@ -263,19 +263,6 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                             .withOpacity(0.9)
                         : CategoryRegistry.getCategory(widget.category).color,
                     borderRadius: BorderRadius.circular(30),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? CategoryRegistry.getCategory(widget.category)
-                                .color
-                                .withOpacity(0.4)
-                            : CategoryRegistry.getCategory(widget.category)
-                                .color
-                                .withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
                   ),
                   child: Text(
                     'Score: $_disputedScore',

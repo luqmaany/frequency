@@ -46,27 +46,17 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
               padding: const EdgeInsets.all(16),
               children: [
                 const SizedBox(height: 48),
-                const Center(
+                Center(
                   child: Text(
                     'Game Settings',
                     style: TextStyle(
                       fontSize: 36,
                       fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Center(
-                  child: Text(
-                    widget.isHost
-                        ? 'Configure your game settings'
-                        : 'Game settings (host only)',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.secondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 16),
                 if (!widget.isHost) ...[
                   Container(

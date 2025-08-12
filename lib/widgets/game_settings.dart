@@ -14,8 +14,8 @@ class GameSettings extends ConsumerStatefulWidget {
 
 class GameSettingsState extends ConsumerState<GameSettings> {
   // Predefined options
-  static const List<int> timeOptions = [15, 30, 60, 90, 120];
-  static const List<int> scoreOptions = [10, 20, 30, 50];
+  static const List<int> timeOptions = [2, 15, 30, 60, 90, 120];
+  static const List<int> scoreOptions = [2, 10, 20, 30, 50];
   static const List<int> skipOptions = [0, 1, 2, 3, 4, 5];
 
   void _updateFirestoreSetting(String key, int value) async {
@@ -62,7 +62,22 @@ class GameSettingsState extends ConsumerState<GameSettings> {
               onTap: widget.readOnly
                   ? null
                   : () {
-                      _updateFirestoreSetting(settingKey, option);
+                      if (widget.sessionId != null) {
+                        _updateFirestoreSetting(settingKey, option);
+                      } else {
+                        final notifier = ref.read(gameSetupProvider.notifier);
+                        switch (settingKey) {
+                          case 'roundTimeSeconds':
+                            notifier.setRoundTime(option);
+                            break;
+                          case 'targetScore':
+                            notifier.setTargetScore(option);
+                            break;
+                          case 'allowedSkips':
+                            notifier.setAllowedSkips(option);
+                            break;
+                        }
+                      }
                     },
               child: Container(
                 padding: const EdgeInsets.symmetric(

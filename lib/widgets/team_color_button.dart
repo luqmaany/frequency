@@ -90,10 +90,12 @@ class _TeamColorButtonState extends State<TeamColorButton> {
   Widget build(BuildContext context) {
     final bool enabled = widget.onPressed != null;
     // Dark mode palette
-    final Color background = widget.color.border.withOpacity(0.4);
-    final Color border = widget.color.background.withOpacity(0.3);
-    final Color text = Colors.white.withOpacity(0.92);
-    final Color iconColor = enabled ? border : Colors.grey.shade400;
+    final Color backgroundEnabled = widget.color.border.withOpacity(0.6);
+    // Increase fill opacity when disabled so it looks more filled
+    final Color backgroundDisabled = widget.color.border.withOpacity(0.2);
+    final Color border = widget.color.border.withOpacity(1);
+    final Color text = enabled ? Colors.white : Colors.white.withOpacity(0.1);
+    final Color iconColor = enabled ? border : border.withOpacity(0.2);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
@@ -102,7 +104,7 @@ class _TeamColorButtonState extends State<TeamColorButton> {
         duration: const Duration(milliseconds: 100),
         curve: Curves.easeOut,
         child: Material(
-          color: enabled ? background : background.withOpacity(0.5),
+          color: enabled ? backgroundEnabled : backgroundDisabled,
           borderRadius: BorderRadius.circular(12),
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
@@ -115,17 +117,9 @@ class _TeamColorButtonState extends State<TeamColorButton> {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: enabled ? border : Colors.grey.shade300,
+                  color: enabled ? border : border.withOpacity(0.2),
                   width: 1.5,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: (enabled ? border : Colors.grey.shade300)
-                        .withOpacity(0.08),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,

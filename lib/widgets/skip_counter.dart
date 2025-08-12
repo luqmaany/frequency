@@ -23,7 +23,7 @@ class SkipCounter extends StatelessWidget {
       child: Text(
         'Skips: $skipsLeft',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black,
+              color: Colors.white.withOpacity(0.95),
             ),
         textAlign: TextAlign.center,
       ),

@@ -17,15 +17,15 @@ class TeamDisplayBox extends StatelessWidget {
   Widget build(BuildContext context) {
     // Dark mode palette
     final Color background = color.border.withOpacity(0.4);
-    final Color border = color.background.withOpacity(0.3);
+    final Color border = color.border.withOpacity(1);
     final Color text = Colors.white.withOpacity(0.95);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(8.0),
+      margin: const EdgeInsets.only(bottom: 0),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(
           color: border,
           width: 2,
@@ -50,7 +50,7 @@ class TeamDisplayBox extends StatelessWidget {
             children: [
               ...children
                   .map((w) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        padding: const EdgeInsets.fromLTRB(4, 1, 4, 0),
                         child: w,
                       ))
                   .toList(),

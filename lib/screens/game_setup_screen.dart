@@ -163,12 +163,13 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                   padding: const EdgeInsets.all(16),
                   children: [
                     const SizedBox(height: 48),
-                    const Center(
+                    Center(
                       child: Text(
                         'Team Setup',
                         style: TextStyle(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),

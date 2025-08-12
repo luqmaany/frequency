@@ -217,7 +217,8 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                           },
                           allowedSwipeDirection: _getAllowedSwipeDirection(),
                           numberOfCardsDisplayed: 1,
-                          padding: const EdgeInsets.all(24.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0, vertical: 40.0),
                         ),
                       ],
                     ),
@@ -330,7 +331,8 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                           },
                           allowedSwipeDirection: _getAllowedSwipeDirection(),
                           numberOfCardsDisplayed: 1,
-                          padding: const EdgeInsets.all(24.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24.0, vertical: 40.0),
                         ),
                       ],
                     ),

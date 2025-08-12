@@ -53,7 +53,7 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, bool>((ref) {
 final lightThemeProvider = Provider<ThemeData>((ref) {
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF9C27B0), // Light purple
+      seedColor: const Color.fromARGB(255, 255, 255, 255), // Light purple
       brightness: Brightness.light,
     ),
     useMaterial3: true,
@@ -107,7 +107,7 @@ final darkThemeProvider = Provider<ThemeData>((ref) {
   const Color darkBg = Color(0xFF0B1020); // Match HomeScreen background
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
-      seedColor: const Color(0xFF9C27B0), // Purple
+      seedColor: const Color.fromARGB(255, 255, 255, 255), // Purple
       brightness: Brightness.dark,
     ),
     useMaterial3: true,
@@ -138,21 +138,21 @@ final darkThemeProvider = Provider<ThemeData>((ref) {
       headlineLarge: TextStyle(
         fontSize: 32,
         fontWeight: FontWeight.bold,
-        color: Color(0xFFE0E0E0), // Softer white
+        color: Color.fromARGB(255, 255, 255, 255), // Softer white
       ),
       headlineMedium: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.w600,
-        color: Color(0xFFE0E0E0), // Softer white
+        color: Color.fromARGB(255, 255, 255, 255), // Softer white
       ),
       bodyLarge: TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.w600,
-        color: Color(0xFFE0E0E0), // Softer white
+        color: Color.fromARGB(255, 246, 246, 246), // Softer white
       ),
       bodyMedium: TextStyle(
         fontSize: 16,
-        color: Color(0xFFB0B0B0), // Softer grey
+        color: Color.fromARGB(255, 255, 255, 255), // Softer grey
       ),
     ),
   );

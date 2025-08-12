@@ -29,7 +29,7 @@ class CategoryDisplay extends StatelessWidget {
             ? 'TIEBREAKER: ${CategoryRegistry.getCategory(categoryId).displayName}'
             : CategoryRegistry.getCategory(categoryId).displayName,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Colors.black,
+              color: Colors.white.withOpacity(0.95),
               fontWeight: FontWeight.w600,
             ),
         textAlign: TextAlign.center,

@@ -307,15 +307,14 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
 
     final Color categoryColor =
         CategoryRegistry.getCategory(widget.categoryId).color;
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
-    final Color cardBackground = isDark
-        ? categoryColor.withOpacity(0.2)
-        : categoryColor.withOpacity(0.1);
-    final Color cardBorder =
-        isDark ? categoryColor.withOpacity(0.8) : categoryColor;
-    final Color cardShadow = isDark
-        ? categoryColor.withOpacity(0.3)
-        : categoryColor.withOpacity(0.2);
+    final Color scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+    // Blend category color with app background to emulate translucent effect
+    final Color cardBackground =
+        Color.alphaBlend(categoryColor.withOpacity(0.25), scaffoldBg);
+    final Color cardBorder = categoryColor;
+    // final Color cardShadow = isDark
+    //     ? categoryColor.withOpacity(0.3)
+    //     : categoryColor.withOpacity(0.2);
 
     if (_isTransitioning) {
       return ConfirmOnBack(
@@ -474,10 +473,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                               decoration: BoxDecoration(
                                                 color: Colors.transparent,
                                                 borderRadius:
-                                                    BorderRadius.circular(16),
+                                                    BorderRadius.circular(10),
                                                 border: Border.all(
                                                   color: Colors.transparent,
-                                                  width: 1.5,
+                                                  width: 2,
                                                 ),
                                               ),
                                               alignment: Alignment.center,
@@ -559,13 +558,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                         color: cardBorder,
                                         width: 2,
                                       ),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: cardShadow,
-                                          blurRadius: 8,
-                                          offset: const Offset(0, 4),
-                                        ),
-                                      ],
+                                      // Removed drop shadow for flatter look
                                     ),
                                     child: Row(
                                       mainAxisAlignment:
@@ -774,15 +767,14 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                                   .scaffoldBackgroundColor,
                                             ),
                                             borderRadius:
-                                                BorderRadius.circular(16),
+                                                BorderRadius.circular(12),
                                             border: Border.all(
                                               color: Color.alphaBlend(
-                                                teamColor.background
-                                                    .withOpacity(0.25),
+                                                teamColor.border.withOpacity(1),
                                                 Theme.of(context)
                                                     .scaffoldBackgroundColor,
                                               ),
-                                              width: 1.5,
+                                              width: 2,
                                             ),
                                           ),
                                           alignment: Alignment.center,
@@ -835,15 +827,14 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                                   .scaffoldBackgroundColor,
                                             ),
                                             borderRadius:
-                                                BorderRadius.circular(16),
+                                                BorderRadius.circular(12),
                                             border: Border.all(
                                               color: Color.alphaBlend(
-                                                teamColor.background
-                                                    .withOpacity(0.25),
+                                                teamColor.border.withOpacity(1),
                                                 Theme.of(context)
                                                     .scaffoldBackgroundColor,
                                               ),
-                                              width: 1.5,
+                                              width: 2,
                                             ),
                                           ),
                                           alignment: Alignment.center,
