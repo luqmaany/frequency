@@ -102,7 +102,7 @@ class _WaveBackgroundState extends State<WaveBackground>
     with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
   static const Duration _loop = Duration(seconds: 10);
-  
+
   @override
   void initState() {
     super.initState();
@@ -119,8 +119,8 @@ class _WaveBackgroundState extends State<WaveBackground>
   Widget build(BuildContext context) {
     // Absolute-time phase 0..1 so there is no visual jump across navigation
     final int nowMs = DateTime.now().millisecondsSinceEpoch;
-    final double t = ((nowMs % _loop.inMilliseconds) / _loop.inMilliseconds)
-        .clamp(0.0, 1.0);
+    final double t =
+        ((nowMs % _loop.inMilliseconds) / _loop.inMilliseconds).clamp(0.0, 1.0);
 
     return RepaintBoundary(
       child: CustomPaint(
