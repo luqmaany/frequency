@@ -6,6 +6,7 @@ import '../models/game_config.dart';
 import '../widgets/player_input.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../widgets/team_display_box.dart';
+import '../widgets/parallel_pulse_waves_background.dart';
 
 class GameSetupScreen extends ConsumerStatefulWidget {
   const GameSetupScreen({super.key});
@@ -111,6 +112,13 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
     return Scaffold(
       body: Stack(
         children: [
+          // Animated parallel waves background
+          const Positioned.fill(
+            child: ParallelPulseWavesBackground(
+              perRowPhaseOffset: 0.0, // align crests across rows
+              baseSpacing: 35.0, // more spacing between waves
+            ),
+          ),
           // Global DragTarget for removing players (background)
           Positioned.fill(
             child: DragTarget<String>(

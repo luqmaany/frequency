@@ -16,7 +16,17 @@ class TeamDisplayBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Dark mode palette
-    final Color background = color.border.withOpacity(0.4);
+    // Use alpha blend to pre-compose a translucent overlay onto the
+    // scaffold background so the result is fully opaque (no shimmer from
+    // animated backgrounds behind it).
+    // Match the darker look of home screen buttons: use the strong border tint
+    // as the overlay instead of the light background tint.
+    final Color baseOverlay = color.border.withOpacity(0.6);
+    final Color blended = Color.alphaBlend(
+      baseOverlay,
+      Theme.of(context).colorScheme.background,
+    );
+    final Color background = blended; // opaque
     final Color border = color.border.withOpacity(1);
     final Color text = Colors.white.withOpacity(0.95);
 

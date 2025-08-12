@@ -7,6 +7,8 @@ import '../services/storage_service.dart';
 import '../providers/session_providers.dart';
 import 'online_team_lobby_screen.dart';
 import 'dart:math';
+import '../widgets/parallel_pulse_waves_background.dart';
+import '../widgets/segmented_code_input.dart';
 
 class OnlineLobbyScreen extends ConsumerStatefulWidget {
   const OnlineLobbyScreen({Key? key}) : super(key: key);
@@ -17,6 +19,7 @@ class OnlineLobbyScreen extends ConsumerStatefulWidget {
 
 class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   final TextEditingController _joinCodeController = TextEditingController();
+  final SegmentedCodeController _codeController = SegmentedCodeController();
   String? _error;
   bool _loading = false;
 
@@ -38,6 +41,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
       if (!mounted) return;
       if (!sessionExists) {
         setState(() => _error = 'Session not found.');
+        _codeController.clear();
         return;
       }
 
@@ -192,123 +196,130 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Online Lobby'),
-      ),
-      body: Align(
-        alignment: const Alignment(0, -0.25),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 520),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Create session first
-                TeamColorButton(
-                  text: 'Create New Session',
-                  icon: Icons.add,
-                  color: teamColors[1],
-                  onPressed: _createSession,
-                ),
-                const SizedBox(height: 28),
-                // Higher-frequency wave divider
-                const WaveDivider(),
-                const SizedBox(height: 28),
-                // Join section below
-                TextField(
-                  controller: _joinCodeController,
-                  decoration: InputDecoration(
-                    labelText: 'Join Code',
-                    border: const OutlineInputBorder(),
-                    errorText: _error,
-                  ),
-                  textCapitalization: TextCapitalization.characters,
-                  maxLength: 6,
-                  enabled: !_loading,
-                ),
-                const SizedBox(height: 16),
-                if (_loading)
-                  const Center(child: CircularProgressIndicator())
-                else
-                  TeamColorButton(
-                    text: 'Join Session',
-                    icon: Icons.login_rounded,
-                    color: teamColors[0],
-                    onPressed: _joinSession,
-                  ),
-              ],
+      body: Stack(
+        children: [
+          const Positioned.fill(
+            child: ParallelPulseWavesBackground(
+              perRowPhaseOffset: 0.0,
+              baseSpacing: 35.0,
             ),
           ),
-        ),
+          Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.all(24.0),
+                  children: [
+                    const SizedBox(height: 48),
+                    Center(
+                      child: Text(
+                        'Online Lobby',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Push controls closer to the middle of the screen
+                    const SizedBox(height: 100),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 520),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          // Create session first
+                          TeamColorButton(
+                            text: 'Create New Session',
+                            icon: Icons.add,
+                            color: teamColors[1],
+                            onPressed: _createSession,
+                          ),
+                          const SizedBox(height: 28),
+                          // OR separator
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Divider(
+                                  color: Theme.of(context)
+                                      .dividerColor
+                                      .withOpacity(0.4),
+                                ),
+                              ),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                child: Text(
+                                  'OR',
+                                  style: TextStyle(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.8),
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                              Expanded(
+                                child: Divider(
+                                  color: Theme.of(context)
+                                      .dividerColor
+                                      .withOpacity(0.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          // Join section below
+                          SegmentedCodeInput(
+                            length: 6,
+                            controller: _codeController,
+                            onChanged: (value) {
+                              setState(() => _error = null);
+                              _joinCodeController.text = value;
+                            },
+                            onCompleted: (value) async {
+                              setState(() => _error = null);
+                              _joinCodeController.text = value;
+                              // Do not auto-join; wait for button press
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color: Colors.red.shade400,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    if (_loading)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      TeamColorButton(
+                        text: 'Join Session',
+                        icon: Icons.login_rounded,
+                        color: teamColors[0],
+                        onPressed: _joinSession,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
-class WaveDivider extends StatelessWidget {
-  final double height;
-  final double strokeWidth;
-  final Color? color;
-
-  const WaveDivider({
-    super.key,
-    this.height = 44,
-    this.strokeWidth = 2.0,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final Color effective =
-        color ?? Theme.of(context).dividerColor.withOpacity(0.6);
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: CustomPaint(
-        painter:
-            _WaveDividerPainter(color: effective, strokeWidth: strokeWidth),
-      ),
-    );
-  }
-}
-
-class _WaveDividerPainter extends CustomPainter {
-  final Color color;
-  final double strokeWidth;
-
-  _WaveDividerPainter({required this.color, required this.strokeWidth});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..isAntiAlias = true;
-
-    final path = Path();
-    final double baseY = size.height / 2;
-    final double amplitude = size.height * 0.15; // reduced wave height
-    // Increase frequency by using smaller wavelength (more cycles)
-    final int cycles = max(4, (size.width / 80).round());
-    final double wavelength = size.width / cycles;
-
-    path.moveTo(0, baseY);
-    const int steps = 240;
-    for (int i = 0; i <= steps; i++) {
-      final double x = size.width * (i / steps);
-      final double y = baseY + amplitude * sin(2 * pi * x / wavelength);
-      path.lineTo(x, y);
-    }
-
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _WaveDividerPainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.strokeWidth != strokeWidth;
-  }
-}
+// Removed WaveDivider from the online lobby

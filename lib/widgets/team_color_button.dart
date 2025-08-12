@@ -89,10 +89,13 @@ class _TeamColorButtonState extends State<TeamColorButton> {
   @override
   Widget build(BuildContext context) {
     final bool enabled = widget.onPressed != null;
-    // Dark mode palette
-    final Color backgroundEnabled = widget.color.border.withOpacity(0.6);
-    // Increase fill opacity when disabled so it looks more filled
-    final Color backgroundDisabled = widget.color.border.withOpacity(0.2);
+    // Compose an opaque dark button color by alpha blending the strong border
+    // tint over the app background, matching the look of other dark buttons.
+    final Color baseBg = Theme.of(context).colorScheme.background;
+    final Color overlayEnabled = widget.color.border.withOpacity(0.6);
+    final Color overlayDisabled = widget.color.border.withOpacity(0.2);
+    final Color backgroundEnabled = Color.alphaBlend(overlayEnabled, baseBg);
+    final Color backgroundDisabled = Color.alphaBlend(overlayDisabled, baseBg);
     final Color border = widget.color.border.withOpacity(1);
     final Color text = enabled ? Colors.white : Colors.white.withOpacity(0.1);
     final Color iconColor = enabled ? border : border.withOpacity(0.2);
@@ -118,7 +121,7 @@ class _TeamColorButtonState extends State<TeamColorButton> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: enabled ? border : border.withOpacity(0.2),
-                  width: 1.5,
+                  width: 1.5, // match other buttons' stroke width
                 ),
               ),
               child: Row(
