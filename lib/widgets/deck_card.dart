@@ -40,12 +40,15 @@ class DeckCard extends StatelessWidget {
               if (category.imageAsset != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: AspectRatio(
-                    aspectRatio: 3 / 2,
-                    child: Image.asset(
-                      category.imageAsset!,
-                      fit: BoxFit.cover,
-                      alignment: Alignment.center,
+                  child: SizedBox(
+                    width: 132,
+                    child: FittedBox(
+                      fit: BoxFit.fitHeight,
+                      alignment: Alignment.centerLeft,
+                      child: Image.asset(
+                        category.imageAsset!,
+                        alignment: Alignment.centerLeft,
+                      ),
                     ),
                   ),
                 )

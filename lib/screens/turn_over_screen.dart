@@ -579,6 +579,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 10),
+                            // TODO: Also display the remaining 'words left on screen' after the skipped words list
                             for (var word in widget.wordsSkipped)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
