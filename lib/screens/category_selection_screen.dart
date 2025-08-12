@@ -12,6 +12,8 @@ import '../services/firestore_service.dart';
 import '../services/online_game_navigation_service.dart';
 import '../providers/session_providers.dart';
 import '../widgets/radial_ripple_background.dart';
+import '../widgets/confirm_on_back.dart';
+import '../widgets/quit_dialog.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -282,155 +284,167 @@ class _CategorySelectionScreenState
       teamColor = teamColors[0];
     }
 
-    return Scaffold(
-      body: Stack(
-        key: _stackKey,
-        children: [
-          Positioned.fill(
-            child: RadialRippleBackground(
-              centerAlignment: _bgCenterAlignment,
-              duration: const Duration(seconds: 100),
-              ringColor: _selectedCategory != null
-                  ? CategoryRegistry.getCategoryByDisplayName(
-                          _selectedCategory!)
-                      .color
-                  : null,
+    return ConfirmOnBack(
+      dialogBuilder: (ctx) => QuitDialog(color: teamColor),
+      onConfirmed: (ctx) async {
+        await GameNavigationService.quitToHome(ctx, ref);
+      },
+      child: Scaffold(
+        body: Stack(
+          key: _stackKey,
+          children: [
+            Positioned.fill(
+              child: RadialRippleBackground(
+                centerAlignment: _bgCenterAlignment,
+                duration: const Duration(seconds: 100),
+                ringColor: _selectedCategory != null
+                    ? CategoryRegistry.getCategoryByDisplayName(
+                            _selectedCategory!)
+                        .color
+                    : null,
+              ),
             ),
-          ),
-          SafeArea(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          widget.displayString,
-                          style: Theme.of(context).textTheme.headlineMedium,
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 40),
-                        GestureDetector(
-                          onTap: (_isCurrentTeamActive && !_isSpinning)
-                              ? _spinCategories
-                              : null,
-                          child: AnimatedBuilder(
-                            animation: _scaleController,
-                            builder: (context, child) {
-                              return Transform.scale(
-                                scale: _scaleAnimation.value,
-                                child: Container(
-                                  key: _circleKey,
-                                  width: 300,
-                                  height: 300,
-                                  margin: const EdgeInsets.only(top: 0),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFF0A0F1E),
-                                    border: Border.all(
-                                      color: _currentCategory.isNotEmpty
-                                          ? CategoryRegistry
-                                                  .getCategoryByDisplayName(
-                                                      _currentCategory)
-                                              .color
-                                          : teamColor.text,
-                                      width: 2,
+            SafeArea(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            widget.displayString,
+                            style: Theme.of(context).textTheme.headlineMedium,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 40),
+                          GestureDetector(
+                            onTap: (_isCurrentTeamActive && !_isSpinning)
+                                ? _spinCategories
+                                : null,
+                            child: AnimatedBuilder(
+                              animation: _scaleController,
+                              builder: (context, child) {
+                                return Transform.scale(
+                                  scale: _scaleAnimation.value,
+                                  child: Container(
+                                    key: _circleKey,
+                                    width: 300,
+                                    height: 300,
+                                    margin: const EdgeInsets.only(top: 0),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFF0A0F1E),
+                                      border: Border.all(
+                                        color: _currentCategory.isNotEmpty
+                                            ? CategoryRegistry
+                                                    .getCategoryByDisplayName(
+                                                        _currentCategory)
+                                                .color
+                                            : teamColor.text,
+                                        width: 2,
+                                      ),
                                     ),
-                                  ),
-                                  child: Center(
-                                    child: AnimatedSwitcher(
-                                      duration:
-                                          const Duration(milliseconds: 150),
-                                      transitionBuilder: (Widget child,
-                                          Animation<double> animation) {
-                                        return FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        );
-                                      },
-                                      child: Text(
-                                        _currentCategory.isEmpty
-                                            ? (_isCurrentTeamActive
-                                                ? 'TAP TO SPIN\nFOR CATEGORY!'
-                                                : 'WAITING...')
-                                            : _currentCategory,
-                                        key: ValueKey<String>(_currentCategory),
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .displayLarge
-                                            ?.copyWith(
-                                              color: _currentCategory.isNotEmpty
-                                                  ? CategoryRegistry
-                                                          .getCategoryByDisplayName(
-                                                              _currentCategory)
-                                                      .color
-                                                  : teamColor.text,
-                                              fontSize: _currentCategory.isEmpty
-                                                  ? 32
-                                                  : null,
-                                            ),
+                                    child: Center(
+                                      child: AnimatedSwitcher(
+                                        duration:
+                                            const Duration(milliseconds: 150),
+                                        transitionBuilder: (Widget child,
+                                            Animation<double> animation) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          );
+                                        },
+                                        child: Text(
+                                          _currentCategory.isEmpty
+                                              ? (_isCurrentTeamActive
+                                                  ? 'TAP TO SPIN\nFOR CATEGORY!'
+                                                  : 'WAITING...')
+                                              : _currentCategory,
+                                          key: ValueKey<String>(
+                                              _currentCategory),
+                                          textAlign: TextAlign.center,
+                                          style:
+                                              Theme.of(context)
+                                                  .textTheme
+                                                  .displayLarge
+                                                  ?.copyWith(
+                                                    color: _currentCategory.isNotEmpty
+                                                        ? CategoryRegistry
+                                                                .getCategoryByDisplayName(
+                                                                    _currentCategory)
+                                                            .color
+                                                        : teamColor.text,
+                                                    fontSize:
+                                                        _currentCategory.isEmpty
+                                                            ? 32
+                                                            : null,
+                                                  ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 40),
-                      ],
+                          const SizedBox(height: 40),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: AnimatedOpacity(
-                    opacity: _selectedCategory != null ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 300),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TeamColorButton(
-                            text: 'Next',
-                            icon: Icons.arrow_forward,
-                            color: uiColors[1], // Green
-                            onPressed: (_isCurrentTeamActive &&
-                                    _selectedCategory != null)
-                                ? () async {
-                                    if (widget.sessionId != null) {
-                                      // For online games, update game state with selected category and change status
-                                      await FirestoreService
-                                          .fromCategorySelection(
-                                        widget.sessionId!,
-                                        selectedCategory: _selectedCategory!,
-                                      );
-                                    } else {
-                                      // For local games, use the existing navigation service
-                                      GameNavigationService
-                                          .navigateFromCategorySelection(
-                                        context,
-                                        ref,
-                                        widget.teamIndex,
-                                        widget.roundNumber,
-                                        widget.turnNumber,
-                                        _selectedCategory!,
-                                      );
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: AnimatedOpacity(
+                      opacity: _selectedCategory != null ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TeamColorButton(
+                              text: 'Next',
+                              icon: Icons.arrow_forward,
+                              color: uiColors[1], // Green
+                              onPressed: (_isCurrentTeamActive &&
+                                      _selectedCategory != null)
+                                  ? () async {
+                                      if (widget.sessionId != null) {
+                                        // For online games, update game state with selected category and change status
+                                        await FirestoreService
+                                            .fromCategorySelection(
+                                          widget.sessionId!,
+                                          selectedCategory: _selectedCategory!,
+                                        );
+                                      } else {
+                                        // For local games, convert display name to ID before navigation
+                                        final categoryId = CategoryRegistry
+                                            .getCategoryFromDisplayName(
+                                                _selectedCategory!);
+                                        GameNavigationService
+                                            .navigateFromCategorySelection(
+                                          context,
+                                          ref,
+                                          widget.teamIndex,
+                                          widget.roundNumber,
+                                          widget.turnNumber,
+                                          categoryId,
+                                        );
+                                      }
                                     }
-                                  }
-                                : null,
+                                  : null,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

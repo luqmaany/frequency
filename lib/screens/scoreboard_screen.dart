@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
 import 'package:convey/widgets/team_color_button.dart';
+import '../widgets/confirm_on_back.dart';
+import '../widgets/quit_dialog.dart';
 
 class ScoreboardScreen extends ConsumerWidget {
   final int roundNumber;
@@ -66,166 +68,176 @@ class ScoreboardScreen extends ConsumerWidget {
     final sortedTeamIndices = List.generate(teamsCount, (i) => i)
       ..sort((a, b) => totalScoresCurr[b].compareTo(totalScoresCurr[a]));
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(27.0, 80.0, 27.0, 27.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (isTiebreaker) ...[
+    return ConfirmOnBack(
+      dialogBuilder: (ctx) => QuitDialog(color: uiColors[0]),
+      onConfirmed: (ctx) async {
+        await GameNavigationService.quitToHome(ctx, ref);
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(27.0, 80.0, 27.0, 27.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (isTiebreaker) ...[
+                  Text(
+                    'Tiebreaker! Teams in a tie are highlighted.',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.deepOrange.withOpacity(0.8),
+                        fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Text(
-                  'Tiebreaker! Teams in a tie are highlighted.',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.deepOrange.withOpacity(0.8),
-                      fontWeight: FontWeight.bold),
+                  'Round $roundNumber',
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineMedium
+                      ?.copyWith(fontSize: 36, fontWeight: FontWeight.bold),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-              ],
-              Text(
-                'Round $roundNumber',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineMedium
-                    ?.copyWith(fontSize: 36, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: List.generate(
-                    sortedTeamIndices.length,
-                    (i) {
-                      final teamIndex = sortedTeamIndices[i];
-                      final playerNames =
-                          gameState.config.teams[teamIndex].join(' & ');
-                      final totalScore = totalScoresCurr[teamIndex];
-                      final isTopThisRound =
-                          roundScores[teamIndex] == topRoundScore &&
-                              topRoundScore > 0;
-                      // Tiebreaker coloring logic
-                      final bool isTied = isTiebreaker &&
-                          (tiedTeamIndices?.contains(teamIndex) ?? false);
-                      final Color backgroundColor = isTiebreaker && !isTied
-                          ? Colors.grey.shade300
-                          : teamColors[gameState
-                                          .config.teamColorIndices.length >
-                                      teamIndex
-                                  ? gameState.config.teamColorIndices[teamIndex]
-                                  : teamIndex % teamColors.length]
-                              .background;
-                      final Color borderColor = isTiebreaker && !isTied
-                          ? Colors.grey
-                          : teamColors[gameState
-                                          .config.teamColorIndices.length >
-                                      teamIndex
-                                  ? gameState.config.teamColorIndices[teamIndex]
-                                  : teamIndex % teamColors.length]
-                              .border;
-                      // Text color is unified in dark mode; keep mapping for light mode if re-enabled
-                      return Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8.0),
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 12.0, horizontal: 10.0),
-                        decoration: BoxDecoration(
-                          color: borderColor.withOpacity(0.4),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: backgroundColor.withOpacity(0.3),
-                            width: 2,
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: List.generate(
+                      sortedTeamIndices.length,
+                      (i) {
+                        final teamIndex = sortedTeamIndices[i];
+                        final playerNames =
+                            gameState.config.teams[teamIndex].join(' & ');
+                        final totalScore = totalScoresCurr[teamIndex];
+                        final isTopThisRound =
+                            roundScores[teamIndex] == topRoundScore &&
+                                topRoundScore > 0;
+                        // Tiebreaker coloring logic
+                        final bool isTied = isTiebreaker &&
+                            (tiedTeamIndices?.contains(teamIndex) ?? false);
+                        final Color backgroundColor = isTiebreaker && !isTied
+                            ? Colors.grey.shade300
+                            : teamColors[
+                                    gameState.config.teamColorIndices.length >
+                                            teamIndex
+                                        ? gameState
+                                            .config.teamColorIndices[teamIndex]
+                                        : teamIndex % teamColors.length]
+                                .background;
+                        final Color borderColor = isTiebreaker && !isTied
+                            ? Colors.grey
+                            : teamColors[
+                                    gameState.config.teamColorIndices.length >
+                                            teamIndex
+                                        ? gameState
+                                            .config.teamColorIndices[teamIndex]
+                                        : teamIndex % teamColors.length]
+                                .border;
+                        // Text color is unified in dark mode; keep mapping for light mode if re-enabled
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12.0, horizontal: 10.0),
+                          decoration: BoxDecoration(
+                            color: borderColor.withOpacity(0.4),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: backgroundColor.withOpacity(0.3),
+                              width: 2,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                isTopThisRound
-                                    ? '$playerNames 🏆'
-                                    : playerNames,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  isTopThisRound
+                                      ? '$playerNames 🏆'
+                                      : playerNames,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color:
+                                              Colors.white.withOpacity(0.95)),
+                                ),
+                              ),
+                              CircleAvatar(
+                                backgroundColor: borderColor.withOpacity(0.8),
+                                radius: 18,
+                                child: Text(
+                                  totalScore.toString(),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
                                         fontSize: 22,
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white.withOpacity(0.95)),
+                                        color: Colors.white,
+                                      ),
+                                ),
                               ),
-                            ),
-                            CircleAvatar(
-                              backgroundColor: borderColor.withOpacity(0.8),
-                              radius: 18,
-                              child: Text(
-                                totalScore.toString(),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleLarge
-                                    ?.copyWith(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            // Arrow for leaderboard movement
-                            Text(
-                              roundNumber == 1
-                                  ? ''
-                                  : currRanks[teamIndex] < prevRanks[teamIndex]
-                                      ? '▲'
-                                      : currRanks[teamIndex] >
-                                              prevRanks[teamIndex]
-                                          ? '▼'
-                                          : '',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: roundNumber == 1
-                                    ? Colors.transparent
+                              const SizedBox(width: 12),
+                              // Arrow for leaderboard movement
+                              Text(
+                                roundNumber == 1
+                                    ? ''
                                     : currRanks[teamIndex] <
                                             prevRanks[teamIndex]
-                                        ? Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.green.withOpacity(0.8)
-                                            : Colors.green
+                                        ? '▲'
                                         : currRanks[teamIndex] >
                                                 prevRanks[teamIndex]
-                                            ? Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? Colors.red.withOpacity(0.8)
-                                                : Colors.red
-                                            : Colors.transparent,
+                                            ? '▼'
+                                            : '',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: roundNumber == 1
+                                      ? Colors.transparent
+                                      : currRanks[teamIndex] <
+                                              prevRanks[teamIndex]
+                                          ? Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.green.withOpacity(0.8)
+                                              : Colors.green
+                                          : currRanks[teamIndex] >
+                                                  prevRanks[teamIndex]
+                                              ? Theme.of(context).brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.red.withOpacity(0.8)
+                                                  : Colors.red
+                                              : Colors.transparent,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              const Spacer(),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  Expanded(
-                    child: TeamColorButton(
-                      text: 'Next Round',
-                      icon: Icons.arrow_forward,
-                      color: teamColors[2], // Green
-                      onPressed: () {
-                        // Use navigation service to navigate to next round
-                        GameNavigationService.navigateToNextRound(
-                            context, ref, roundNumber + 1);
+                            ],
+                          ),
+                        );
                       },
                     ),
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 32),
+                const Spacer(),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: TeamColorButton(
+                        text: 'Next Round',
+                        icon: Icons.arrow_forward,
+                        color: teamColors[2], // Green
+                        onPressed: () {
+                          // Use navigation service to navigate to next round
+                          GameNavigationService.navigateToNextRound(
+                              context, ref, roundNumber + 1);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

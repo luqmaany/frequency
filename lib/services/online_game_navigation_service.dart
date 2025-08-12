@@ -29,6 +29,27 @@ class OnlineGameNavigationService {
     }
   }
 
+  /// Leave session (if any), clear local game state, and go home.
+  static Future<void> leaveSessionAndGoHome({
+    required BuildContext context,
+    required WidgetRef ref,
+    String? sessionId,
+  }) async {
+    try {
+      if (sessionId != null && sessionId.isNotEmpty) {
+        // Best effort: mark this device as left or clean partial state if you have such API.
+        // Currently, just navigate away; session host flow continues.
+      }
+    } catch (_) {}
+    // Clear any local game state provider if used alongside online flow
+    // Note: We don't import game_state_provider here to avoid circular deps in online flows.
+    // The home screen will render without relying on that state.
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
   // ============================================================================
   // MAIN NAVIGATION METHOD
   // ============================================================================

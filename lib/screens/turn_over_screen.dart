@@ -9,6 +9,8 @@ import '../data/category_registry.dart';
 import '../providers/category_provider.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
+import '../widgets/confirm_on_back.dart';
+import '../widgets/quit_dialog.dart';
 
 class TurnOverScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -200,130 +202,126 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(top: 40.0),
-          child: Column(
-            children: [
-              // Category display
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? CategoryRegistry.getCategory(widget.category)
-                          .color
-                          .withOpacity(0.3)
-                      : CategoryRegistry.getCategory(widget.category)
-                          .color
-                          .withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
+    final gameConfig = ref.watch(gameSetupProvider);
+    final colorIndex = (gameConfig.teamColorIndices.length > widget.teamIndex)
+        ? gameConfig.teamColorIndices[widget.teamIndex]
+        : widget.teamIndex % teamColors.length;
+    final teamColor = teamColors[colorIndex];
+
+    return ConfirmOnBack(
+      dialogBuilder: (ctx) => QuitDialog(color: teamColor),
+      onConfirmed: (ctx) async {
+        await GameNavigationService.quitToHome(ctx, ref);
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 40.0),
+            child: Column(
+              children: [
+                // Category display
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                  decoration: BoxDecoration(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? CategoryRegistry.getCategory(widget.category)
                             .color
-                            .withOpacity(0.8)
-                        : CategoryRegistry.getCategory(widget.category).color,
-                    width: 2,
-                  ),
-                ),
-                child: Text(
-                  CategoryRegistry.getCategory(widget.category).displayName,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withOpacity(0.95)
-                            : Colors.black,
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Score display
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? CategoryRegistry.getCategory(widget.category)
-                          .color
-                          .withOpacity(0.9)
-                      : CategoryRegistry.getCategory(widget.category).color,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
+                            .withOpacity(0.3)
+                        : CategoryRegistry.getCategory(widget.category)
+                            .color
+                            .withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
                       color: Theme.of(context).brightness == Brightness.dark
                           ? CategoryRegistry.getCategory(widget.category)
                               .color
-                              .withOpacity(0.4)
-                          : CategoryRegistry.getCategory(widget.category)
-                              .color
-                              .withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
+                              .withOpacity(0.8)
+                          : CategoryRegistry.getCategory(widget.category).color,
+                      width: 2,
                     ),
-                  ],
+                  ),
+                  child: Text(
+                    CategoryRegistry.getCategory(widget.category).displayName,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white.withOpacity(0.95)
+                              : Colors.black,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
                 ),
-                child: Text(
-                  'Score: $_disputedScore',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(height: 16),
+                // Score display
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? CategoryRegistry.getCategory(widget.category)
+                            .color
+                            .withOpacity(0.9)
+                        : CategoryRegistry.getCategory(widget.category).color,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? CategoryRegistry.getCategory(widget.category)
+                                .color
+                                .withOpacity(0.4)
+                            : CategoryRegistry.getCategory(widget.category)
+                                .color
+                                .withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
                       ),
+                    ],
+                  ),
+                  child: Text(
+                    'Score: $_disputedScore',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Words Guessed:',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        if (widget.wordsGuessed.isNotEmpty) ...[
-                          for (var i = 0;
-                              i < widget.wordsGuessed.length;
-                              i += 2)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: GestureDetector(
-                                      onTap: () => _onWordDisputed(
-                                          widget.wordsGuessed[i]),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: 8, horizontal: 12),
-                                        decoration: BoxDecoration(
-                                          color: _disputedWords.contains(
-                                                  widget.wordsGuessed[i])
-                                              ? Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? Colors.red.withOpacity(0.2)
-                                                  : Colors.red.withOpacity(0.1)
-                                              : Theme.of(context).brightness ==
-                                                      Brightness.dark
-                                                  ? CategoryRegistry
-                                                          .getCategory(
-                                                              widget.category)
-                                                      .color
-                                                      .withOpacity(0.2)
-                                                  : CategoryRegistry
-                                                          .getCategory(
-                                                              widget.category)
-                                                      .color
-                                                      .withOpacity(0.1),
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                          border: Border.all(
+                const SizedBox(height: 20),
+                Text(
+                  'Words Guessed:',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Column(
+                        children: [
+                          if (widget.wordsGuessed.isNotEmpty) ...[
+                            for (var i = 0;
+                                i < widget.wordsGuessed.length;
+                                i += 2)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => _onWordDisputed(
+                                            widget.wordsGuessed[i]),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 8, horizontal: 12),
+                                          decoration: BoxDecoration(
                                             color: _disputedWords.contains(
                                                     widget.wordsGuessed[i])
-                                                ? Colors.red
+                                                ? Theme.of(context)
+                                                            .brightness ==
+                                                        Brightness.dark
+                                                    ? Colors.red
+                                                        .withOpacity(0.2)
+                                                    : Colors.red
+                                                        .withOpacity(0.1)
                                                 : Theme.of(context)
                                                             .brightness ==
                                                         Brightness.dark
@@ -331,326 +329,353 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                                                             .getCategory(
                                                                 widget.category)
                                                         .color
-                                                        .withOpacity(0.8)
+                                                        .withOpacity(0.2)
                                                     : CategoryRegistry
                                                             .getCategory(
                                                                 widget.category)
-                                                        .color,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                widget.wordsGuessed[i],
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleMedium
-                                                    ?.copyWith(
-                                                      color: Theme.of(context)
-                                                                  .brightness ==
-                                                              Brightness.dark
-                                                          ? Colors.white
-                                                              .withOpacity(0.95)
-                                                          : Colors.black,
-                                                    ),
-                                                textAlign: TextAlign.center,
-                                              ),
+                                                        .color
+                                                        .withOpacity(0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: _disputedWords.contains(
+                                                      widget.wordsGuessed[i])
+                                                  ? Colors.red
+                                                  : Theme.of(context)
+                                                              .brightness ==
+                                                          Brightness.dark
+                                                      ? CategoryRegistry
+                                                              .getCategory(
+                                                                  widget
+                                                                      .category)
+                                                          .color
+                                                          .withOpacity(0.8)
+                                                      : CategoryRegistry
+                                                              .getCategory(
+                                                                  widget
+                                                                      .category)
+                                                          .color,
+                                              width: 2,
                                             ),
-                                            if (_disputedWords.contains(
-                                                widget.wordsGuessed[i]))
-                                              const Icon(
-                                                Icons.close,
-                                                color: Colors.red,
-                                                size: 20,
+                                          ),
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  widget.wordsGuessed[i],
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleMedium
+                                                      ?.copyWith(
+                                                        color: Theme.of(context)
+                                                                    .brightness ==
+                                                                Brightness.dark
+                                                            ? Colors.white
+                                                                .withOpacity(
+                                                                    0.95)
+                                                            : Colors.black,
+                                                      ),
+                                                  textAlign: TextAlign.center,
+                                                ),
                                               ),
-                                          ],
+                                              if (_disputedWords.contains(
+                                                  widget.wordsGuessed[i]))
+                                                const Icon(
+                                                  Icons.close,
+                                                  color: Colors.red,
+                                                  size: 20,
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: i + 1 < widget.wordsGuessed.length
-                                        ? GestureDetector(
-                                            onTap: () => _onWordDisputed(
-                                                widget.wordsGuessed[i + 1]),
-                                            child: Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 8,
-                                                      horizontal: 12),
-                                              decoration: BoxDecoration(
-                                                color: _disputedWords.contains(
-                                                        widget.wordsGuessed[
-                                                            i + 1])
-                                                    ? Theme.of(context)
-                                                                .brightness ==
-                                                            Brightness.dark
-                                                        ? Colors.red
-                                                            .withOpacity(0.2)
-                                                        : Colors.red
-                                                            .withOpacity(0.1)
-                                                    : Theme.of(context)
-                                                                .brightness ==
-                                                            Brightness.dark
-                                                        ? CategoryRegistry.getCategory(
-                                                                widget.category)
-                                                            .color
-                                                            .withOpacity(0.2)
-                                                        : CategoryRegistry.getCategory(
-                                                                widget.category)
-                                                            .color
-                                                            .withOpacity(0.1),
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                border: Border.all(
-                                                  color: _disputedWords
-                                                          .contains(widget
-                                                                  .wordsGuessed[
-                                                              i + 1])
-                                                      ? Colors.red
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: i + 1 < widget.wordsGuessed.length
+                                          ? GestureDetector(
+                                              onTap: () => _onWordDisputed(
+                                                  widget.wordsGuessed[i + 1]),
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                        horizontal: 12),
+                                                decoration: BoxDecoration(
+                                                  color: _disputedWords.contains(widget
+                                                          .wordsGuessed[i + 1])
+                                                      ? Theme.of(context)
+                                                                  .brightness ==
+                                                              Brightness.dark
+                                                          ? Colors.red
+                                                              .withOpacity(0.2)
+                                                          : Colors.red
+                                                              .withOpacity(0.1)
                                                       : Theme.of(context)
                                                                   .brightness ==
                                                               Brightness.dark
-                                                          ? CategoryRegistry
-                                                                  .getCategory(
-                                                                      widget
-                                                                          .category)
+                                                          ? CategoryRegistry.getCategory(
+                                                                  widget
+                                                                      .category)
                                                               .color
-                                                              .withOpacity(0.8)
-                                                          : CategoryRegistry
-                                                                  .getCategory(
-                                                                      widget
-                                                                          .category)
-                                                              .color,
-                                                  width: 2,
+                                                              .withOpacity(0.2)
+                                                          : CategoryRegistry.getCategory(
+                                                                  widget.category)
+                                                              .color
+                                                              .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                  border: Border.all(
+                                                    color: _disputedWords
+                                                            .contains(widget
+                                                                    .wordsGuessed[
+                                                                i + 1])
+                                                        ? Colors.red
+                                                        : Theme.of(context)
+                                                                    .brightness ==
+                                                                Brightness.dark
+                                                            ? CategoryRegistry
+                                                                    .getCategory(
+                                                                        widget
+                                                                            .category)
+                                                                .color
+                                                                .withOpacity(
+                                                                    0.8)
+                                                            : CategoryRegistry
+                                                                    .getCategory(
+                                                                        widget
+                                                                            .category)
+                                                                .color,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Text(
+                                                        widget.wordsGuessed[
+                                                            i + 1],
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .titleMedium
+                                                            ?.copyWith(
+                                                              color: Theme.of(context)
+                                                                          .brightness ==
+                                                                      Brightness
+                                                                          .dark
+                                                                  ? Colors.white
+                                                                      .withOpacity(
+                                                                          0.95)
+                                                                  : Colors
+                                                                      .black,
+                                                            ),
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                      ),
+                                                    ),
+                                                    if (_disputedWords.contains(
+                                                        widget.wordsGuessed[
+                                                            i + 1]))
+                                                      const Icon(
+                                                        Icons.close,
+                                                        color: Colors.red,
+                                                        size: 20,
+                                                      ),
+                                                  ],
                                                 ),
                                               ),
-                                              child: Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment
-                                                        .spaceBetween,
-                                                children: [
-                                                  Expanded(
-                                                    child: Text(
-                                                      widget
-                                                          .wordsGuessed[i + 1],
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .titleMedium
-                                                          ?.copyWith(
-                                                            color: Theme.of(context)
-                                                                        .brightness ==
-                                                                    Brightness
-                                                                        .dark
-                                                                ? Colors.white
-                                                                    .withOpacity(
-                                                                        0.95)
-                                                                : Colors.black,
-                                                          ),
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                    ),
-                                                  ),
-                                                  if (_disputedWords.contains(
-                                                      widget
-                                                          .wordsGuessed[i + 1]))
-                                                    const Icon(
-                                                      Icons.close,
-                                                      color: Colors.red,
-                                                      size: 20,
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                        : const SizedBox(),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Tap words to contest them',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  color: CategoryRegistry.getCategory(
-                                          widget.category)
-                                      .color,
+                                            )
+                                          : const SizedBox(),
+                                    ),
+                                  ],
                                 ),
-                          ),
-                          const SizedBox(height: 16),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 12, horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? CategoryRegistry.getCategory(
-                                          widget.category)
-                                      .color
-                                      .withOpacity(0.2)
-                                  : CategoryRegistry.getCategory(
-                                          widget.category)
-                                      .color
-                                      .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
+                              ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Tap words to contest them',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    color: CategoryRegistry.getCategory(
+                                            widget.category)
+                                        .color,
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              decoration: BoxDecoration(
                                 color: Theme.of(context).brightness ==
                                         Brightness.dark
                                     ? CategoryRegistry.getCategory(
                                             widget.category)
                                         .color
-                                        .withOpacity(0.8)
+                                        .withOpacity(0.2)
                                     : CategoryRegistry.getCategory(
                                             widget.category)
-                                        .color,
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _getPerformanceMessage(),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white.withOpacity(0.95)
-                                        : Colors.black,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ] else ...[
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 20),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.red.withOpacity(0.2)
-                                  : Colors.red.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? Colors.red.withOpacity(0.8)
-                                    : Colors.red,
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _getRandomMessage(_zeroScoreMessages),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white.withOpacity(0.95)
-                                        : Colors.black,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ],
-                        if (widget.wordsSkipped.isNotEmpty) ...[
-                          const SizedBox(height: 24),
-                          Text(
-                            'Words Skipped:',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                          const SizedBox(height: 10),
-                          for (var word in widget.wordsSkipped)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8, horizontal: 12),
-                                decoration: BoxDecoration(
+                                        .color
+                                        .withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
                                   color: Theme.of(context).brightness ==
                                           Brightness.dark
                                       ? CategoryRegistry.getCategory(
                                               widget.category)
                                           .color
-                                          .withOpacity(0.1)
+                                          .withOpacity(0.8)
                                       : CategoryRegistry.getCategory(
                                               widget.category)
-                                          .color
-                                          .withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
+                                          .color,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                _getPerformanceMessage(),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.white.withOpacity(0.95)
+                                          : Colors.black,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ] else ...[
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.red.withOpacity(0.2)
+                                    : Colors.red.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.red.withOpacity(0.8)
+                                      : Colors.red,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                _getRandomMessage(_zeroScoreMessages),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.white.withOpacity(0.95)
+                                          : Colors.black,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                          if (widget.wordsSkipped.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            Text(
+                              'Words Skipped:',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 10),
+                            for (var word in widget.wordsSkipped)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 12),
+                                  decoration: BoxDecoration(
                                     color: Theme.of(context).brightness ==
                                             Brightness.dark
                                         ? CategoryRegistry.getCategory(
                                                 widget.category)
                                             .color
-                                            .withOpacity(0.5)
+                                            .withOpacity(0.1)
                                         : CategoryRegistry.getCategory(
                                                 widget.category)
                                             .color
-                                            .withOpacity(0.3),
-                                    width: 1,
+                                            .withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? CategoryRegistry.getCategory(
+                                                  widget.category)
+                                              .color
+                                              .withOpacity(0.5)
+                                          : CategoryRegistry.getCategory(
+                                                  widget.category)
+                                              .color
+                                              .withOpacity(0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    word,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white.withOpacity(0.95)
+                                              : Colors.black,
+                                        ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
-                                child: Text(
-                                  word,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        color: Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? Colors.white.withOpacity(0.95)
-                                            : Colors.black,
-                                      ),
-                                  textAlign: TextAlign.center,
-                                ),
                               ),
-                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  children: [
-                    if (_disputedWords.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Text(
-                          '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
-                          style:
-                              Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Colors.red,
-                                  ),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Column(
+                    children: [
+                      if (_disputedWords.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: Text(
+                            '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Colors.red,
+                                ),
+                          ),
                         ),
+                      TeamColorButton(
+                        text: 'Confirm Score',
+                        icon: Icons.check,
+                        color: uiColors[0],
+                        onPressed: _confirmScore,
                       ),
-                    TeamColorButton(
-                      text: 'Confirm Score',
-                      icon: Icons.check,
-                      color: uiColors[0],
-                      onPressed: _confirmScore,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-            ],
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),

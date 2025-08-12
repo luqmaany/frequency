@@ -43,10 +43,6 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     final gameConfig = ref.read(gameSetupProvider);
 
     if (gameConfig.playerNames.length >= 12) {
-      setState(() {
-        _errorMessage =
-            'Maximum 12 players reached. Remove players to add more.';
-      });
       return;
     }
 
@@ -120,9 +116,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
               focusNode: _focusNode,
               enabled: gameConfig.playerNames.length < 12,
               decoration: InputDecoration(
-                labelText: gameConfig.playerNames.length >= 12
-                    ? 'Maximum players reached'
-                    : 'Player Name',
+                labelText: 'Player Name',
                 errorText: _errorMessage,
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.add),

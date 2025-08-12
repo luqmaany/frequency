@@ -173,18 +173,15 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      gameConfig.playerNames.length >= 12
-                          ? 'Maximum 12 players reached. Remove players to add more.'
-                          : 'Tap a name to add to a team.',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: gameConfig.playerNames.length >= 12
-                            ? Colors.orange
-                            : Colors.grey,
+                    if (gameConfig.playerNames.length >= 12)
+                      Text(
+                        'Maximum 12 players reached. Remove players to add more.',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.orange,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 16),
                     const PlayerInput(),
                     const SizedBox(height: 0),
@@ -194,11 +191,10 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
+                          crossAxisCount: 1,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
-                          childAspectRatio:
-                              1, // Changed to 0.7 for the right height
+                          childAspectRatio: 3,
                         ),
                         itemCount: gameConfig.teams.length,
                         itemBuilder: (context, index) {

@@ -12,6 +12,7 @@ import '../screens/game_setup_screen.dart';
 import '../screens/word_lists_manager_screen.dart';
 import '../screens/settings_screen.dart';
 import '../services/game_state_provider.dart';
+import '../screens/home_screen.dart';
 
 class GameNavigationService {
   // ============================================================================
@@ -243,7 +244,28 @@ class GameNavigationService {
 
   /// Navigate back to home screen
   static void _navigateToHome(BuildContext context) {
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    // Ensure we land on home screen; if already first route is home this is fine,
+    // otherwise replace stack with Home.
+    bool poppedToFirst = false;
+    Navigator.of(context).popUntil((route) {
+      poppedToFirst = route.isFirst;
+      return poppedToFirst;
+    });
+    if (poppedToFirst && ModalRoute.of(context)?.settings.name == '/home') {
+      return;
+    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
+      (route) => false,
+    );
+  }
+
+  /// Clear game state and navigate to home. Use for global quit.
+  static Future<void> quitToHome(BuildContext context, WidgetRef ref) async {
+    // Clear in-memory game state
+    ref.read(gameStateProvider.notifier).resetGame();
+    // Navigate to Home
+    _navigateToHome(context);
   }
 
   /// Navigate to game over screen

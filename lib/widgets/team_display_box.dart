@@ -45,11 +45,16 @@ class TeamDisplayBox extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Center(
-            child: Column(
-              // Changed from Wrap to Column
-              children: children,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ...children
+                  .map((w) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                        child: w,
+                      ))
+                  .toList(),
+            ],
           ),
         ],
       ),

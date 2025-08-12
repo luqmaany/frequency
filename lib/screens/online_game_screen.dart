@@ -6,6 +6,8 @@ import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
 import '../widgets/game_countdown.dart';
 import '../widgets/team_color_button.dart';
+import '../widgets/confirm_on_back.dart';
+import '../widgets/quit_dialog.dart';
 import '../services/storage_service.dart';
 import '../data/category_registry.dart';
 import '../services/firestore_service.dart';
@@ -228,69 +230,14 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
 
     final teamColor = teamColors[colorIndex];
 
-    return WillPopScope(
-      onWillPop: () async {
-        final shouldQuit = await showDialog<bool>(
-          context: context,
-          barrierDismissible: true,
-          builder: (context) => Dialog(
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).dialogBackgroundColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: teamColor.border, width: 2),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.warning_amber_rounded,
-                      color: teamColor.border, size: 48),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Quit Game?',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          color: teamColor.text,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'You sure you want to be a quitter?',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      Expanded(
-                        child: TeamColorButton(
-                          text: 'Cancel',
-                          icon: Icons.close,
-                          color: teamColor,
-                          onPressed: () => Navigator.of(context).pop(false),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: TeamColorButton(
-                          text: 'Quit',
-                          icon: Icons.exit_to_app,
-                          color: teamColor,
-                          onPressed: () => Navigator.of(context).pop(true),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+    return ConfirmOnBack(
+      dialogBuilder: (ctx) => QuitDialog(color: teamColor),
+      onConfirmed: (ctx) async {
+        await OnlineGameNavigationService.leaveSessionAndGoHome(
+          context: ctx,
+          ref: ref,
+          sessionId: widget.sessionId,
         );
-        return shouldQuit == true;
       },
       child: Scaffold(
         body: SafeArea(
