@@ -314,6 +314,34 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                   ],
                 ),
               ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TeamColorButton(
+                        text: 'Home',
+                        icon: Icons.home,
+                        color: uiColors[0],
+                        onPressed: () {
+                          Navigator.of(context)
+                              .popUntil((route) => route.isFirst);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],

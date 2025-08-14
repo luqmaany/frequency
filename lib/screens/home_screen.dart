@@ -1,10 +1,10 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/game_navigation_service.dart';
 import 'online_lobby_screen.dart';
+import 'background_lab_screen.dart';
+import '../widgets/wave_background.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
 class AnimatedGradientText extends StatefulWidget {
@@ -86,96 +86,6 @@ class _AnimatedGradientTextState extends State<AnimatedGradientText>
       },
     );
   }
-}
-
-/// --- Animated wave background ----------------------------------------------
-/// Lightweight CustomPainter with animated contour-like lines.
-/// Looks best on dark backgrounds.
-class WaveBackground extends StatefulWidget {
-  const WaveBackground({super.key});
-
-  @override
-  State<WaveBackground> createState() => _WaveBackgroundState();
-}
-
-class _WaveBackgroundState extends State<WaveBackground>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
-  static const Duration _loop = Duration(seconds: 10);
-
-  @override
-  void initState() {
-    super.initState();
-    _ticker = createTicker((_) => setState(() {}))..start();
-  }
-
-  @override
-  void dispose() {
-    _ticker.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Absolute-time phase 0..1 so there is no visual jump across navigation
-    final int nowMs = DateTime.now().millisecondsSinceEpoch;
-    final double t =
-        ((nowMs % _loop.inMilliseconds) / _loop.inMilliseconds).clamp(0.0, 1.0);
-
-    return RepaintBoundary(
-      child: CustomPaint(
-        painter: _WavesPainter(t: t),
-      ),
-    );
-  }
-}
-
-class _WavesPainter extends CustomPainter {
-  final double t;
-  _WavesPainter({required this.t});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Background gradient
-    final bg = Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(0, -0.2),
-        radius: 1.2,
-        colors: [Color(0xFF0B1020), Color(0xFF0E162A)],
-      ).createShader(Offset.zero & size);
-    canvas.drawRect(Offset.zero & size, bg);
-
-    // Contour lines
-    const lines = 26;
-    for (int i = 0; i < lines; i++) {
-      final yBase = size.height * (i / (lines - 1));
-      final path = Path();
-      for (double x = 0; x <= size.width; x += 6) {
-        // Two sine layers + slow drift for "radio" feel
-        // Use integer multiples of 2π for time terms so the loop is seamless when t resets
-        final y = yBase +
-            10 * math.sin((x * 0.012) + (t * math.pi * 2 * 1.0) + i * 0.55) +
-            4 * math.sin((x * 0.02) - (t * math.pi * 2 * 2.0) + i * 1.1);
-        if (x == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
-
-      // Subtle hue shift across lines, with glow-like opacity
-      final hue = (210 + i * 7) % 360.0; // blues → purples → reds
-      final color = HSLColor.fromAHSL(0.20, hue, 0.65, 0.55).toColor();
-      final paint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.3
-        ..color = color.withOpacity(0.9);
-      canvas.drawPath(path, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _WavesPainter oldDelegate) => oldDelegate.t != t;
 }
 
 /// --- HomeScreen with animated background + new title ------------------------
@@ -274,6 +184,19 @@ class HomeScreen extends ConsumerWidget {
                     () => GameNavigationService.navigateToSettings(context),
                     buttonColors[2],
                   ),
+                  const SizedBox(height: 16),
+                  _buildMenuButton(
+                    context,
+                    'Background Lab',
+                    () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const BackgroundLabScreen(),
+                        ),
+                      );
+                    },
+                    buttonColors[0],
+                  ),
                   const Spacer(),
                 ],
               ),
@@ -305,7 +228,7 @@ class HomeScreen extends ConsumerWidget {
           decoration: BoxDecoration(
             color: buttonColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 1.5),
+            border: Border.all(color: borderColor, width: 2.0),
             boxShadow: [
               BoxShadow(
                 color: borderColor.withOpacity(0.08),

@@ -16,9 +16,6 @@ class DecksStoreScreen extends ConsumerWidget {
     final List<Category> more = all.where((c) => !c.isUnlocked).toList();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Decks'),
-      ),
       body: SafeArea(
         child: Column(
           children: [
@@ -29,6 +26,18 @@ class DecksStoreScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Center(
+                      child: Text(
+                        'Decks',
+                        style: TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     _SectionHeader(text: 'Owned', isPrimary: true),
                     const SizedBox(height: 8),
                     if (owned.isEmpty)

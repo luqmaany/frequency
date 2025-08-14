@@ -159,15 +159,10 @@ class _ParallelWavesPainter extends CustomPainter {
     // Palette consistent with app hues
     const List<Color> baseColors = [
       Color(0xFF5EB1FF), // blue
-      Color(0xFF8287FF), // blue-purple midpoint
       Color(0xFF7A5CFF), // purple
-      Color(0xFFFF85BF), // purple-pink midpoint
       Color(0xFFFF6680), // pink/red
-      Color(0xFFFF8572), // pink-orange midpoint
       Color(0xFFFFA14A), // orange
-      Color(0xFFBEE1A8), // orange-green midpoint
       Color(0xFF4CD295), // green
-      Color(0xFF6FE8C6), // green-blue midpoint
     ];
 
     double hueLerp(double a, double b, double t) {

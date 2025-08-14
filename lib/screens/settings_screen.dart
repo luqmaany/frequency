@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/storage_service.dart';
 import '../services/theme_provider.dart';
+import '../widgets/team_color_button.dart';
+import '../widgets/dual_radial_interference_background.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -73,103 +75,141 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Settings',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.all(24.0),
-                      children: [
-                        const Text(
-                          'App Preferences',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Text(
-                          'Customize your gaming experience',
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 48),
-                        _buildSettingTile(
-                          context,
-                          'Sound Effects',
-                          Icons.volume_up_rounded,
-                          'Enable sound effects during gameplay',
-                          _soundEnabled,
-                          _updateSoundEnabled,
-                          Colors.blue,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildSettingTile(
-                          context,
-                          'Vibration',
-                          Icons.vibration_rounded,
-                          'Enable vibration feedback',
-                          _vibrationEnabled,
-                          _updateVibrationEnabled,
-                          Colors.green,
-                        ),
-                        const SizedBox(height: 16),
-                        // Dark mode is forced; hide toggle but keep code infrastructure
-                        const SizedBox(height: 48),
-                        const Text(
-                          'Data Management',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Text(
-                          'Manage your game data and preferences',
-                          style: TextStyle(
-                            fontSize: 24,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 48),
-                        _buildActionTile(
-                          context,
-                          'Clear Game Data',
-                          Icons.delete_outline_rounded,
-                          'Remove all saved games and statistics',
-                          _showClearDataDialog,
-                          Colors.red,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildActionTile(
-                          context,
-                          'Reset to Defaults',
-                          Icons.refresh_rounded,
-                          'Restore all settings to default values',
-                          _showResetDefaultsDialog,
-                          Colors.orange,
-                        ),
-                      ],
-                    ),
+          : Stack(
+              children: [
+                const Positioned.fill(
+                  child: DualRadialInterferenceBackground(
+                    verticalPositionFactor: 0.5,
+                    sourcesHorizontalOffsetFactor: 0.52,
+                    colorCyclesPerLoop: 0.05,
                   ),
-                ],
-              ),
+                ),
+                SafeArea(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ListView(
+                          padding: const EdgeInsets.all(24.0),
+                          children: [
+                            Center(
+                              child: Text(
+                                'Settings',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Center(
+                              child: Text(
+                                'App Preferences',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 0.6,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildSettingTile(
+                              context,
+                              'Sound Effects',
+                              Icons.volume_up_rounded,
+                              'Enable sound effects during gameplay',
+                              _soundEnabled,
+                              _updateSoundEnabled,
+                              Colors.blue,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildSettingTile(
+                              context,
+                              'Vibration',
+                              Icons.vibration_rounded,
+                              'Enable vibration feedback',
+                              _vibrationEnabled,
+                              _updateVibrationEnabled,
+                              Colors.green,
+                            ),
+                            const SizedBox(height: 16),
+                            // Dark mode is forced; hide toggle but keep code infrastructure
+                            const SizedBox(height: 16),
+                            Center(
+                              child: Text(
+                                'Data Management',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 0.6,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildActionTile(
+                              context,
+                              'Reset to Defaults',
+                              Icons.refresh_rounded,
+                              'Restore all settings to default values',
+                              _showResetDefaultsDialog,
+                              Colors.orange,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildActionTile(
+                              context,
+                              'Clear Game Data',
+                              Icons.delete_outline_rounded,
+                              'Remove all saved games and statistics',
+                              _showClearDataDialog,
+                              Colors.red,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, -2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TeamColorButton(
+                                text: 'Home',
+                                icon: Icons.home,
+                                color: uiColors[0],
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .popUntil((route) => route.isFirst);
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
     );
   }
@@ -183,7 +223,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     ValueChanged<bool> onChanged,
     Color color,
   ) {
-    final Color buttonColor = color.withOpacity(0.2);
+    final Color baseBg = Theme.of(context).colorScheme.background;
+    final Color overlay = color.withOpacity(0.3);
+    final Color buttonColor = Color.alphaBlend(overlay, baseBg);
     final Color borderColor = color;
 
     return Padding(
@@ -255,7 +297,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     VoidCallback onTap,
     Color color,
   ) {
-    final Color buttonColor = color.withOpacity(0.2);
+    final Color baseBg = Theme.of(context).colorScheme.background;
+    final Color overlay = color.withOpacity(0.3);
+    final Color buttonColor = Color.alphaBlend(overlay, baseBg);
     final Color borderColor = color;
 
     return Padding(
@@ -320,62 +364,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _showClearDataDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Clear Game Data'),
-          content: const Text(
-            'This will permanently delete all saved games, statistics, and player data. This action cannot be undone.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _clearGameData();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: const Text('Clear Data'),
-            ),
-          ],
-        );
-      },
+    _showStyledActionDialog(
+      title: 'Clear Game Data',
+      message:
+          'This will permanently delete all saved games, statistics, and player data. This action cannot be undone.',
+      baseColor: Colors.red,
+      icon: Icons.delete_outline_rounded,
+      confirmText: 'Clear Data',
+      onConfirm: _clearGameData,
     );
   }
 
   void _showResetDefaultsDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Reset to Defaults'),
-          content: const Text(
-            'This will reset all settings to their default values. Your game data will be preserved.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _resetToDefaults();
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.orange,
-              ),
-              child: const Text('Reset'),
-            ),
-          ],
-        );
-      },
+    _showStyledActionDialog(
+      title: 'Reset to Defaults',
+      message:
+          'This will reset all settings to their default values. Your game data will be preserved.',
+      baseColor: Colors.orange,
+      icon: Icons.refresh_rounded,
+      confirmText: 'Reset',
+      onConfirm: _resetToDefaults,
     );
   }
 
@@ -431,5 +439,92 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     }
+  }
+
+  void _showStyledActionDialog({
+    required String title,
+    required String message,
+    required Color baseColor,
+    required IconData icon,
+    required String confirmText,
+    required VoidCallback onConfirm,
+  }) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        final Color fillColor = Color.alphaBlend(
+          baseColor.withOpacity(0.18),
+          Theme.of(context).colorScheme.background,
+        );
+        final Color borderColor = baseColor;
+        final Color textColor = Colors.white;
+        return Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 560),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: fillColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: borderColor, width: 2),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: borderColor, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: textColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: textColor.withOpacity(0.9), fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: TeamColorButton(
+                        text: 'Cancel',
+                        icon: Icons.close,
+                        color: TeamColor('Base', baseColor.withOpacity(0.2),
+                            borderColor, Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TeamColorButton(
+                        text: confirmText,
+                        icon: icon,
+                        color: TeamColor('Base', baseColor.withOpacity(0.2),
+                            borderColor, Colors.white),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onConfirm();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }

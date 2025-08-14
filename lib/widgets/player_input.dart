@@ -106,50 +106,35 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Builder(
-          builder: (context) {
-            final fillColor = Colors.blueGrey.shade900;
-            final borderColor = Colors.blueGrey.shade700;
-            final focusedBorderColor = Colors.blue.shade200;
-            return TextField(
-              controller: _controller,
-              focusNode: _focusNode,
-              enabled: gameConfig.playerNames.length < 12,
-              decoration: InputDecoration(
-                labelText: 'Player Name',
-                errorText: _errorMessage,
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed:
-                      gameConfig.playerNames.length >= 12 ? null : _addPlayer,
-                ),
-                filled: true,
-                fillColor: fillColor,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: borderColor, width: 2),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: borderColor, width: 2),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: focusedBorderColor, width: 2),
-                ),
+        SizedBox(
+          height: 45,
+          child: TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            enabled: gameConfig.playerNames.length < 12,
+            decoration: InputDecoration(
+              labelText: 'Player Name',
+              errorText: _errorMessage,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.add),
+                onPressed:
+                    gameConfig.playerNames.length >= 12 ? null : _addPlayer,
               ),
-              onSubmitted: gameConfig.playerNames.length >= 12
-                  ? null
-                  : (_) => _addPlayer(),
-              onChanged: (_) {
-                if (_errorMessage != null) {
-                  setState(() {
-                    _errorMessage = null;
-                  });
-                }
-              },
-            );
-          },
+              border: const OutlineInputBorder(),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            ),
+            onSubmitted: gameConfig.playerNames.length >= 12
+                ? null
+                : (_) => _addPlayer(),
+            onChanged: (_) {
+              if (_errorMessage != null) {
+                setState(() {
+                  _errorMessage = null;
+                });
+              }
+            },
+          ),
         ),
         const SizedBox(height: 8),
         _buildSuggestedNames(gameConfig),

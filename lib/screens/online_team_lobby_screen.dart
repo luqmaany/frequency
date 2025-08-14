@@ -376,20 +376,23 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                   ),
                                   // Team Setup Section
                                   const SizedBox(height: 10),
-                                  const Text('Team Setup',
-                                      style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold)),
                                   const SizedBox(height: 16),
                                   SizedBox(
                                     height: 45,
                                     child: TextField(
                                       controller: _teamNameController,
-                                      decoration: const InputDecoration(
+                                      textAlign: TextAlign.center,
+                                      decoration: InputDecoration(
                                         labelText: 'Team Name',
-                                        border: OutlineInputBorder(),
-                                        contentPadding: EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 8),
+                                        border: const OutlineInputBorder(),
+                                        filled: true,
+                                        fillColor: Theme.of(context)
+                                            .scaffoldBackgroundColor,
+                                        floatingLabelAlignment:
+                                            FloatingLabelAlignment.center,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 12, vertical: 8),
                                       ),
                                       onChanged: (value) {
                                         _onNameChanged();
@@ -404,11 +407,18 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                           height: 45,
                                           child: TextField(
                                             controller: _player1Controller,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Player 1 Name',
-                                              border: OutlineInputBorder(),
+                                            textAlign: TextAlign.center,
+                                            decoration: InputDecoration(
+                                              labelText: 'Player 1',
+                                              border:
+                                                  const OutlineInputBorder(),
+                                              filled: true,
+                                              fillColor: Theme.of(context)
+                                                  .scaffoldBackgroundColor,
+                                              floatingLabelAlignment:
+                                                  FloatingLabelAlignment.center,
                                               contentPadding:
-                                                  EdgeInsets.symmetric(
+                                                  const EdgeInsets.symmetric(
                                                       horizontal: 12,
                                                       vertical: 8),
                                             ),
@@ -424,11 +434,18 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                           height: 45,
                                           child: TextField(
                                             controller: _player2Controller,
-                                            decoration: const InputDecoration(
-                                              labelText: 'Player 2 Name',
-                                              border: OutlineInputBorder(),
+                                            textAlign: TextAlign.center,
+                                            decoration: InputDecoration(
+                                              labelText: 'Player 2',
+                                              border:
+                                                  const OutlineInputBorder(),
+                                              filled: true,
+                                              fillColor: Theme.of(context)
+                                                  .scaffoldBackgroundColor,
+                                              floatingLabelAlignment:
+                                                  FloatingLabelAlignment.center,
                                               contentPadding:
-                                                  EdgeInsets.symmetric(
+                                                  const EdgeInsets.symmetric(
                                                       horizontal: 12,
                                                       vertical: 8),
                                             ),
@@ -440,13 +457,12 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 24),
-                                  const Text('Team Colour',
-                                      style: TextStyle(fontSize: 16)),
+                                  const SizedBox(height: 8),
                                   ListView.builder(
                                     shrinkWrap: true,
                                     physics:
                                         const NeverScrollableScrollPhysics(),
+                                    clipBehavior: Clip.none,
                                     itemCount: teamColors.length,
                                     itemBuilder: (context, i) {
                                       final isSelected =
@@ -486,6 +502,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                         child: InkWell(
                                           borderRadius:
                                               BorderRadius.circular(12),
+                                          splashColor: Colors.transparent,
+                                          highlightColor: Colors.transparent,
                                           onTap: (takenByOther || _updating)
                                               ? null
                                               : () async {
@@ -503,98 +521,122 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                                     _onColorChanged();
                                                   }
                                                 },
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                vertical: 8, horizontal: 10),
-                                            decoration: BoxDecoration(
-                                              // Dark opaque background matching setup screen boxes
-                                              color: Color.alphaBlend(
-                                                teamColor.border
-                                                    .withOpacity(0.6),
-                                                Theme.of(context)
-                                                    .colorScheme
-                                                    .background,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? teamColor.border
-                                                    : teamColor.border
-                                                        .withOpacity(0.5),
-                                                width: 2.0,
-                                              ),
-                                              boxShadow: isSelected
-                                                  ? [
-                                                      BoxShadow(
-                                                        color: teamColor.border
-                                                            .withOpacity(0.18),
-                                                        blurRadius: 8,
-                                                        offset:
-                                                            const Offset(0, 2),
-                                                      ),
-                                                    ]
-                                                  : [],
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.center,
-                                              children: [
-                                                Row(
+                                          child: AnimatedScale(
+                                              scale: isSelected ? 1.03 : 1.0,
+                                              duration: const Duration(
+                                                  milliseconds: 120),
+                                              curve: Curves.easeOut,
+                                              child: Container(
+                                                clipBehavior: Clip.none,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                        horizontal: 10),
+                                                decoration: BoxDecoration(
+                                                  // Dark opaque background matching setup screen boxes
+                                                  color: Color.alphaBlend(
+                                                    teamColor.border
+                                                        .withOpacity(isSelected
+                                                            ? 0.85
+                                                            : 0.6),
+                                                    Theme.of(context)
+                                                        .colorScheme
+                                                        .background,
+                                                  ),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  border: Border.all(
+                                                    color: isSelected
+                                                        ? teamColor.border
+                                                        : teamColor.border
+                                                            .withOpacity(0.5),
+                                                    width:
+                                                        isSelected ? 3.0 : 2.0,
+                                                  ),
+                                                  boxShadow: isSelected
+                                                      ? [
+                                                          BoxShadow(
+                                                            color: teamColor
+                                                                .border
+                                                                .withOpacity(
+                                                                    0.18),
+                                                            blurRadius: 8,
+                                                            offset:
+                                                                const Offset(
+                                                                    0, 2),
+                                                          ),
+                                                        ]
+                                                      : [],
+                                                ),
+                                                child: Column(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
                                                   crossAxisAlignment:
-                                                      CrossAxisAlignment
-                                                          .center, // ensure vertical centering
+                                                      CrossAxisAlignment.center,
                                                   children: [
-                                                    Icon(Icons.circle,
-                                                        color: teamColor.border,
-                                                        size: 22),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Text(
-                                                        teamColor.name,
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .center, // ensure vertical centering
+                                                      children: [
+                                                        Icon(Icons.circle,
+                                                            color: teamColor
+                                                                .border,
+                                                            size: 22),
+                                                        const SizedBox(
+                                                            width: 8),
+                                                        Expanded(
+                                                          child: Text(
+                                                            teamColor.name,
+                                                            textAlign: TextAlign
+                                                                .center,
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                              fontSize: 18,
+                                                              color:
+                                                                  Colors.white,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                        if (teamIsReady) ...[
+                                                          const SizedBox(
+                                                              width: 8),
+                                                          const Icon(
+                                                              Icons
+                                                                  .check_circle,
+                                                              color:
+                                                                  Colors.green,
+                                                              size: 22),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                    if (colorTaken &&
+                                                        infoText
+                                                            .isNotEmpty) ...[
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        infoText,
                                                         textAlign:
                                                             TextAlign.center,
                                                         style: TextStyle(
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          fontSize: 18,
+                                                          fontSize: 15,
                                                           color: Colors.white,
+                                                          fontWeight:
+                                                              FontWeight.w500,
                                                         ),
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        maxLines: 2,
                                                       ),
-                                                    ),
-                                                    if (teamIsReady) ...[
-                                                      const SizedBox(width: 8),
-                                                      const Icon(
-                                                          Icons.check_circle,
-                                                          color: Colors.green,
-                                                          size: 22),
                                                     ],
                                                   ],
                                                 ),
-                                                if (colorTaken &&
-                                                    infoText.isNotEmpty) ...[
-                                                  const SizedBox(height: 4),
-                                                  Text(
-                                                    infoText,
-                                                    textAlign: TextAlign.center,
-                                                    style: TextStyle(
-                                                      fontSize: 15,
-                                                      color: Colors.white,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                                    overflow:
-                                                        TextOverflow.ellipsis,
-                                                    maxLines: 2,
-                                                  ),
-                                                ],
-                                              ],
-                                            ),
-                                          ),
+                                              )),
                                         ),
                                       );
                                     },
