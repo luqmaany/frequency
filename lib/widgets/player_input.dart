@@ -55,23 +55,22 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       orElse: () => '',
     );
 
+    // If already in a team, do not add (regardless of suggestions)
     if (exists) {
-      if (suggested.isNotEmpty) {
-        ref.read(gameSetupProvider.notifier).addPlayer(suggested);
-        _controller.clear();
-        _focusNode.requestFocus();
-        setState(() {
-          _errorMessage = null;
-        });
-      } else {
-        setState(() {
-          _errorMessage = '$name is already in a team';
-        });
-      }
+      setState(() {
+        _errorMessage = '$name is already in a team';
+      });
       return;
     }
 
     if (suggested.isNotEmpty) {
+      // Remove from suggestions store and local list, then add
+      final updated = List<String>.from(_suggestedNames)
+        ..removeWhere((s) => s.toLowerCase() == suggested.toLowerCase());
+      StorageService.saveSuggestedNames(updated);
+      setState(() {
+        _suggestedNames = updated;
+      });
       ref.read(gameSetupProvider.notifier).addPlayer(suggested);
       _controller.clear();
       _focusNode.requestFocus();
@@ -111,6 +110,11 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
 
+    // Refresh suggestions whenever setup state changes (e.g., after Clear)
+    ref.listen(gameSetupProvider, (previous, next) {
+      _loadSuggestedNames();
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_suggestedNames.isEmpty) {
         _loadSuggestedNames();
@@ -135,7 +139,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
                 labelPadding: EdgeInsets.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(7),
-                  side: BorderSide(color: Colors.grey.shade600, width: 1),
+                  side: const BorderSide(color: Colors.white, width: 1),
                 ),
                 onPressed: gameConfig.playerNames.length >= 12
                     ? null
@@ -159,19 +163,20 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
                   backgroundColor: Colors.grey[850],
                   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   visualDensity: VisualDensity.compact,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(7),
-                    side: BorderSide(color: Colors.grey.shade600, width: 1),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(7)),
+                    side: BorderSide(color: Colors.white, width: 1),
                   ),
                   label: ConstrainedBox(
                     constraints:
-                        const BoxConstraints(minWidth: 40, maxWidth: 220),
+                        const BoxConstraints(minWidth: 22, maxWidth: 220),
                     child: IntrinsicWidth(
                       child: TextField(
                         controller: _controller,
                         focusNode: _focusNode,
                         autofocus: true,
-                        style: const TextStyle(color: Colors.white),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 14),
                         cursorColor: Colors.white70,
                         // Always show cursor while editing
                         showCursor: true,
@@ -212,7 +217,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
                     ),
                   ),
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                      const EdgeInsets.symmetric(horizontal: 0, vertical: 9),
                   onPressed: null,
                 ),
               ),
@@ -226,6 +231,24 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   }
 
   Widget _buildSuggestedNames(GameConfig gameConfig) {
+    // If at maximum players, replace suggestions row with message
+    if (gameConfig.playerNames.length >= 12) {
+      return SizedBox(
+        height: 50,
+        child: const Center(
+          child: Text(
+            'Maximum 12 players reached.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color.fromARGB(255, 255, 0, 0),
+            ),
+          ),
+        ),
+      );
+    }
+
     final suggestedNames = _suggestedNames
         .where((suggestion) => !gameConfig.playerNames
             .any((name) => name.toLowerCase() == suggestion.toLowerCase()))
@@ -253,11 +276,20 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     final chip = ActionChip(
       backgroundColor: Colors.grey[850],
       label: Text(suggestion),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(7),
+        side: const BorderSide(color: Colors.white, width: 1),
+      ),
       onPressed: canAdd
           ? () async {
-              await ref
-                  .read(gameSetupProvider.notifier)
-                  .moveNameToQueueFront(suggestion);
+              // Remove from suggestions and add to team
+              final updated = List<String>.from(_suggestedNames)
+                ..removeWhere(
+                    (s) => s.toLowerCase() == suggestion.toLowerCase());
+              await StorageService.saveSuggestedNames(updated);
+              setState(() {
+                _suggestedNames = updated;
+              });
               ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
             }
           : null,
@@ -268,19 +300,22 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       child: LongPressDraggable<String>(
         data: suggestion,
         delay: const Duration(milliseconds: 120),
-        feedback: Material(
-          color: Colors.transparent,
-          child: Chip(
-            label: Text(suggestion),
-            backgroundColor: Colors.grey[800],
-            side: BorderSide(color: Colors.grey.shade600),
+        dragAnchorStrategy: pointerDragAnchorStrategy,
+        feedback: Transform.translate(
+          offset: const Offset(-30, -70),
+          child: Material(
+            color: Colors.transparent,
+            child: Chip(
+              label: Text(suggestion),
+              backgroundColor: Colors.grey[800],
+              side: const BorderSide(color: Colors.white),
+            ),
           ),
         ),
         childWhenDragging: Opacity(
           opacity: 0.5,
           child: chip,
         ),
-        dragAnchorStrategy: pointerDragAnchorStrategy,
         child: chip,
       ),
     );

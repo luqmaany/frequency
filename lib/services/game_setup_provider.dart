@@ -265,6 +265,9 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
 
     // Save only player names to storage
     _savePlayerNamesToStorage(updatedPlayers);
+
+    // Move removed name back to suggestions queue
+    StorageService.addNamesToQueue([name]);
   }
 
   void setRoundTime(int seconds) {
@@ -400,21 +403,43 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
     }
   }
 
+  // Persist the current list of players found in teams to storage
+  Future<void> persistTeamPlayers() async {
+    final Set<String> players = {};
+    for (final team in state.teams) {
+      for (final p in team) {
+        if (p.isNotEmpty) players.add(p);
+      }
+    }
+    final List<String> playersList = players.toList();
+    state = state.copyWith(playerNames: playersList);
+    await StorageService.savePlayerNames(playersList);
+  }
+
   // Move a name to the front of the suggestion queue
   Future<void> moveNameToQueueFront(String name) async {
     await StorageService.moveNameToFront(name);
   }
 
   // Clear all players from teams but keep player names available
-  void clearAllPlayers() {
-    // Remove all players from playerNames list
-    final updatedPlayerNames = <String>[];
+  Future<void> clearAllPlayers() async {
+    // Collect all current names (from teams and playerNames) and move to suggestions
+    final Set<String> allNames = {...state.playerNames};
+    for (final team in state.teams) {
+      for (final player in team) {
+        if (player.isNotEmpty) allNames.add(player);
+      }
+    }
+    if (allNames.isNotEmpty) {
+      await StorageService.addNamesToQueue(allNames.toList());
+    }
+
+    // Clear teams and players
     state = state.copyWith(
-      playerNames: updatedPlayerNames,
+      playerNames: [],
       teams: [],
       teamColorIndices: [],
     );
-    // Teams are not saved to storage
   }
 }
 

@@ -20,6 +20,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
   List<Animation<double>> _animations = [];
   List<List<String>> _prevTeams = [];
   bool _dropAcceptedByTeam = false;
+  bool _isDraggingTeamChip = false;
 
   @override
   void initState() {
@@ -162,37 +163,32 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
               },
             ),
           ),
-          // Main content with teams and players
+          // Main content with pinned header and scrollable content
           Column(
             children: [
+              SafeArea(
+                bottom: false,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Center(
+                    child: Text(
+                      'Team Setup',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Expanded(
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const SizedBox(height: 48),
-                    Center(
-                      child: Text(
-                        'Team Setup',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    if (gameConfig.playerNames.length >= 12)
-                      const Text(
-                        'Maximum 12 players reached. Remove players to add more.',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.orange,
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    const PlayerInput(),
                     const SizedBox(height: 8),
+                    const PlayerInput(),
                     Column(
                       children: List.generate(teamColors.length, (i) {
                         final teamColor = teamColors[i];
@@ -265,25 +261,30 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                                 (context, candidate, rejected) {
                                               return Draggable<String>(
                                                 data: player,
-                                                feedback: Material(
-                                                  color: Colors.transparent,
-                                                  child: Chip(
-                                                    label: Text(player),
-                                                    backgroundColor:
-                                                        teamColor.background,
-                                                    side: BorderSide(
-                                                        color:
-                                                            teamColor.border),
-                                                    materialTapTargetSize:
-                                                        MaterialTapTargetSize
-                                                            .shrinkWrap,
-                                                    visualDensity:
-                                                        VisualDensity.compact,
-                                                    labelPadding:
-                                                        const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 8,
-                                                            vertical: 1),
+                                                dragAnchorStrategy:
+                                                    pointerDragAnchorStrategy,
+                                                feedback: Transform.translate(
+                                                  offset:
+                                                      const Offset(-30, -70),
+                                                  child: Material(
+                                                    color: Colors.transparent,
+                                                    child: Chip(
+                                                      label: Text(player),
+                                                      backgroundColor:
+                                                          Colors.grey[800],
+                                                      side: const BorderSide(
+                                                          color: Colors.white),
+                                                      materialTapTargetSize:
+                                                          MaterialTapTargetSize
+                                                              .shrinkWrap,
+                                                      visualDensity:
+                                                          VisualDensity.compact,
+                                                      labelPadding:
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 8,
+                                                              vertical: 1),
+                                                    ),
                                                   ),
                                                 ),
                                                 childWhenDragging: Opacity(
@@ -327,6 +328,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                                 ),
                                                 onDragStarted: () {
                                                   _dropAcceptedByTeam = false;
+                                                  setState(() {
+                                                    _isDraggingTeamChip = true;
+                                                  });
                                                 },
                                                 onDragEnd: (details) {
                                                   if (!_dropAcceptedByTeam) {
@@ -336,6 +340,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                                                         .removePlayer(player);
                                                   }
                                                   _dropAcceptedByTeam = false;
+                                                  setState(() {
+                                                    _isDraggingTeamChip = false;
+                                                  });
                                                 },
                                               );
                                             },
@@ -412,45 +419,59 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                 decoration: const BoxDecoration(
                   color: Colors.transparent,
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TeamColorButton(
-                        text: 'Home',
-                        icon: Icons.home,
-                        color: uiColors[0],
-                        onPressed: () {
-                          Navigator.of(context)
-                              .popUntil((route) => route.isFirst);
-                        },
+                child: _isDraggingTeamChip
+                    ? Center(
+                        child: TeamColorButton(
+                          text: 'Delete',
+                          icon: Icons.delete_outline,
+                          color: uiColors[2],
+                          onPressed: () {},
+                        ),
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: TeamColorButton(
+                              text: 'Home',
+                              icon: Icons.home,
+                              color: uiColors[0],
+                              onPressed: () {
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst);
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: TeamColorButton(
+                              text: 'Next',
+                              icon: Icons.arrow_forward,
+                              color: uiColors[1],
+                              onPressed: gameConfig.teams.length >= 2 &&
+                                      gameConfig.teams.every((team) =>
+                                          team
+                                              .where(
+                                                  (player) => player.isNotEmpty)
+                                              .length ==
+                                          2)
+                                  ? () async {
+                                      // Persist current team players to storage
+                                      await ref
+                                          .read(gameSetupProvider.notifier)
+                                          .persistTeamPlayers();
+                                      // Also queue them for future suggestions
+                                      await ref
+                                          .read(gameSetupProvider.notifier)
+                                          .addCurrentPlayersToQueue();
+                                      // Navigate to game settings
+                                      GameNavigationService
+                                          .navigateToGameSettings(context);
+                                    }
+                                  : null,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: TeamColorButton(
-                        text: 'Next',
-                        icon: Icons.arrow_forward,
-                        color: uiColors[1],
-                        onPressed: gameConfig.teams.length >= 2 &&
-                                gameConfig.teams.every((team) =>
-                                    team
-                                        .where((player) => player.isNotEmpty)
-                                        .length ==
-                                    2)
-                            ? () async {
-                                // Add current players to suggestion queue
-                                await ref
-                                    .read(gameSetupProvider.notifier)
-                                    .addCurrentPlayersToQueue();
-                                // Use navigation service to navigate to game settings
-                                GameNavigationService.navigateToGameSettings(
-                                    context);
-                              }
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
