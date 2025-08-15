@@ -5,7 +5,6 @@ import '../services/game_navigation_service.dart';
 import '../models/game_config.dart';
 import '../widgets/player_input.dart';
 import 'package:convey/widgets/team_color_button.dart';
-import '../widgets/team_display_box.dart';
 import '../widgets/parallel_pulse_waves_background.dart';
 
 class GameSetupScreen extends ConsumerStatefulWidget {
@@ -115,7 +114,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
           // Animated parallel waves background
           const Positioned.fill(
             child: ParallelPulseWavesBackground(
-              perRowPhaseOffset: 0.0, // align crests across rows
+              perRowPhaseOffset: 0.1, // align crests across rows
               baseSpacing: 35.0, // more spacing between waves
             ),
           ),
@@ -183,9 +182,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                     ),
                     const SizedBox(height: 16),
                     if (gameConfig.playerNames.length >= 12)
-                      Text(
+                      const Text(
                         'Maximum 12 players reached. Remove players to add more.',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.orange,
@@ -193,110 +192,182 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                       ),
                     const SizedBox(height: 16),
                     const PlayerInput(),
-                    const SizedBox(height: 0),
-                    if (gameConfig.teams.isNotEmpty)
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 1,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 3,
-                        ),
-                        itemCount: gameConfig.teams.length,
-                        itemBuilder: (context, index) {
-                          final team = gameConfig.teams[index];
-                          final colorIndex =
-                              gameConfig.teamColorIndices.length > index
-                                  ? gameConfig.teamColorIndices[index]
-                                  : index % teamColors.length;
-                          final color = teamColors[colorIndex];
-
-                          return AnimatedBuilder(
-                            animation: _animations.length > index
-                                ? _animations[index]
-                                : kAlwaysDismissedAnimation,
-                            builder: (context, child) {
-                              final scale = _animations.length > index
-                                  ? 1.0 + (_animations[index].value * 0.03)
-                                  : 1.0;
-                              return Transform.scale(
-                                scale: scale,
-                                child: child,
-                              );
-                            },
-                            child: TeamDisplayBox(
-                              teamName: '${color.name} Team',
-                              color: color,
-                              children: team
-                                  .where((player) => player.isNotEmpty)
-                                  .map((player) {
-                                return DragTarget<String>(
-                                  builder:
-                                      (context, candidateData, rejectedData) {
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        color: candidateData.isNotEmpty
-                                            ? color.background.withOpacity(0.3)
-                                            : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: candidateData.isNotEmpty
-                                            ? Border.all(
-                                                color: color.border, width: 2)
-                                            : null,
-                                      ),
-                                      child: Draggable<String>(
-                                        data: player,
-                                        feedback: Material(
-                                          color: Colors.transparent,
-                                          child: Chip(
-                                            label: Text(player),
-                                            backgroundColor: color.background,
-                                            side:
-                                                BorderSide(color: color.border),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: List.generate(teamColors.length, (i) {
+                        final teamColor = teamColors[i];
+                        final Color background = Color.alphaBlend(
+                          teamColor.border.withOpacity(0.6),
+                          Theme.of(context).colorScheme.background,
+                        );
+                        final Color border = teamColor.border.withOpacity(1);
+                        final teamIdx = gameConfig.teamColorIndices.indexOf(i);
+                        final List<String> players = teamIdx >= 0
+                            ? gameConfig.teams[teamIdx]
+                                .where((p) => p.isNotEmpty)
+                                .toList()
+                            : <String>[];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: DragTarget<String>(
+                            builder: (context, candidateData, rejectedData) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 10),
+                                decoration: BoxDecoration(
+                                  color: background,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: border,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        Center(
+                                          child: Text(
+                                            teamColor.name,
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 18,
+                                              color: Colors.white,
+                                            ),
                                           ),
                                         ),
-                                        childWhenDragging: Opacity(
-                                          opacity: 0.5,
-                                          child: Chip(label: Text(player)),
+                                        Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.circle,
+                                                  color: border, size: 22),
+                                              const SizedBox(width: 8),
+                                            ],
+                                          ),
                                         ),
-                                        child: Chip(
-                                          label: Text(player),
-                                          backgroundColor:
-                                              color.background.withOpacity(0.2),
-                                          side: BorderSide(color: color.border),
-                                        ),
-                                        onDragStarted: () {
-                                          _dropAcceptedByTeam = false;
-                                        },
-                                        onDragEnd: (details) {
-                                          if (!_dropAcceptedByTeam) {
-                                            ref
-                                                .read(
-                                                    gameSetupProvider.notifier)
-                                                .removePlayer(player);
-                                          }
-                                          _dropAcceptedByTeam = false;
-                                        },
+                                      ],
+                                    ),
+                                    if (players.isNotEmpty) ...[
+                                      const SizedBox(height: 6),
+                                      Wrap(
+                                        alignment: WrapAlignment.center,
+                                        spacing: 6,
+                                        runSpacing: 6,
+                                        children: players.map((player) {
+                                          return DragTarget<String>(
+                                            builder:
+                                                (context, candidate, rejected) {
+                                              return Draggable<String>(
+                                                data: player,
+                                                feedback: Material(
+                                                  color: Colors.transparent,
+                                                  child: Chip(
+                                                    label: Text(player),
+                                                    backgroundColor:
+                                                        teamColor.background,
+                                                    side: BorderSide(
+                                                        color:
+                                                            teamColor.border),
+                                                    materialTapTargetSize:
+                                                        MaterialTapTargetSize
+                                                            .shrinkWrap,
+                                                    visualDensity:
+                                                        VisualDensity.compact,
+                                                    labelPadding:
+                                                        const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 1),
+                                                  ),
+                                                ),
+                                                childWhenDragging: Opacity(
+                                                  opacity: 0.5,
+                                                  child: Chip(
+                                                    label: Text(player),
+                                                    backgroundColor: teamColor
+                                                        .background
+                                                        .withOpacity(0.2),
+                                                    side: BorderSide(
+                                                        color:
+                                                            teamColor.border),
+                                                    materialTapTargetSize:
+                                                        MaterialTapTargetSize
+                                                            .shrinkWrap,
+                                                    visualDensity:
+                                                        VisualDensity.compact,
+                                                    labelPadding:
+                                                        const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 8,
+                                                            vertical: 1),
+                                                  ),
+                                                ),
+                                                child: Chip(
+                                                  label: Text(player),
+                                                  backgroundColor: teamColor
+                                                      .background
+                                                      .withOpacity(0.2),
+                                                  side: BorderSide(
+                                                      color: teamColor.border),
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                  labelPadding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 8,
+                                                      vertical: 1),
+                                                ),
+                                                onDragStarted: () {
+                                                  _dropAcceptedByTeam = false;
+                                                },
+                                                onDragEnd: (details) {
+                                                  if (!_dropAcceptedByTeam) {
+                                                    ref
+                                                        .read(gameSetupProvider
+                                                            .notifier)
+                                                        .removePlayer(player);
+                                                  }
+                                                  _dropAcceptedByTeam = false;
+                                                },
+                                              );
+                                            },
+                                            onWillAcceptWithDetails:
+                                                (details) => true,
+                                            onAcceptWithDetails: (details) {
+                                              _dropAcceptedByTeam = true;
+                                              ref
+                                                  .read(gameSetupProvider
+                                                      .notifier)
+                                                  .swapWithColorPlayer(
+                                                      details.data, player, i);
+                                            },
+                                          );
+                                        }).toList(),
                                       ),
-                                    );
-                                  },
-                                  onWillAcceptWithDetails: (details) =>
-                                      details.data != player,
-                                  onAcceptWithDetails: (details) {
-                                    _dropAcceptedByTeam = true;
-                                    ref
-                                        .read(gameSetupProvider.notifier)
-                                        .swapPlayers(details.data, player);
-                                  },
-                                );
-                              }).toList(),
-                            ),
-                          );
-                        },
-                      ),
+                                    ],
+                                  ],
+                                ),
+                              );
+                            },
+                            onWillAcceptWithDetails: (details) => true,
+                            onAcceptWithDetails: (details) {
+                              _dropAcceptedByTeam = true;
+                              ref
+                                  .read(gameSetupProvider.notifier)
+                                  .movePlayerToColor(details.data, i);
+                            },
+                          ),
+                        );
+                      }),
+                    ),
                     if (gameConfig.teams.expand((t) => t).isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -338,15 +409,8 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
               ),
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 4,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
+                decoration: const BoxDecoration(
+                  color: Colors.transparent,
                 ),
                 child: Row(
                   children: [

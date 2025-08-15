@@ -10,12 +10,14 @@ import '../widgets/game_countdown.dart';
 import '../widgets/team_color_button.dart'; // Added import for TeamColorButton
 import '../widgets/confirm_on_back.dart';
 import '../widgets/quit_dialog.dart';
+import 'zen_summary_screen.dart';
 
 class GameScreen extends ConsumerStatefulWidget {
   final int teamIndex;
   final int roundNumber;
   final int turnNumber;
   final String category;
+  final bool zenMode;
 
   const GameScreen({
     super.key,
@@ -23,6 +25,7 @@ class GameScreen extends ConsumerStatefulWidget {
     required this.roundNumber,
     required this.turnNumber,
     required this.category,
+    this.zenMode = false,
   });
 
   @override
@@ -38,19 +41,35 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   @override
   void onTurnEnd() {
-    // Use navigation service to navigate to turn over screen
-    GameNavigationService.navigateToTurnOver(
-      context,
-      widget.teamIndex,
-      widget.roundNumber,
-      widget.turnNumber,
-      widget.category,
-      correctCount,
-      skipsLeft,
-      wordsGuessed,
-      wordsSkipped,
-      disputedWords,
-    );
+    if (widget.zenMode) {
+      // In Zen mode, skip team/role flow and show a lightweight summary
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => ZenSummaryScreen(
+            categoryId: widget.category,
+            correctCount: correctCount,
+            skipsLeft: skipsLeft,
+            wordsGuessed: wordsGuessed,
+            wordsSkipped: wordsSkipped,
+            wordsLeftOnScreen: currentWords.map((w) => w.text).toList(),
+          ),
+        ),
+      );
+    } else {
+      // Use navigation service to navigate to turn over screen
+      GameNavigationService.navigateToTurnOver(
+        context,
+        widget.teamIndex,
+        widget.roundNumber,
+        widget.turnNumber,
+        widget.category,
+        correctCount,
+        skipsLeft,
+        wordsGuessed,
+        wordsSkipped,
+        disputedWords,
+      );
+    }
   }
 
   @override
@@ -141,15 +160,16 @@ class _GameScreenState extends ConsumerState<GameScreen>
             children: [
               Column(
                 children: [
-                  // Title showing current players
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text(
-                      "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
+                  // Title (hide player names in Zen mode)
+                  if (!widget.zenMode)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        "${ref.read(currentTeamPlayersProvider)[0]} & ${ref.read(currentTeamPlayersProvider)[1]}'s Turn",
+                        style: Theme.of(context).textTheme.headlineMedium,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ),
 
                   // Game header with timer, category, and skips
                   GameHeader(
@@ -190,8 +210,12 @@ class _GameScreenState extends ConsumerState<GameScreen>
               // Countdown overlay
               if (_isCountdownActive)
                 GameCountdown(
-                  player1Name: ref.read(currentTeamPlayersProvider)[0],
-                  player2Name: ref.read(currentTeamPlayersProvider)[1],
+                  player1Name: widget.zenMode
+                      ? 'Ready'
+                      : ref.read(currentTeamPlayersProvider)[0],
+                  player2Name: widget.zenMode
+                      ? ''
+                      : ref.read(currentTeamPlayersProvider)[1],
                   categoryId: categoryId,
                   onCountdownComplete: _onCountdownComplete,
                 ),

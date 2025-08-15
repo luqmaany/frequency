@@ -23,52 +23,215 @@ class GameSetupNotifier extends StateNotifier<GameConfig> {
   }
 
   void addPlayerToTeams(String name) {
-    // Try to fill the first empty slot in teams
+    // New behavior: fill the first available team in color-list order
     final updatedPlayers = [...state.playerNames, name];
     final List<List<String>> newTeams =
         state.teams.map((team) => [...team]).toList();
     List<int> newColorIndices = List<int>.from(state.teamColorIndices);
-    bool filled = false;
-    for (int t = 0; t < newTeams.length && !filled; t++) {
-      for (int p = 0; p < newTeams[t].length; p++) {
-        if (newTeams[t][p] == "") {
-          newTeams[t][p] = name;
-          filled = true;
-          break;
-        }
-      }
+
+    // Respect max players (12)
+    if (updatedPlayers.length > 12) {
+      return;
     }
-    if (!filled) {
-      // Check if we can add to an existing team or create a new one
-      if (newTeams.isEmpty || newTeams.last.length == 2) {
-        // Check if we've reached the maximum number of players (12)
-        if (updatedPlayers.length >= 12) {
-          // Don't add the player if we've reached the maximum players
+
+    // Find first color row with capacity (<2). If team for that color doesn't
+    // exist yet, create it and assign that color.
+    for (int colorIdx = 0; colorIdx < teamColors.length; colorIdx++) {
+      int existingTeamIndex = newColorIndices.indexOf(colorIdx);
+      if (existingTeamIndex == -1) {
+        // Create a new team for this color and add the player
+        newTeams.add([name]);
+        newColorIndices.add(colorIdx);
+        state = state.copyWith(
+          playerNames: updatedPlayers,
+          teams: newTeams,
+          teamColorIndices: newColorIndices,
+        );
+        _savePlayerNamesToStorage(updatedPlayers);
+        return;
+      } else {
+        // Team exists for this color; add if it has capacity
+        if (newTeams[existingTeamIndex].where((p) => p.isNotEmpty).length < 2) {
+          bool placed = false;
+          for (int i = 0; i < newTeams[existingTeamIndex].length; i++) {
+            if (newTeams[existingTeamIndex][i].isEmpty) {
+              newTeams[existingTeamIndex][i] = name;
+              placed = true;
+              break;
+            }
+          }
+          if (!placed) {
+            newTeams[existingTeamIndex].add(name);
+          }
+          state = state.copyWith(
+            playerNames: updatedPlayers,
+            teams: newTeams,
+            teamColorIndices: newColorIndices,
+          );
+          _savePlayerNamesToStorage(updatedPlayers);
           return;
         }
-        newTeams.add([name]);
-        // Assign a random unused color index
-        final usedIndices = newColorIndices.toSet();
-        final availableIndices = List<int>.generate(teamColors.length, (i) => i)
-            .where((i) => !usedIndices.contains(i))
-            .toList();
-        if (availableIndices.isEmpty) {
-          // If all colors are used, generate a new random set
-          newColorIndices = _generateRandomColorIndices(newTeams.length);
-        } else {
-          availableIndices.shuffle();
-          newColorIndices.add(availableIndices.first);
-        }
-      } else {
-        newTeams.last.add(name);
       }
     }
-    state = state.copyWith(
-        playerNames: updatedPlayers,
-        teams: newTeams,
-        teamColorIndices: newColorIndices);
 
-    // Save only player names to storage
+    // If all color rows are full or unavailable, do nothing
+  }
+
+  // Ensure a team exists for a given color index in provided lists and return its team index
+  int _ensureTeamForColorIndex(
+      int colorIndex, List<List<String>> teams, List<int> colorIndices) {
+    int teamIdx = colorIndices.indexOf(colorIndex);
+    if (teamIdx == -1) {
+      teams.add([]);
+      colorIndices.add(colorIndex);
+      return teams.length - 1;
+    }
+    return teamIdx;
+  }
+
+  void movePlayerToColor(String player, int colorIndex) {
+    // Allow dragging from existing teams or from suggestions row (new player)
+    final bool alreadyInPlayers =
+        state.playerNames.any((n) => n.toLowerCase() == player.toLowerCase());
+
+    final List<List<String>> newTeams =
+        state.teams.map((team) => [...team]).toList();
+    final List<int> newColorIndices = List<int>.from(state.teamColorIndices);
+
+    int? fromTeamIdx;
+    int? fromPlayerIdx;
+    if (alreadyInPlayers) {
+      // Find and temporarily remove from current team
+      for (int t = 0; t < newTeams.length; t++) {
+        for (int p = 0; p < newTeams[t].length; p++) {
+          if (newTeams[t][p] == player) {
+            fromTeamIdx = t;
+            fromPlayerIdx = p;
+            break;
+          }
+        }
+        if (fromTeamIdx != null) break;
+      }
+      if (fromTeamIdx == null || fromPlayerIdx == null) return;
+      newTeams[fromTeamIdx][fromPlayerIdx] = "";
+    } else {
+      // New player dragged from suggestions: respect max 12
+      if (state.playerNames.length >= 12) {
+        return;
+      }
+    }
+
+    final int targetTeamIdx =
+        _ensureTeamForColorIndex(colorIndex, newTeams, newColorIndices);
+    final int filledCount =
+        newTeams[targetTeamIdx].where((p) => p.isNotEmpty).length;
+    if (filledCount >= 2) {
+      // Target full; revert if moved from a team
+      if (fromTeamIdx != null && fromPlayerIdx != null) {
+        newTeams[fromTeamIdx][fromPlayerIdx] = player;
+      }
+      return;
+    }
+
+    // Place in first empty slot else append
+    bool placed = false;
+    for (int i = 0; i < newTeams[targetTeamIdx].length; i++) {
+      if (newTeams[targetTeamIdx][i].isEmpty) {
+        newTeams[targetTeamIdx][i] = player;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      newTeams[targetTeamIdx].add(player);
+    }
+
+    // Clean up: remove teams that are fully empty and compress empty slots
+    final List<List<String>> filteredTeams = [];
+    final List<int> filteredColors = [];
+    for (int i = 0; i < newTeams.length; i++) {
+      if (newTeams[i].any((p) => p.isNotEmpty)) {
+        filteredTeams.add(newTeams[i].where((p) => p.isNotEmpty).toList());
+        filteredColors.add(newColorIndices[i]);
+      }
+    }
+
+    // Ensure we add new player to playerNames if coming from suggestions
+    final List<String> updatedPlayerNames = alreadyInPlayers
+        ? List<String>.from(state.playerNames)
+        : [...state.playerNames, player];
+
+    state = state.copyWith(
+      playerNames: updatedPlayerNames,
+      teams: filteredTeams,
+      teamColorIndices: filteredColors,
+    );
+    _savePlayerNamesToStorage(updatedPlayerNames);
+  }
+
+  void swapWithColorPlayer(String source, String target, int colorIndex) {
+    if (source.toLowerCase() == target.toLowerCase()) {
+      return;
+    }
+    final bool sourceInPlayers =
+        state.playerNames.any((n) => n.toLowerCase() == source.toLowerCase());
+
+    // Defensive: target must exist in the specified color team
+    final List<List<String>> teams = state.teams.map((t) => [...t]).toList();
+    final List<int> colorIndices = List<int>.from(state.teamColorIndices);
+    final int teamIdx = colorIndices.indexOf(colorIndex);
+    if (teamIdx == -1) return;
+    final int targetIdx = teams[teamIdx].indexOf(target);
+    if (targetIdx == -1) return;
+
+    if (sourceInPlayers) {
+      // Find source position
+      int? sTeamIdx;
+      int? sPlayerIdx;
+      for (int t = 0; t < teams.length; t++) {
+        for (int p = 0; p < teams[t].length; p++) {
+          if (teams[t][p] == source) {
+            sTeamIdx = t;
+            sPlayerIdx = p;
+            break;
+          }
+        }
+        if (sTeamIdx != null) break;
+      }
+      if (sTeamIdx == null || sPlayerIdx == null) return;
+
+      // Perform swap across teams
+      teams[teamIdx][targetIdx] = source;
+      teams[sTeamIdx][sPlayerIdx] = target;
+
+      // Clean up: remove empties and compress
+      final List<List<String>> filteredTeams = [];
+      final List<int> filteredColors = [];
+      for (int i = 0; i < teams.length; i++) {
+        if (teams[i].any((p) => p.isNotEmpty)) {
+          filteredTeams.add(teams[i].where((p) => p.isNotEmpty).toList());
+          filteredColors.add(colorIndices[i]);
+        }
+      }
+      state = state.copyWith(
+          teams: filteredTeams, teamColorIndices: filteredColors);
+      return;
+    }
+
+    // Source from suggestions
+    if (state.playerNames.length >= 12) {
+      return;
+    }
+    // Replace target with source, and remove target from player list
+    teams[teamIdx][targetIdx] = source;
+    final List<String> updatedPlayers = [
+      ...state.playerNames
+          .where((n) => n.toLowerCase() != target.toLowerCase()),
+      source,
+    ];
+    state = state.copyWith(playerNames: updatedPlayers, teams: teams);
+    // Optionally push target to front of suggestions
+    StorageService.moveNameToFront(target);
     _savePlayerNamesToStorage(updatedPlayers);
   }
 

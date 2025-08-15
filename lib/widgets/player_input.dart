@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
 import '../services/storage_service.dart';
@@ -16,6 +17,7 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   final FocusNode _focusNode = FocusNode();
   List<String> _suggestedNames = [];
   String? _errorMessage;
+  bool _isEditing = false;
 
   @override
   void initState() {
@@ -93,6 +95,18 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     }
   }
 
+  void _startInlineEdit() {
+    setState(() {
+      _isEditing = true;
+      _errorMessage = null;
+    });
+    // Defer focus until after frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.clear();
+      _focusNode.requestFocus();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
@@ -103,41 +117,109 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       }
     });
 
+    // Removed keyboard visibility check; cursor is always shown while editing
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: 45,
-          child: TextField(
-            controller: _controller,
-            focusNode: _focusNode,
-            enabled: gameConfig.playerNames.length < 12,
-            decoration: InputDecoration(
-              labelText: 'Player Name',
-              errorText: _errorMessage,
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.add),
-                onPressed:
-                    gameConfig.playerNames.length >= 12 ? null : _addPlayer,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (!_isEditing)
+              RawChip(
+                label: const Icon(Icons.add, size: 22, color: Colors.white),
+                backgroundColor: Colors.grey[850],
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                labelPadding: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(7),
+                  side: BorderSide(color: Colors.grey.shade600, width: 1),
+                ),
+                onPressed: gameConfig.playerNames.length >= 12
+                    ? null
+                    : _startInlineEdit,
+              )
+            else
+              Focus(
+                onFocusChange: (hasFocus) {
+                  if (!hasFocus) {
+                    // Close editor on blur without adding
+                    setState(() {
+                      _isEditing = false;
+                      _errorMessage = null;
+                    });
+                    _controller.clear();
+                    _focusNode.unfocus();
+                    FocusScope.of(context).unfocus();
+                  }
+                },
+                child: RawChip(
+                  backgroundColor: Colors.grey[850],
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(7),
+                    side: BorderSide(color: Colors.grey.shade600, width: 1),
+                  ),
+                  label: ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(minWidth: 40, maxWidth: 220),
+                    child: IntrinsicWidth(
+                      child: TextField(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        autofocus: true,
+                        style: const TextStyle(color: Colors.white),
+                        cursorColor: Colors.white70,
+                        // Always show cursor while editing
+                        showCursor: true,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(10),
+                        ],
+                        decoration: InputDecoration(
+                          isDense: true,
+                          // No hint; start empty and grow with text
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.zero,
+                          errorText: _errorMessage,
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) {
+                          _addPlayer();
+                          setState(() {
+                            _isEditing = false;
+                          });
+                          _focusNode.unfocus();
+                          FocusScope.of(context).unfocus();
+                        },
+                        onChanged: (_) {
+                          if (_errorMessage != null) {
+                            setState(() => _errorMessage = null);
+                          }
+                        },
+                        onTapOutside: (_) {
+                          setState(() {
+                            _isEditing = false;
+                            _errorMessage = null;
+                          });
+                          _controller.clear();
+                          _focusNode.unfocus();
+                          FocusScope.of(context).unfocus();
+                        },
+                      ),
+                    ),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  onPressed: null,
+                ),
               ),
-              border: const OutlineInputBorder(),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            ),
-            onSubmitted: gameConfig.playerNames.length >= 12
-                ? null
-                : (_) => _addPlayer(),
-            onChanged: (_) {
-              if (_errorMessage != null) {
-                setState(() {
-                  _errorMessage = null;
-                });
-              }
-            },
-          ),
+            const SizedBox(width: 8),
+            Expanded(child: _buildSuggestedNames(gameConfig)),
+          ],
         ),
-        const SizedBox(height: 8),
-        _buildSuggestedNames(gameConfig),
         const SizedBox(height: 16),
       ],
     );
@@ -167,19 +249,39 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   }
 
   Widget _buildChip(String suggestion, GameConfig gameConfig) {
+    final bool canAdd = gameConfig.playerNames.length < 12;
+    final chip = ActionChip(
+      backgroundColor: Colors.grey[850],
+      label: Text(suggestion),
+      onPressed: canAdd
+          ? () async {
+              await ref
+                  .read(gameSetupProvider.notifier)
+                  .moveNameToQueueFront(suggestion);
+              ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
+            }
+          : null,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(right: 8),
-      child: ActionChip(
-        backgroundColor: Colors.grey[850],
-        label: Text(suggestion),
-        onPressed: gameConfig.playerNames.length >= 12
-            ? null
-            : () async {
-                await ref
-                    .read(gameSetupProvider.notifier)
-                    .moveNameToQueueFront(suggestion);
-                ref.read(gameSetupProvider.notifier).addPlayer(suggestion);
-              },
+      child: LongPressDraggable<String>(
+        data: suggestion,
+        delay: const Duration(milliseconds: 120),
+        feedback: Material(
+          color: Colors.transparent,
+          child: Chip(
+            label: Text(suggestion),
+            backgroundColor: Colors.grey[800],
+            side: BorderSide(color: Colors.grey.shade600),
+          ),
+        ),
+        childWhenDragging: Opacity(
+          opacity: 0.5,
+          child: chip,
+        ),
+        dragAnchorStrategy: pointerDragAnchorStrategy,
+        child: chip,
       ),
     );
   }

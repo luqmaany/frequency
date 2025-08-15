@@ -349,5 +349,3 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
     );
   }
 }
-
-// Removed WaveDivider from the online lobby

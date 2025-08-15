@@ -5,6 +5,7 @@ import '../services/game_navigation_service.dart';
 import 'online_lobby_screen.dart';
 import 'background_lab_screen.dart';
 import '../widgets/wave_background.dart';
+import 'zen_setup_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
 class AnimatedGradientText extends StatefulWidget {
@@ -148,6 +149,19 @@ class HomeScreen extends ConsumerWidget {
                     'Start Game',
                     () => GameNavigationService.navigateToGameSetup(context),
                     buttonColors[0],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildMenuButton(
+                    context,
+                    'Zen Mode',
+                    () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ZenSetupScreen(),
+                        ),
+                      );
+                    },
+                    buttonColors[1],
                   ),
                   const SizedBox(height: 16),
                   _buildMenuButton(

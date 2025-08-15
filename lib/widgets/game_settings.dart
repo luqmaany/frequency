@@ -38,12 +38,14 @@ class GameSettingsState extends ConsumerState<GameSettings> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: color,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: 0.6,
                   ),
             ),
             if (widget.readOnly) ...[
@@ -52,58 +54,72 @@ class GameSettingsState extends ConsumerState<GameSettings> {
             ],
           ],
         ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: options.map((option) {
-            final isSelected = option == currentValue;
-            return GestureDetector(
-              onTap: widget.readOnly
-                  ? null
-                  : () {
-                      if (widget.sessionId != null) {
-                        _updateFirestoreSetting(settingKey, option);
-                      } else {
-                        final notifier = ref.read(gameSetupProvider.notifier);
-                        switch (settingKey) {
-                          case 'roundTimeSeconds':
-                            notifier.setRoundTime(option);
-                            break;
-                          case 'targetScore':
-                            notifier.setTargetScore(option);
-                            break;
-                          case 'allowedSkips':
-                            notifier.setAllowedSkips(option);
-                            break;
-                        }
-                      }
-                    },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected ? color : color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? color : color.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-                child: Text(
-                  option.toString(),
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : color,
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
+        const SizedBox(height: 16),
+        Center(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            runAlignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: options.map((option) {
+              final isSelected = option == currentValue;
+              return Builder(
+                builder: (context) {
+                  final Color baseBg = Theme.of(context).colorScheme.background;
+                  final double overlayAlpha = isSelected ? 0.6 : 0.2;
+                  final Color background =
+                      Color.alphaBlend(color.withOpacity(overlayAlpha), baseBg);
+                  return GestureDetector(
+                    onTap: widget.readOnly
+                        ? null
+                        : () {
+                            if (widget.sessionId != null) {
+                              _updateFirestoreSetting(settingKey, option);
+                            } else {
+                              final notifier =
+                                  ref.read(gameSetupProvider.notifier);
+                              switch (settingKey) {
+                                case 'roundTimeSeconds':
+                                  notifier.setRoundTime(option);
+                                  break;
+                                case 'targetScore':
+                                  notifier.setTargetScore(option);
+                                  break;
+                                case 'allowedSkips':
+                                  notifier.setAllowedSkips(option);
+                                  break;
+                              }
+                            }
+                          },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: background,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: color,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Text(
+                        option.toString(),
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : color,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              );
+            }).toList(),
+          ),
         ),
         const SizedBox(height: 16),
       ],

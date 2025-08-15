@@ -57,8 +57,8 @@ class ParallelPulseWavesBackground extends StatefulWidget {
     this.perRowPhaseOffset = 0.6,
     this.cyclesPerLoop = 2.0,
     this.pulseSpanWaves = 6.0,
-    this.baseOpacity = 0.28,
-    this.highlightOpacity = 0.92,
+    this.baseOpacity = 0.1,
+    this.highlightOpacity = 0.5,
   });
 
   @override
