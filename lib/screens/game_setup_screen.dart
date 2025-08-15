@@ -29,9 +29,9 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
     _initControllers(gameConfig.teams);
     _prevTeams = gameConfig.teams.map((t) => List<String>.from(t)).toList();
 
-    // Load saved data from storage
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(gameSetupProvider.notifier).loadFromStorage();
+    // Reset setup on entry: return any names to suggestions and clear teams
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref.read(gameSetupProvider.notifier).clearAllPlayers();
     });
   }
 
@@ -435,9 +435,14 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                               text: 'Home',
                               icon: Icons.home,
                               color: uiColors[0],
-                              onPressed: () {
-                                Navigator.of(context)
-                                    .popUntil((route) => route.isFirst);
+                              onPressed: () async {
+                                await ref
+                                    .read(gameSetupProvider.notifier)
+                                    .clearAllPlayers();
+                                if (mounted) {
+                                  Navigator.of(context)
+                                      .popUntil((route) => route.isFirst);
+                                }
                               },
                             ),
                           ),
