@@ -326,14 +326,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
           body: Stack(
             children: [
               Positioned.fill(
-                child: Opacity(
-                  opacity: 0.22,
-                  child: StaticRadialCirclesBackground(
-                    centerAlignment: const Alignment(0, -0.3),
-                    ringColor: teamColor.border,
-                    fullCircles: true,
-                    maxRings: 60,
-                  ),
+                child: StaticRadialCirclesBackground(
+                  centerAlignment: const Alignment(0, -0.3),
+                  baseOpacity: 0.28,
+                  highlightOpacity: 0.92,
+                  highlightTargetLightness: 0.62,
+                  highlightSaturationTarget: 0.95,
+                  strokeWidth: 2.0,
+                  blendMode: BlendMode.srcOver,
+                  globalOpacity: 0.22,
+                  fullCircles: true,
+                  maxRings: 60,
                 ),
               ),
               SafeArea(
@@ -636,12 +639,14 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         body: Stack(
           children: [
             Positioned.fill(
-              child: Opacity(
-                opacity: 0.22,
-                child: StaticRadialCirclesBackground(
-                  centerAlignment: const Alignment(0, -0.3),
-                  ringColor: teamColor.border,
-                ),
+              child: StaticRadialCirclesBackground(
+                centerAlignment: const Alignment(0, -0.3),
+                baseOpacity: 0.28,
+                highlightOpacity: 0.92,
+                strokeWidth: 2.0,
+                blendMode: BlendMode.srcOver,
+                globalOpacity: 0.22,
+                fullCircles: false,
               ),
             ),
             SafeArea(

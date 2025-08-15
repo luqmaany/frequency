@@ -23,6 +23,24 @@ class StaticRadialCirclesBackground extends StatefulWidget {
   /// If true, draw full circles instead of arc sections
   final bool fullCircles;
 
+  /// Lightness target for base (non-highlighted) rings in HSL space
+  final double baseTargetLightness;
+
+  /// Lightness target at pulse peak (brighter than base)
+  final double highlightTargetLightness;
+
+  /// Saturation target at pulse peak
+  final double highlightSaturationTarget;
+
+  /// Multiplies final ring alpha, useful instead of wrapping in Opacity
+  final double globalOpacity;
+
+  /// Stroke width for rings
+  final double strokeWidth;
+
+  /// Blend mode for drawing rings (default additive for pop)
+  final BlendMode blendMode;
+
   // Removed spacing variation; spacing is uniform by design
 
   const StaticRadialCirclesBackground({
@@ -34,9 +52,15 @@ class StaticRadialCirclesBackground extends StatefulWidget {
     this.animate = true,
     this.duration = const Duration(seconds: 3),
     this.pulseSpanRings = 6.0,
-    this.baseOpacity = 0.3,
-    this.highlightOpacity = 1.0,
+    this.baseOpacity = 0.28,
+    this.highlightOpacity = 0.92,
     this.fullCircles = false,
+    this.baseTargetLightness = 0.50,
+    this.highlightTargetLightness = 0.60,
+    this.highlightSaturationTarget = 0.90,
+    this.globalOpacity = 1.0,
+    this.strokeWidth = 2.0,
+    this.blendMode = BlendMode.plus,
   });
 
   @override
@@ -97,6 +121,12 @@ class _StaticRadialCirclesBackgroundState
                   baseOpacity: widget.baseOpacity,
                   highlightOpacity: widget.highlightOpacity,
                   fullCircles: widget.fullCircles,
+                  baseTargetLightness: widget.baseTargetLightness,
+                  highlightTargetLightness: widget.highlightTargetLightness,
+                  highlightSaturationTarget: widget.highlightSaturationTarget,
+                  globalOpacity: widget.globalOpacity,
+                  strokeWidth: widget.strokeWidth,
+                  blendMode: widget.blendMode,
                 ),
               ),
             )
@@ -111,6 +141,12 @@ class _StaticRadialCirclesBackgroundState
                 baseOpacity: widget.baseOpacity,
                 highlightOpacity: widget.highlightOpacity,
                 fullCircles: widget.fullCircles,
+                baseTargetLightness: widget.baseTargetLightness,
+                highlightTargetLightness: widget.highlightTargetLightness,
+                highlightSaturationTarget: widget.highlightSaturationTarget,
+                globalOpacity: widget.globalOpacity,
+                strokeWidth: widget.strokeWidth,
+                blendMode: widget.blendMode,
               ),
             ),
     );
@@ -127,6 +163,12 @@ class _StaticCirclesPainter extends CustomPainter {
   final double baseOpacity;
   final double highlightOpacity;
   final bool fullCircles;
+  final double baseTargetLightness;
+  final double highlightTargetLightness;
+  final double highlightSaturationTarget;
+  final double globalOpacity;
+  final double strokeWidth;
+  final BlendMode blendMode;
 
   _StaticCirclesPainter({
     required this.centerAlignment,
@@ -138,6 +180,12 @@ class _StaticCirclesPainter extends CustomPainter {
     required this.baseOpacity,
     required this.highlightOpacity,
     required this.fullCircles,
+    required this.baseTargetLightness,
+    required this.highlightTargetLightness,
+    required this.highlightSaturationTarget,
+    required this.globalOpacity,
+    required this.strokeWidth,
+    required this.blendMode,
   });
 
   @override
@@ -201,9 +249,11 @@ class _StaticCirclesPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 2.0;
+      ..strokeJoin = StrokeJoin.round
+      ..strokeWidth = strokeWidth
+      ..blendMode = blendMode; // additive default for brighter overlaps
 
-    // Normalize lightness to align with app accent brightness
+    // Lightness baseline matches ParallelPulseWavesBackground
     const double baseTargetLightness = 0.50;
 
     // Draw static rings with pulse; either full circles or selected arc segment
@@ -225,8 +275,8 @@ class _StaticCirclesPainter extends CustomPainter {
       } else {
         final Color base = palette[i % palette.length];
         final HSLColor hsl = HSLColor.fromColor(base);
-        // Static subtle hue shift based on index for variety
-        final double hueOffset = math.sin(i * 0.33) * 2.0;
+        // Subtle hue shift with time, similar to parallel waves
+        final double hueOffset = math.sin(i * 0.33 + t * math.pi * 2) * 2.0;
         baseHsl = hsl
             .withHue((hsl.hue + hueOffset) % 360)
             .withSaturation(hsl.saturation.clamp(0.5, 1.0))
@@ -244,19 +294,21 @@ class _StaticCirclesPainter extends CustomPainter {
       if (trailingDistance <= pulseSpanRings) {
         falloff = (1.0 - (trailingDistance / pulseSpanRings)).clamp(0.0, 1.0);
       }
-      // Make highlighted rings look like the category chip: vivid saturation and mid-high lightness
-      const double targetLightness = 0.60; // chip-like brightness
-      final double l =
-          (baseHsl.lightness + (targetLightness - baseHsl.lightness) * falloff)
-              .clamp(0.0, 1.0);
-      final double s =
-          (baseHsl.saturation + (0.90 - baseHsl.saturation) * falloff)
-              .clamp(0.0, 1.0);
+      // Brighten and saturate toward the pulse peak, matching ParallelPulseWaves defaults
+      const double highlightTargetLightness = 0.60;
+      const double highlightSaturationTarget = 0.90;
+      final double l = (baseHsl.lightness +
+              (highlightTargetLightness - baseHsl.lightness) * falloff)
+          .clamp(0.0, 1.0);
+      final double s = (baseHsl.saturation +
+              (highlightSaturationTarget - baseHsl.saturation) * falloff)
+          .clamp(0.0, 1.0);
       final Color brightColor =
           baseHsl.withLightness(l).withSaturation(s).toColor();
 
       final double opacity =
-          (baseOpacity + highlightOpacity * falloff).clamp(0.0, 1.0);
+          ((baseOpacity + highlightOpacity * falloff) * globalOpacity)
+              .clamp(0.0, 1.0);
       ringPaint.color = brightColor.withOpacity(opacity);
       if (fullCircles) {
         canvas.drawCircle(center, radius, ringPaint);

@@ -109,7 +109,10 @@ class HomeScreen extends ConsumerWidget {
       body: Stack(
         children: [
           // Animated waves
-          const Positioned.fill(child: WaveBackground()),
+          const Positioned.fill(
+              child: WaveBackground(
+            strokeWidth: 1.5,
+          )),
 
           // Content
           SafeArea(
