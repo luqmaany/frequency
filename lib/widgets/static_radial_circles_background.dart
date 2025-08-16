@@ -9,6 +9,11 @@ class StaticRadialCirclesBackground extends StatefulWidget {
   final Color? backgroundColor; // When provided, solid background fill
   final double baseSpacing;
   final int maxRings;
+
+  /// Controls the pulse travel speed independent of [maxRings].
+  /// The pulse center is computed as (t * pulseBaseRings) % maxRings.
+  /// Default: equals [maxRings] to preserve original behavior.
+  final int? pulseBaseRings;
   final bool animate;
   final Duration duration;
 
@@ -51,6 +56,7 @@ class StaticRadialCirclesBackground extends StatefulWidget {
     this.backgroundColor,
     this.baseSpacing = 10.0,
     this.maxRings = 30,
+    this.pulseBaseRings,
     this.animate = true,
     this.duration = const Duration(seconds: 3),
     this.pulseSpanRings = 6.0,
@@ -119,6 +125,7 @@ class _StaticRadialCirclesBackgroundState
                   backgroundColor: widget.backgroundColor,
                   baseSpacing: widget.baseSpacing,
                   maxRings: widget.maxRings,
+                  pulseBaseRings: widget.pulseBaseRings ?? widget.maxRings,
                   t: _controller!.value,
                   pulseSpanRings: widget.pulseSpanRings,
                   baseOpacity: widget.baseOpacity,
@@ -140,6 +147,7 @@ class _StaticRadialCirclesBackgroundState
                 backgroundColor: widget.backgroundColor,
                 baseSpacing: widget.baseSpacing,
                 maxRings: widget.maxRings,
+                pulseBaseRings: widget.pulseBaseRings ?? widget.maxRings,
                 t: 0.0,
                 pulseSpanRings: widget.pulseSpanRings,
                 baseOpacity: widget.baseOpacity,
@@ -163,6 +171,7 @@ class _StaticCirclesPainter extends CustomPainter {
   final Color? backgroundColor;
   final double baseSpacing;
   final int maxRings;
+  final int pulseBaseRings;
   final double t; // 0..1 animation phase
   final double pulseSpanRings;
   final double baseOpacity;
@@ -181,6 +190,7 @@ class _StaticCirclesPainter extends CustomPainter {
     required this.backgroundColor,
     required this.baseSpacing,
     required this.maxRings,
+    required this.pulseBaseRings,
     required this.t,
     required this.pulseSpanRings,
     required this.baseOpacity,
@@ -267,8 +277,9 @@ class _StaticCirclesPainter extends CustomPainter {
     const double startAngle = 7 * math.pi / 3;
     const double sweepAngle = math.pi / 3;
 
-    // Pulse center ring index advances with t from 0..maxRings
-    final double pulseCenter = (t * maxRings) % maxRings;
+    // Pulse center ring index advances with t based on pulseBaseRings,
+    // wrapping by the actual ring count to cover the full set
+    final double pulseCenter = (t * pulseBaseRings) % maxRings;
     for (int i = 0; i < maxRings; i++) {
       // Uniform spacing only
       final double radius = i * baseSpacing;

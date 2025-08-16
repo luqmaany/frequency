@@ -354,6 +354,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                 blendMode: BlendMode.srcOver,
                 globalOpacity: 0.25,
                 fullCircles: _isTransitioning,
+                maxRings: _isTransitioning ? 60 : 30,
+                pulseBaseRings: _isTransitioning ? 60 : 30,
               ),
             ),
             SafeArea(
@@ -738,12 +740,18 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                               color: Colors.red, size: 32),
                                         if (_swipeStep == 1)
                                           const SizedBox(width: 12),
-                                        Text(
-                                          _swipeSteps[_swipeStep].text,
-                                          style: TextStyle(
-                                            color:
-                                                _swipeSteps[_swipeStep].color,
-                                            fontSize: 22,
+                                        Flexible(
+                                          child: Text(
+                                            _swipeSteps[_swipeStep].text,
+                                            textAlign: TextAlign.center,
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 2,
+                                            style: TextStyle(
+                                              color:
+                                                  _swipeSteps[_swipeStep].color,
+                                              fontSize: 18,
+                                              height: 1.2,
+                                            ),
                                           ),
                                         ),
                                         if (_swipeStep == 0)
