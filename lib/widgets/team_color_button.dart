@@ -134,9 +134,11 @@ class _TeamColorButtonState extends State<TeamColorButton> {
                   Text(
                     widget.text,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: enabled ? text : Colors.grey.shade400,
+                          color: enabled
+                              ? text
+                              : Colors.grey.shade400.withOpacity(0.5),
                           fontWeight: FontWeight.w600,
-                          fontSize: 18,
+                          fontSize: 16,
                         ),
                   ),
                 ],

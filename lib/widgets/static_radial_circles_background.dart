@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 class StaticRadialCirclesBackground extends StatefulWidget {
   final Alignment centerAlignment;
   final Color? ringColor; // When provided, all rings use this color
+  final Color? backgroundColor; // When provided, solid background fill
   final double baseSpacing;
   final int maxRings;
   final bool animate;
@@ -47,6 +48,7 @@ class StaticRadialCirclesBackground extends StatefulWidget {
     super.key,
     this.centerAlignment = Alignment.center,
     this.ringColor,
+    this.backgroundColor,
     this.baseSpacing = 10.0,
     this.maxRings = 30,
     this.animate = true,
@@ -114,6 +116,7 @@ class _StaticRadialCirclesBackgroundState
                 painter: _StaticCirclesPainter(
                   centerAlignment: widget.centerAlignment,
                   ringColor: widget.ringColor,
+                  backgroundColor: widget.backgroundColor,
                   baseSpacing: widget.baseSpacing,
                   maxRings: widget.maxRings,
                   t: _controller!.value,
@@ -134,6 +137,7 @@ class _StaticRadialCirclesBackgroundState
               painter: _StaticCirclesPainter(
                 centerAlignment: widget.centerAlignment,
                 ringColor: widget.ringColor,
+                backgroundColor: widget.backgroundColor,
                 baseSpacing: widget.baseSpacing,
                 maxRings: widget.maxRings,
                 t: 0.0,
@@ -156,6 +160,7 @@ class _StaticRadialCirclesBackgroundState
 class _StaticCirclesPainter extends CustomPainter {
   final Alignment centerAlignment;
   final Color? ringColor;
+  final Color? backgroundColor;
   final double baseSpacing;
   final int maxRings;
   final double t; // 0..1 animation phase
@@ -173,6 +178,7 @@ class _StaticCirclesPainter extends CustomPainter {
   _StaticCirclesPainter({
     required this.centerAlignment,
     required this.ringColor,
+    required this.backgroundColor,
     required this.baseSpacing,
     required this.maxRings,
     required this.t,
@@ -190,7 +196,8 @@ class _StaticCirclesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Background gradient similar to ripple
+    // Background fill: solid color when provided, otherwise gradient
+    // Always paint the default gradient background; waves are colored by ringColor
     final Paint bg = Paint()
       ..shader = RadialGradient(
         center: centerAlignment,

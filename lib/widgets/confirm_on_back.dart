@@ -24,11 +24,17 @@ class ConfirmOnBack extends StatelessWidget {
   final String cancelText;
   final bool barrierDismissible;
 
+  /// Optional override for back handling. If provided and returns false,
+  /// the back action is cancelled without showing a dialog.
+  /// If it returns true, the normal confirmation flow runs.
+  final Future<bool> Function(BuildContext context)? onWillPopOverride;
+
   const ConfirmOnBack({
     super.key,
     required this.child,
     this.dialogBuilder,
     this.onConfirmed,
+    this.onWillPopOverride,
     this.title = 'Leave this screen?',
     this.message = 'Your progress may be lost. Do you want to leave?',
     this.confirmText = 'Leave',
@@ -40,6 +46,10 @@ class ConfirmOnBack extends StatelessWidget {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
+        if (onWillPopOverride != null) {
+          final bool proceed = await onWillPopOverride!(context);
+          if (!proceed) return false;
+        }
         final bool? shouldLeave = await showDialog<bool>(
           context: context,
           barrierDismissible: barrierDismissible,

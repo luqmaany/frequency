@@ -56,12 +56,15 @@ class _SwipeTutorialStep {
 }
 
 class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   String? _selectedGuesser;
   String? _selectedConveyor;
   bool _isTransitioning = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late AnimationController _fadeController; // controls fade-out of pre UI
+  late Animation<double> _preOpacity; // 1 -> 0 during fade
+  double _postOpacity = 0.0; // 0 -> 1 when post UI appears
   int _swipeStep = 0;
   bool _swipeRightDone = false;
   bool _swipeLeftDone = false;
@@ -97,6 +100,13 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         parent: _animationController,
         curve: Curves.easeInOut,
       ),
+    );
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _preOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
     );
     _selectedConveyor = widget.onlineTeam?['players']?[0];
     _selectedGuesser = widget.onlineTeam?['players']?[1];
@@ -144,30 +154,26 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   void _assignRandomRoles() {
     List<String> teamPlayers = [];
 
-    // Always get team players from the widget
     if (widget.onlineTeam != null) {
-      // Online game: get team data from widget
       final players = widget.onlineTeam!['players'] as List?;
       if (players != null && players.length >= 2) {
         teamPlayers = players.map((p) => p.toString()).toList();
       }
     } else {
-      // Local game: get team data from game setup provider
       final gameConfig = ref.read(gameSetupProvider);
       final teams = gameConfig.teams;
-
       if (teams.isNotEmpty && widget.teamIndex < teams.length) {
         teamPlayers = teams[widget.teamIndex];
       }
     }
 
-    // Throw error if we don't have enough players
     if (teamPlayers.length < 2) {
       throw Exception(
           'Cannot determine team players. Expected at least 2 players, but got ${teamPlayers.length}');
@@ -176,10 +182,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     final random = teamPlayers.toList()..shuffle();
 
     if (widget.sessionId != null) {
-      // Online game: update Firestore
       _updateRoleAssignment(random[0], random[1], false);
     } else {
-      // Local game: update local state
       setState(() {
         _selectedGuesser = random[0];
         _selectedConveyor = random[1];
@@ -190,7 +194,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   void _updateRoleAssignment(
       String guesser, String conveyor, bool isTransitioning) {
     if (widget.sessionId != null) {
-      // Online game: update Firestore
       FirestoreService.updateRoleAssignment(
         widget.sessionId!,
         guesser: guesser,
@@ -198,7 +201,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         isTransitioning: isTransitioning,
       );
     } else {
-      // Local game: update local state
       setState(() {
         _selectedGuesser = guesser;
         _selectedConveyor = conveyor;
@@ -208,32 +210,34 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   }
 
   void _showTransitionScreen() {
-    // Immediately show transition UI locally to avoid flicker
-    setState(() {
-      _isTransitioning = true;
+    // Fade out pre UI, then flip to transitioning and fade in post UI
+    _fadeController.forward(from: 0).then((_) {
+      setState(() {
+        _isTransitioning = true;
+        _postOpacity = 0.0;
+      });
+      // small delay to ensure rebuild completes before animating in
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _postOpacity = 1.0;
+        });
+      });
+      if (widget.sessionId != null) {
+        _updateRoleAssignment(_selectedGuesser!, _selectedConveyor!, true);
+      }
     });
-
-    if (widget.sessionId != null) {
-      // Online game: update Firestore
-      _updateRoleAssignment(_selectedGuesser!, _selectedConveyor!, true);
-    } else {
-      // Local game: update local state
-      // already set above
-    }
   }
 
   void _switchRoles() {
-    if (!_isCurrentTeamActive) return; // Only current team can switch roles
+    if (!_isCurrentTeamActive) return;
 
     final temp = _selectedGuesser;
     final newGuesser = _selectedConveyor;
     final newConveyor = temp;
 
     if (widget.sessionId != null) {
-      // Online game: update Firestore
       _updateRoleAssignment(newGuesser!, newConveyor!, _isTransitioning);
     } else {
-      // Local game: update local state
       setState(() {
         _selectedGuesser = newGuesser;
         _selectedConveyor = newConveyor;
@@ -316,337 +320,40 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     //     ? categoryColor.withOpacity(0.3)
     //     : categoryColor.withOpacity(0.2);
 
-    if (_isTransitioning) {
-      return ConfirmOnBack(
-        dialogBuilder: (ctx) => QuitDialog(color: teamColor),
-        onConfirmed: (ctx) async {
-          await GameNavigationService.quitToHome(ctx, ref);
-        },
-        child: Scaffold(
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: StaticRadialCirclesBackground(
-                  centerAlignment: const Alignment(0, -0.3),
-                  baseOpacity: 0.28,
-                  highlightOpacity: 0.92,
-                  highlightTargetLightness: 0.62,
-                  highlightSaturationTarget: 0.95,
-                  strokeWidth: 2.0,
-                  blendMode: BlendMode.srcOver,
-                  globalOpacity: 0.22,
-                  fullCircles: true,
-                  maxRings: 60,
-                ),
-              ),
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Invisible header placeholders to match role selection layout spacing
-                      const SizedBox(height: 24),
-                      Opacity(
-                        opacity: 0.0,
-                        child: Text(
-                          'Choose Roles',
-                          style: Theme.of(context).textTheme.headlineLarge,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Opacity(
-                        opacity: 0.0,
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? CategoryRegistry.getCategory(
-                                          widget.categoryId)
-                                      .color
-                                      .withOpacity(0.3)
-                                  : CategoryRegistry.getCategory(
-                                          widget.categoryId)
-                                      .color
-                                      .withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Theme.of(context).brightness ==
-                                        Brightness.dark
-                                    ? CategoryRegistry.getCategory(
-                                            widget.categoryId)
-                                        .color
-                                        .withOpacity(0.8)
-                                    : CategoryRegistry.getCategory(
-                                            widget.categoryId)
-                                        .color,
-                                width: 2,
-                              ),
-                            ),
-                            child: Text(
-                              CategoryRegistry.getCategory(widget.categoryId)
-                                  .displayName,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? Colors.white.withOpacity(0.95)
-                                        : Colors.black,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (widget.sessionId != null &&
-                          widget.onlineTeam != null) ...[
-                        const SizedBox(height: 8),
-                        Opacity(
-                          opacity: 0.0,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? teamColor.border.withOpacity(0.2)
-                                  : teamColor.background.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: teamColor.border.withOpacity(0.5),
-                                width: 1,
-                              ),
-                            ),
-                            child: Text(
-                              _isCurrentTeamActive
-                                  ? 'Your turn to assign roles'
-                                  : '${widget.onlineTeam!['teamName'] ?? 'Team'}\'s turn',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineSmall
-                                  ?.copyWith(
-                                    color: teamColor.text,
-                                  ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 50),
-                      Expanded(
-                        child: Center(
-                          child: _isCurrentTeamActive
-                              ? Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10.0),
-                                      child: Text(
-                                        'Transmitter',
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineSmall
-                                            ?.copyWith(
-                                              fontSize: 26,
-                                              color:
-                                                  Colors.white.withOpacity(0.9),
-                                            ),
-                                      ),
-                                    ),
-                                    // Keep the card structure but make it fully transparent; keep the name visible
-                                    SizedBox(
-                                      height: 90,
-                                      child: AnimatedBuilder(
-                                        animation: _animation,
-                                        builder: (context, child) {
-                                          return Transform.scale(
-                                            scale:
-                                                1 + (_animation.value * 0.03),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: Colors.transparent,
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                border: Border.all(
-                                                  color: Colors.transparent,
-                                                  width: 2,
-                                                ),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Text(
-                                                _selectedConveyor!,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .displayLarge,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    const SizedBox(height: 150),
-                                    Text(
-                                      "${(widget.onlineTeam?['teamName'] as String?) ?? 'Current team'} is getting ready",
-                                      textAlign: TextAlign.center,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
-                                          ?.copyWith(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .secondary,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'Please wait while they get set to start the round.',
-                                      textAlign: TextAlign.center,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyMedium,
-                                    ),
-                                  ],
-                                ),
-                        ),
-                      ),
-                      // No extra space above the card now
-                      Expanded(
-                        child: Center(
-                          child: (_swipeRightDone && _swipeLeftDone) ||
-                                  !_isCurrentTeamActive
-                              ? const SizedBox.shrink()
-                              : Dismissible(
-                                  key: ValueKey(_swipeStep),
-                                  direction: _swipeSteps[_swipeStep].direction,
-                                  onDismissed: (direction) {
-                                    setState(() {
-                                      if (_swipeStep == 0 &&
-                                          direction ==
-                                              DismissDirection.startToEnd) {
-                                        _swipeRightDone = true;
-                                        _swipeStep = 1;
-                                      } else if (_swipeStep == 1 &&
-                                          direction ==
-                                              DismissDirection.endToStart) {
-                                        _swipeLeftDone = true;
-                                      }
-                                    });
-                                  },
-                                  child: Container(
-                                    width: double.infinity,
-                                    height: 120,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 0),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 20),
-                                    decoration: BoxDecoration(
-                                      color: cardBackground,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: cardBorder,
-                                        width: 2,
-                                      ),
-                                      // Removed drop shadow for flatter look
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        if (_swipeStep == 1)
-                                          const Icon(Icons.arrow_back,
-                                              color: Colors.red, size: 32),
-                                        if (_swipeStep == 1)
-                                          const SizedBox(width: 12),
-                                        Text(
-                                          _swipeSteps[_swipeStep].text,
-                                          style: TextStyle(
-                                            color:
-                                                _swipeSteps[_swipeStep].color,
-                                            fontSize: 22,
-                                          ),
-                                        ),
-                                        if (_swipeStep == 0)
-                                          const SizedBox(width: 12),
-                                        if (_swipeStep == 0)
-                                          const Icon(Icons.arrow_forward,
-                                              color: Colors.green, size: 32),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        width: 200,
-                        child: TeamColorButton(
-                          text: 'Start',
-                          icon: Icons.play_arrow,
-                          color: uiColors[1], // Green
-                          onPressed: (_swipeRightDone && _swipeLeftDone) &&
-                                  _isCurrentTeamActive
-                              ? () async {
-                                  if (widget.sessionId != null) {
-                                    await FirestoreService.fromRoleAssignment(
-                                      widget.sessionId!,
-                                      guesser: _selectedGuesser!,
-                                      conveyor: _selectedConveyor!,
-                                    );
-                                  } else {
-                                    GameNavigationService.navigateToGameScreen(
-                                      context,
-                                      widget.teamIndex,
-                                      widget.roundNumber,
-                                      widget.turnNumber,
-                                      widget.categoryId,
-                                    );
-                                  }
-                                }
-                              : null,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
+    // Unified single-scaffold design (no separate transitioning scaffold)
 
     return ConfirmOnBack(
       dialogBuilder: (ctx) => QuitDialog(color: teamColor),
       onConfirmed: (ctx) async {
         await GameNavigationService.quitToHome(ctx, ref);
       },
+      onWillPopOverride: (ctx) async {
+        if (_isTransitioning) {
+          setState(() {
+            _isTransitioning = false;
+            _swipeStep = 0;
+            _swipeRightDone = false;
+            _swipeLeftDone = false;
+            _fadeController.reset();
+            _postOpacity = 0.0;
+          });
+          return false; // intercept: go back to pre-next UI without dialog
+        }
+        return true; // normal flow (show dialog)
+      },
       child: Scaffold(
         body: Stack(
           children: [
             Positioned.fill(
               child: StaticRadialCirclesBackground(
-                centerAlignment: const Alignment(0, -0.3),
-                baseOpacity: 0.28,
-                highlightOpacity: 0.92,
+                centerAlignment: const Alignment(0, -0.22),
+                ringColor: teamColor.border,
+                baseOpacity: 0.22,
+                highlightOpacity: 1,
                 strokeWidth: 2.0,
                 blendMode: BlendMode.srcOver,
-                globalOpacity: 0.22,
-                fullCircles: false,
+                globalOpacity: 0.25,
+                fullCircles: _isTransitioning,
               ),
             ),
             SafeArea(
@@ -735,11 +442,206 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                       ),
                     ],
                     const SizedBox(height: 50),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          // Conveyor title + card
-                          Expanded(
+                    if (!_isTransitioning) ...[
+                      Expanded(
+                        child: FadeTransition(
+                          opacity: _preOpacity,
+                          child: Column(
+                            children: [
+                              // Transmitter title + card
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 10.0),
+                                      child: Text(
+                                        'Transmitter',
+                                        textAlign: TextAlign.center,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .headlineSmall
+                                            ?.copyWith(
+                                              fontSize: 26,
+                                              color:
+                                                  Colors.white.withOpacity(0.9),
+                                            ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 90,
+                                      child: AnimatedBuilder(
+                                        animation: _animation,
+                                        builder: (context, child) {
+                                          return Transform.scale(
+                                            scale:
+                                                1 + (_animation.value * 0.03),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Color.alphaBlend(
+                                                  teamColor.border
+                                                      .withOpacity(0.3),
+                                                  Theme.of(context)
+                                                      .scaffoldBackgroundColor,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: Color.alphaBlend(
+                                                    teamColor.border
+                                                        .withOpacity(1),
+                                                    Theme.of(context)
+                                                        .scaffoldBackgroundColor,
+                                                  ),
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                _selectedConveyor!,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displayLarge,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Swap Button
+                              Center(
+                                child: IconButton(
+                                  onPressed: _isCurrentTeamActive
+                                      ? _switchRoles
+                                      : null,
+                                  icon: Icon(
+                                    Icons.swap_vert,
+                                    size: 48,
+                                    color: _isCurrentTeamActive
+                                        ? teamColor.border.withOpacity(0.95)
+                                        : teamColor.border.withOpacity(0.4),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 50),
+                              // Receiver card with title beneath
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    SizedBox(
+                                      height: 90,
+                                      child: AnimatedBuilder(
+                                        animation: _animation,
+                                        builder: (context, child) {
+                                          return Transform.scale(
+                                            scale:
+                                                1.0 + (_animation.value * 0.03),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Color.alphaBlend(
+                                                  teamColor.border
+                                                      .withOpacity(0.3),
+                                                  Theme.of(context)
+                                                      .scaffoldBackgroundColor,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                  color: Color.alphaBlend(
+                                                    teamColor.border
+                                                        .withOpacity(1),
+                                                    Theme.of(context)
+                                                        .scaffoldBackgroundColor,
+                                                  ),
+                                                  width: 2,
+                                                ),
+                                              ),
+                                              alignment: Alignment.center,
+                                              child: Text(
+                                                _selectedGuesser!,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .displayLarge,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Receiver',
+                                      textAlign: TextAlign.center,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall
+                                          ?.copyWith(
+                                            fontSize: 26,
+                                            color:
+                                                Colors.white.withOpacity(0.9),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      // Bottom actions row (pre-next)
+                      FadeTransition(
+                        opacity: _preOpacity,
+                        child: Row(
+                          children: [
+                            IconOnlyColorButton(
+                              icon: _isCurrentTeamActive
+                                  ? Icons.shuffle
+                                  : Icons.hourglass_empty,
+                              color: uiColors[0],
+                              onPressed: _isCurrentTeamActive
+                                  ? () {
+                                      _assignRandomRoles();
+                                    }
+                                  : null,
+                              size: 56,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TeamColorButton(
+                                text: _isCurrentTeamActive
+                                    ? 'Next'
+                                    : 'Waiting...',
+                                icon: _isCurrentTeamActive
+                                    ? Icons.arrow_forward
+                                    : Icons.hourglass_empty,
+                                color: uiColors[1],
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 16, horizontal: 8),
+                                onPressed: _isCurrentTeamActive
+                                    ? () {
+                                        _showTransitionScreen();
+                                      }
+                                    : null,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ] else ...[
+                      // Post-next: simplified layout with tutorial + Start
+                      Expanded(
+                        child: AnimatedOpacity(
+                          duration: const Duration(milliseconds: 250),
+                          opacity: _postOpacity,
+                          child: Center(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -766,19 +668,11 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                         scale: 1 + (_animation.value * 0.03),
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            color: Color.alphaBlend(
-                                              teamColor.border.withOpacity(0.3),
-                                              Theme.of(context)
-                                                  .scaffoldBackgroundColor,
-                                            ),
+                                            color: Colors.transparent,
                                             borderRadius:
-                                                BorderRadius.circular(12),
+                                                BorderRadius.circular(10),
                                             border: Border.all(
-                                              color: Color.alphaBlend(
-                                                teamColor.border.withOpacity(1),
-                                                Theme.of(context)
-                                                    .scaffoldBackgroundColor,
-                                              ),
+                                              color: Colors.transparent,
                                               width: 2,
                                             ),
                                           ),
@@ -797,119 +691,110 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                               ],
                             ),
                           ),
-                          // Switch Button (no background, larger icon) centered between cards
-                          Center(
-                            child: IconButton(
-                              onPressed:
-                                  _isCurrentTeamActive ? _switchRoles : null,
-                              icon: Icon(
-                                Icons.swap_vert,
-                                size: 48,
-                                color: _isCurrentTeamActive
-                                    ? teamColor.border.withOpacity(0.95)
-                                    : teamColor.border.withOpacity(0.4),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 50),
-                          // Receiver card with title beneath
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                SizedBox(
-                                  height: 90,
-                                  child: AnimatedBuilder(
-                                    animation: _animation,
-                                    builder: (context, child) {
-                                      return Transform.scale(
-                                        scale: 1.0 + (_animation.value * 0.03),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Color.alphaBlend(
-                                              teamColor.border.withOpacity(0.3),
-                                              Theme.of(context)
-                                                  .scaffoldBackgroundColor,
-                                            ),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            border: Border.all(
-                                              color: Color.alphaBlend(
-                                                teamColor.border.withOpacity(1),
-                                                Theme.of(context)
-                                                    .scaffoldBackgroundColor,
-                                              ),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            _selectedGuesser!,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .displayLarge,
+                        ),
+                      ),
+                      Expanded(
+                        child: Center(
+                          child: (_isCurrentTeamActive &&
+                                  !(_swipeRightDone && _swipeLeftDone))
+                              ? Dismissible(
+                                  key: ValueKey(_swipeStep),
+                                  direction: _swipeSteps[_swipeStep].direction,
+                                  onDismissed: (direction) {
+                                    setState(() {
+                                      if (_swipeStep == 0 &&
+                                          direction ==
+                                              DismissDirection.startToEnd) {
+                                        _swipeRightDone = true;
+                                        _swipeStep = 1;
+                                      } else if (_swipeStep == 1 &&
+                                          direction ==
+                                              DismissDirection.endToStart) {
+                                        _swipeLeftDone = true;
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    height: 120,
+                                    margin: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 0),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 20),
+                                    decoration: BoxDecoration(
+                                      color: cardBackground,
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: cardBorder,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        if (_swipeStep == 1)
+                                          const Icon(Icons.arrow_back,
+                                              color: Colors.red, size: 32),
+                                        if (_swipeStep == 1)
+                                          const SizedBox(width: 12),
+                                        Text(
+                                          _swipeSteps[_swipeStep].text,
+                                          style: TextStyle(
+                                            color:
+                                                _swipeSteps[_swipeStep].color,
+                                            fontSize: 22,
                                           ),
                                         ),
-                                      );
-                                    },
+                                        if (_swipeStep == 0)
+                                          const SizedBox(width: 12),
+                                        if (_swipeStep == 0)
+                                          const Icon(Icons.arrow_forward,
+                                              color: Colors.green, size: 32),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Receiver',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall
-                                      ?.copyWith(
-                                        fontSize: 26,
-                                        color: Colors.white.withOpacity(0.9),
-                                      ),
-                                ),
-                                // Removed sine underline for simplicity
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Bottom actions row: small icon-only "Pick" on the left, full "Next" on the right
-                    Row(
-                      children: [
-                        IconOnlyColorButton(
-                          icon: _isCurrentTeamActive
-                              ? Icons.shuffle
-                              : Icons.hourglass_empty,
-                          color: uiColors[0],
-                          onPressed:
-                              (_isCurrentTeamActive || widget.sessionId == null)
-                                  ? () {
-                                      _assignRandomRoles();
-                                      _showTransitionScreen();
-                                    }
-                                  : null,
-                          size: 56,
+                                )
+                              : const SizedBox.shrink(),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                      ),
+                      const SizedBox(height: 32),
+                      AnimatedOpacity(
+                        duration: const Duration(milliseconds: 250),
+                        opacity: _postOpacity,
+                        child: SizedBox(
+                          width: double.infinity,
                           child: TeamColorButton(
-                            text: _isCurrentTeamActive ? 'Next' : 'Waiting...',
-                            icon: _isCurrentTeamActive
-                                ? Icons.arrow_forward
-                                : Icons.hourglass_empty,
-                            color: uiColors[1], // Green
+                            text: 'Start',
+                            icon: Icons.play_arrow,
+                            color: uiColors[1],
                             padding: const EdgeInsets.symmetric(
-                                vertical: 16, horizontal: 8),
-                            onPressed: _isCurrentTeamActive
-                                ? () {
-                                    _showTransitionScreen();
+                                vertical: 18, horizontal: 12),
+                            onPressed: (_swipeRightDone && _swipeLeftDone) &&
+                                    _isCurrentTeamActive
+                                ? () async {
+                                    if (widget.sessionId != null) {
+                                      await FirestoreService.fromRoleAssignment(
+                                        widget.sessionId!,
+                                        guesser: _selectedGuesser!,
+                                        conveyor: _selectedConveyor!,
+                                      );
+                                    } else {
+                                      GameNavigationService
+                                          .navigateToGameScreen(
+                                        context,
+                                        widget.teamIndex,
+                                        widget.roundNumber,
+                                        widget.turnNumber,
+                                        widget.categoryId,
+                                      );
+                                    }
                                   }
                                 : null,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ),
