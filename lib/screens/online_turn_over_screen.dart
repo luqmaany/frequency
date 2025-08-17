@@ -18,6 +18,7 @@ class OnlineTurnOverScreen extends ConsumerStatefulWidget {
   final int skipsLeft;
   final List<String> wordsGuessed;
   final List<String> wordsSkipped;
+  final List<String> wordsLeftOnScreen;
   final Set<String> disputedWords;
   final String? conveyor;
   final String? guesser;
@@ -37,6 +38,7 @@ class OnlineTurnOverScreen extends ConsumerStatefulWidget {
     required this.skipsLeft,
     required this.wordsGuessed,
     required this.wordsSkipped,
+    required this.wordsLeftOnScreen,
     required this.disputedWords,
     this.conveyor,
     this.guesser,
@@ -519,7 +521,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 10),
-                            // TODO: Also display the remaining 'words left on screen' after the skipped words list
                             for (var word in widget.wordsSkipped)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8.0),
@@ -562,6 +563,62 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
                                               ? Colors.white.withOpacity(0.95)
+                                              : Colors.black,
+                                        ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              ),
+                          ],
+                          if (widget.wordsLeftOnScreen.isNotEmpty) ...[
+                            const SizedBox(height: 24),
+                            Text(
+                              'Words Left On Screen:',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 10),
+                            for (var word in widget.wordsLeftOnScreen)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 8, horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).brightness ==
+                                            Brightness.dark
+                                        ? CategoryRegistry.getCategory(
+                                                widget.category)
+                                            .color
+                                            .withOpacity(0.06)
+                                        : CategoryRegistry.getCategory(
+                                                widget.category)
+                                            .color
+                                            .withOpacity(0.04),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? CategoryRegistry.getCategory(
+                                                  widget.category)
+                                              .color
+                                              .withOpacity(0.4)
+                                          : CategoryRegistry.getCategory(
+                                                  widget.category)
+                                              .color
+                                              .withOpacity(0.25),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    word,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Theme.of(context).brightness ==
+                                                  Brightness.dark
+                                              ? Colors.white.withOpacity(0.9)
                                               : Colors.black,
                                         ),
                                     textAlign: TextAlign.center,

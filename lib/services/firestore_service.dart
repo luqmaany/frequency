@@ -423,6 +423,7 @@ class FirestoreService {
       int skipsLeft,
       List<String> wordsGuessed,
       List<String> wordsSkipped,
+      List<String> wordsLeftOnScreen,
       Set<String> disputedWords,
       String conveyor,
       String guesser) async {
@@ -442,6 +443,7 @@ class FirestoreService {
       'skipsLeft': skipsLeft,
       'wordsGuessed': wordsGuessed,
       'wordsSkipped': wordsSkipped,
+      'wordsLeftOnScreen': wordsLeftOnScreen,
       'disputedWords':
           disputedWords.toList(), // Convert Set to List for Firestore
       'conveyor': conveyor,
@@ -490,6 +492,7 @@ class FirestoreService {
       'skipsLeft': skipsLeft,
       'wordsGuessed': wordsGuessed,
       'wordsSkipped': wordsSkipped,
+      'wordsLeftOnScreen': [],
       'disputedWords': disputedWords.toList(),
       'conveyor': conveyor,
       'guesser': guesser,
@@ -622,7 +625,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE TX: upsertTeamByDeviceId($sessionId) - deviceId: $deviceId');
-    await FirebaseFirestore.instance.runTransaction((txn) async {
+    await sessions.firestore.runTransaction((txn) async {
       final docRef = sessions.doc(sessionId);
       final snapshot = await txn.get(docRef);
       if (!snapshot.exists) {
@@ -661,7 +664,7 @@ class FirestoreService {
 
     print(
         '🔥 FIRESTORE TX: removeTeamByDeviceId($sessionId) - deviceId: $deviceId');
-    await FirebaseFirestore.instance.runTransaction((txn) async {
+    await sessions.firestore.runTransaction((txn) async {
       final docRef = sessions.doc(sessionId);
       final snapshot = await txn.get(docRef);
       if (!snapshot.exists) {

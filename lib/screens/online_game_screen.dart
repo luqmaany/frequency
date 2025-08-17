@@ -73,6 +73,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
       skipsLeft,
       wordsGuessed,
       wordsSkipped,
+      currentWords.map((w) => w.text).toList(),
       disputedWords,
       conveyor,
       guesser,

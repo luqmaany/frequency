@@ -457,7 +457,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                       ),
                                     ],
                                   ),
-                                  const SizedBox(height: 8),
                                   ListView.builder(
                                     shrinkWrap: true,
                                     physics:
@@ -522,7 +521,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                                   }
                                                 },
                                           child: AnimatedScale(
-                                              scale: isSelected ? 1.03 : 1.0,
+                                              scale: isSelected ? 1 : 0.98,
                                               duration: const Duration(
                                                   milliseconds: 120),
                                               curve: Curves.easeOut,

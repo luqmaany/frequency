@@ -18,17 +18,23 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   List<String> _suggestedNames = [];
   String? _errorMessage;
   bool _isEditing = false;
+  final ScrollController _suggestionsScrollController = ScrollController();
+  bool _canScrollLeft = false;
+  bool _canScrollRight = false;
 
   @override
   void initState() {
     super.initState();
     _loadSuggestedNames();
+    _suggestionsScrollController.addListener(_updateEdgeFades);
   }
 
   @override
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
+    _suggestionsScrollController.removeListener(_updateEdgeFades);
+    _suggestionsScrollController.dispose();
     super.dispose();
   }
 
@@ -230,6 +236,29 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
     );
   }
 
+  void _updateEdgeFades() {
+    if (!_suggestionsScrollController.hasClients) {
+      if (_canScrollLeft || _canScrollRight) {
+        setState(() {
+          _canScrollLeft = false;
+          _canScrollRight = false;
+        });
+      }
+      return;
+    }
+    final position = _suggestionsScrollController.position;
+    final double max = position.maxScrollExtent;
+    final double offset = position.pixels;
+    final bool canLeft = offset > 0.0;
+    final bool canRight = offset < (max - 0.5);
+    if (canLeft != _canScrollLeft || canRight != _canScrollRight) {
+      setState(() {
+        _canScrollLeft = canLeft;
+        _canScrollRight = canRight;
+      });
+    }
+  }
+
   Widget _buildSuggestedNames(GameConfig gameConfig) {
     // If at maximum players, replace suggestions row with message
     if (gameConfig.playerNames.length >= 12) {
@@ -258,14 +287,33 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
       return const SizedBox.shrink();
     }
 
+    WidgetsBinding.instance.addPostFrameCallback((_) => _updateEdgeFades());
+
     return SizedBox(
       height: 50, // Fixed height for single row
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children:
-              suggestedNames.map((s) => _buildChip(s, gameConfig)).toList(),
+      child: ShaderMask(
+        shaderCallback: (Rect bounds) {
+          return LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: <Color>[
+              _canScrollLeft ? Colors.transparent : Colors.white,
+              Colors.white,
+              Colors.white,
+              _canScrollRight ? Colors.transparent : Colors.white,
+            ],
+            stops: const <double>[0.0, 0.06, 0.94, 1.0],
+          ).createShader(bounds);
+        },
+        blendMode: BlendMode.dstIn,
+        child: SingleChildScrollView(
+          controller: _suggestionsScrollController,
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children:
+                suggestedNames.map((s) => _buildChip(s, gameConfig)).toList(),
+          ),
         ),
       ),
     );

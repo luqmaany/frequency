@@ -143,6 +143,7 @@ class GameNavigationService {
     int skipsLeft,
     List<String> wordsGuessed,
     List<String> wordsSkipped,
+    List<String> wordsLeftOnScreen,
     Set<String> disputedWords,
   ) {
     Navigator.of(context).pushReplacement(
@@ -156,6 +157,7 @@ class GameNavigationService {
           skipsLeft: skipsLeft,
           wordsGuessed: wordsGuessed,
           wordsSkipped: wordsSkipped,
+          wordsLeftOnScreen: wordsLeftOnScreen,
           disputedWords: disputedWords,
         ),
       ),

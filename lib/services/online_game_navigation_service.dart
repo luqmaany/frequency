@@ -321,6 +321,8 @@ class OnlineGameNavigationService {
               currentTurnRecord['wordsGuessed'] as List? ?? []),
           wordsSkipped: List<String>.from(
               currentTurnRecord['wordsSkipped'] as List? ?? []),
+          wordsLeftOnScreen: List<String>.from(
+              currentTurnRecord['wordsLeftOnScreen'] as List? ?? []),
           disputedWords: Set<String>.from(
               currentTurnRecord['disputedWords'] as List? ?? []),
           conveyor: currentTurnRecord['conveyor'] as String?,

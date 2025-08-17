@@ -67,6 +67,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         skipsLeft,
         wordsGuessed,
         wordsSkipped,
+        currentWords.map((w) => w.text).toList(),
         disputedWords,
       );
     }

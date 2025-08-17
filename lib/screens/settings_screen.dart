@@ -502,6 +502,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         icon: Icons.close,
                         color: TeamColor('Base', baseColor.withOpacity(0.2),
                             borderColor, Colors.white),
+                        variant: TeamButtonVariant.outline,
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ),
@@ -512,6 +513,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         icon: icon,
                         color: TeamColor('Base', baseColor.withOpacity(0.2),
                             borderColor, Colors.white),
+                        variant: TeamButtonVariant.filled,
                         onPressed: () {
                           Navigator.of(context).pop();
                           onConfirm();

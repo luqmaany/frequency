@@ -404,9 +404,14 @@ class _CategorySelectionScreenState
                         children: [
                           Expanded(
                             child: TeamColorButton(
-                              text: 'Next',
-                              icon: Icons.arrow_forward,
-                              color: uiColors[1], // Green
+                              text:
+                                  _isCurrentTeamActive ? 'Next' : 'Waiting...',
+                              icon: _isCurrentTeamActive
+                                  ? Icons.arrow_forward
+                                  : Icons.hourglass_top,
+                              color: _isCurrentTeamActive
+                                  ? uiColors[1] // Green
+                                  : uiColors[0], // Blue for waiting
                               onPressed: (_isCurrentTeamActive &&
                                       _selectedCategory != null)
                                   ? () async {

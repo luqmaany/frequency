@@ -40,6 +40,7 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
   double _leftSwipeProgress = 0.0;
   double _bottomRightSwipeProgress = 0.0;
   double _bottomLeftSwipeProgress = 0.0;
+  // Removed animated hint in favor of static triple arrows
 
   @override
   void initState() {
@@ -108,6 +109,11 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
     if (widget.currentWords.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
+
+    final bool _showSwipeHint = _leftSwipeProgress == 0.0 &&
+        _rightSwipeProgress == 0.0 &&
+        _bottomLeftSwipeProgress == 0.0 &&
+        _bottomRightSwipeProgress == 0.0;
 
     return Stack(
       children: [
@@ -341,6 +347,61 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
               ),
             ),
           ],
+        ),
+        // Swipe arrows near the side icons (static triples, red on left / green on right)
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedOpacity(
+              opacity: _showSwipeHint ? 0.95 : 0.0,
+              duration: const Duration(milliseconds: 150),
+              child: Stack(
+                children: [
+                  // Left group moved toward center (further from left icon)
+                  Positioned(
+                    left: 65,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.keyboard_arrow_left,
+                              color: Colors.red.withOpacity(1.0), size: 28),
+                          const SizedBox(width: 0),
+                          Icon(Icons.keyboard_arrow_left,
+                              color: Colors.red.withOpacity(0.7), size: 26),
+                          const SizedBox(width: 0),
+                          Icon(Icons.keyboard_arrow_left,
+                              color: Colors.red.withOpacity(0.4), size: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Right group moved toward center (further from right icon)
+                  Positioned(
+                    right: 65,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.keyboard_arrow_right,
+                              color: Colors.green.withOpacity(0.4), size: 24),
+                          const SizedBox(width: 0),
+                          Icon(Icons.keyboard_arrow_right,
+                              color: Colors.green.withOpacity(0.7), size: 26),
+                          const SizedBox(width: 0),
+                          Icon(Icons.keyboard_arrow_right,
+                              color: Colors.green.withOpacity(1.0), size: 28),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
         // Skip icon positioned between cards on the left
         Positioned(

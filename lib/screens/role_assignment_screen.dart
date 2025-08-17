@@ -4,7 +4,6 @@ import '../services/game_setup_provider.dart';
 import '../services/game_navigation_service.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import 'package:convey/widgets/static_radial_circles_background.dart';
-// import 'package:convey/widgets/radial_ripple_background.dart';
 import '../data/category_registry.dart';
 import '../services/storage_service.dart';
 import '../services/firestore_service.dart';
@@ -290,6 +289,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
             _selectedConveyor = conveyor;
             // Once transitioning, keep it true to prevent flicker back to the role UI
             _isTransitioning = _isTransitioning || isTransitioning;
+            if (isTransitioning) {
+              // Ensure non-active devices reveal post UI as well
+              _postOpacity = 1.0;
+            }
           });
         }
       });
@@ -354,8 +357,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                 blendMode: BlendMode.srcOver,
                 globalOpacity: 0.25,
                 fullCircles: _isTransitioning,
-                maxRings: _isTransitioning ? 60 : 30,
-                pulseBaseRings: _isTransitioning ? 60 : 30,
+                maxRings: _isTransitioning ? 60 : 27,
+                pulseBaseRings: _isTransitioning ? 60 : 27,
               ),
             ),
             SafeArea(
@@ -603,19 +606,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         opacity: _preOpacity,
                         child: Row(
                           children: [
-                            IconOnlyColorButton(
-                              icon: _isCurrentTeamActive
-                                  ? Icons.shuffle
-                                  : Icons.hourglass_empty,
-                              color: uiColors[0],
-                              onPressed: _isCurrentTeamActive
-                                  ? () {
-                                      _assignRandomRoles();
-                                    }
-                                  : null,
-                              size: 56,
-                            ),
-                            const SizedBox(width: 12),
+                            if (_isCurrentTeamActive) ...[
+                              IconOnlyColorButton(
+                                icon: Icons.shuffle,
+                                color: uiColors[0],
+                                onPressed: () {
+                                  _assignRandomRoles();
+                                },
+                                size: 56,
+                              ),
+                              const SizedBox(width: 12),
+                            ],
                             Expanded(
                               child: TeamColorButton(
                                 text: _isCurrentTeamActive
@@ -763,7 +764,37 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                     ),
                                   ),
                                 )
-                              : const SizedBox.shrink(),
+                              : (!_isCurrentTeamActive)
+                                  ? Container(
+                                      width: double.infinity,
+                                      height: 120,
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 0),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 24, vertical: 20),
+                                      decoration: BoxDecoration(
+                                        color: cardBackground,
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: cardBorder,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          'Waiting for the active team to continue...',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: teamColor.text,
+                                            fontSize: 18,
+                                            height: 1.2,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(),
                         ),
                       ),
                       const SizedBox(height: 32),

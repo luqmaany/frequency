@@ -25,8 +25,10 @@ class QuitDialog extends StatelessWidget {
     const Color dangerText = Color(0xFFFFCDD2);
 
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
+        constraints: const BoxConstraints(maxWidth: 560),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: dangerFill,
@@ -65,6 +67,7 @@ class QuitDialog extends StatelessWidget {
                     icon: Icons.close,
                     color: TeamColor(
                         'Red', dangerText, dangerBorder, Colors.white),
+                    variant: TeamButtonVariant.outline,
                     onPressed: () => Navigator.of(context).pop(false),
                   ),
                 ),
@@ -75,6 +78,7 @@ class QuitDialog extends StatelessWidget {
                     icon: Icons.exit_to_app,
                     color: TeamColor(
                         'Red', dangerText, dangerBorder, Colors.white),
+                    variant: TeamButtonVariant.filled,
                     onPressed: () => Navigator.of(context).pop(true),
                   ),
                 ),

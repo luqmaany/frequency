@@ -20,18 +20,24 @@ class OnlineLobbyScreen extends ConsumerStatefulWidget {
 class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
   final TextEditingController _joinCodeController = TextEditingController();
   final SegmentedCodeController _codeController = SegmentedCodeController();
-  String? _error;
-  bool _loading = false;
+  String? _createError;
+  String? _joinError;
+  bool _isCreating = false;
+  bool _isJoining = false;
 
   Future<void> _joinSession() async {
     final code = _joinCodeController.text.trim().toUpperCase();
     if (code.isEmpty) {
-      setState(() => _error = 'Enter join code.');
+      setState(() {
+        _joinError = 'Enter join code.';
+        _createError = null;
+      });
       return;
     }
     setState(() {
-      _loading = true;
-      _error = null;
+      _isJoining = true;
+      _joinError = null;
+      _createError = null;
     });
     try {
       final deviceId = await StorageService.getDeviceId();
@@ -40,7 +46,7 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
       final sessionExists = await ref.read(sessionExistsProvider(code).future);
       if (!mounted) return;
       if (!sessionExists) {
-        setState(() => _error = 'Session not found.');
+        setState(() => _joinError = 'Session not found.');
         _codeController.clear();
         return;
       }
@@ -84,14 +90,14 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = 'Failed to join session.');
+      setState(() => _joinError = 'Failed to join session.');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to join session: $e')),
       );
     } finally {
       if (!mounted) return;
       setState(() {
-        _loading = false;
+        _isJoining = false;
       });
     }
   }
@@ -109,8 +115,8 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
 
   Future<void> _createSession() async {
     setState(() {
-      _loading = true;
-      _error = null;
+      _isCreating = true;
+      _createError = null;
     });
 
     String newCode = '';
@@ -134,8 +140,8 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
 
     if (exists) {
       setState(() {
-        _loading = false;
-        _error =
+        _isCreating = false;
+        _createError =
             'Failed to generate unique code after $maxAttempts attempts. Please try again.';
       });
       return;
@@ -176,14 +182,12 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
         ),
       );
     } catch (e) {
-      setState(() => _error = 'Failed to create session.');
+      setState(() => _createError = 'Failed to create session.');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to create session: $e')),
       );
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      setState(() => _isCreating = false);
     }
   }
 
@@ -234,8 +238,21 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                             text: 'Create New Session',
                             icon: Icons.add,
                             color: teamColors[1],
-                            onPressed: _createSession,
+                            onPressed: _isCreating ? null : _createSession,
+                            isLoading: _isCreating,
                           ),
+                          if (_createError != null) ...[
+                            const SizedBox(height: 8),
+                            Center(
+                              child: Text(
+                                _createError!,
+                                style: TextStyle(
+                                  color: Colors.red.shade400,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 28),
                           // OR separator
                           Row(
@@ -277,40 +294,38 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
                             length: 6,
                             controller: _codeController,
                             onChanged: (value) {
-                              setState(() => _error = null);
+                              setState(() => _joinError = null);
                               _joinCodeController.text = value;
                             },
                             onCompleted: (value) async {
-                              setState(() => _error = null);
+                              setState(() => _joinError = null);
                               _joinCodeController.text = value;
                               // Do not auto-join; wait for button press
                             },
                           ),
+                          if (_joinError != null) ...[
+                            const SizedBox(height: 8),
+                            Center(
+                              child: Text(
+                                _joinError!,
+                                style: TextStyle(
+                                  color: Colors.red.shade400,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                    if (_error != null) ...[
-                      const SizedBox(height: 8),
-                      Center(
-                        child: Text(
-                          _error!,
-                          style: TextStyle(
-                            color: Colors.red.shade400,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 16),
-                    if (_loading)
-                      const Center(child: CircularProgressIndicator())
-                    else
-                      TeamColorButton(
-                        text: 'Join Session',
-                        icon: Icons.login_rounded,
-                        color: teamColors[0],
-                        onPressed: _joinSession,
-                      ),
+                    TeamColorButton(
+                      text: 'Join Session',
+                      icon: Icons.login_rounded,
+                      color: teamColors[0],
+                      onPressed: _isJoining ? null : _joinSession,
+                      isLoading: _isJoining,
+                    ),
                   ],
                 ),
               ),

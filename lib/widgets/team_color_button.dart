@@ -10,6 +10,8 @@ class TeamColor {
   TeamColor(this.name, this.background, this.border, this.text);
 }
 
+enum TeamButtonVariant { filled, outline }
+
 final List<TeamColor> uiColors = [
   TeamColor('Blue', Colors.blue.shade100, Colors.blue, Colors.blue.shade900),
   TeamColor(
@@ -41,6 +43,8 @@ class TeamColorButton extends StatefulWidget {
   final VoidCallback? onPressed;
   final EdgeInsetsGeometry padding;
   final double iconSize;
+  final TeamButtonVariant variant;
+  final bool isLoading;
 
   const TeamColorButton({
     super.key,
@@ -50,6 +54,8 @@ class TeamColorButton extends StatefulWidget {
     required this.onPressed,
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
     this.iconSize = 24,
+    this.variant = TeamButtonVariant.filled,
+    this.isLoading = false,
   });
 
   @override
@@ -90,17 +96,27 @@ class _TeamColorButtonState extends State<TeamColorButton> {
 
   @override
   Widget build(BuildContext context) {
-    final bool enabled = widget.onPressed != null;
+    final bool enabled = widget.onPressed != null && !widget.isLoading;
     // Compose an opaque dark button color by alpha blending the strong border
     // tint over the app background, matching the look of other dark buttons.
     final Color baseBg = Theme.of(context).colorScheme.background;
-    final Color overlayEnabled = widget.color.border.withOpacity(0.6);
-    final Color overlayDisabled = widget.color.border.withOpacity(0.2);
+    final bool isOutline = widget.variant == TeamButtonVariant.outline;
+    final double enabledOverlayOpacity = isOutline ? 0.08 : 0.6;
+    final double disabledOverlayOpacity = isOutline ? 0.04 : 0.2;
+    final Color overlayEnabled =
+        widget.color.border.withOpacity(enabledOverlayOpacity);
+    final Color overlayDisabled =
+        widget.color.border.withOpacity(disabledOverlayOpacity);
     final Color backgroundEnabled = Color.alphaBlend(overlayEnabled, baseBg);
     final Color backgroundDisabled = Color.alphaBlend(overlayDisabled, baseBg);
-    final Color border = widget.color.border.withOpacity(1);
-    final Color text = enabled ? Colors.white : Colors.white.withOpacity(0.1);
-    final Color iconColor = enabled ? border : border.withOpacity(0.2);
+    final Color border = (isOutline
+        ? widget.color.border.withOpacity(0.7)
+        : widget.color.border.withOpacity(1));
+    final Color text = enabled
+        ? (isOutline ? Colors.white.withOpacity(0.95) : Colors.white)
+        : Colors.white.withOpacity(0.1);
+    final Color iconColor =
+        enabled ? widget.color.border : widget.color.border.withOpacity(0.2);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
@@ -129,7 +145,17 @@ class _TeamColorButtonState extends State<TeamColorButton> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(widget.icon, size: widget.iconSize, color: iconColor),
+                  if (widget.isLoading)
+                    SizedBox(
+                      width: widget.iconSize,
+                      height: widget.iconSize,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(iconColor),
+                      ),
+                    )
+                  else
+                    Icon(widget.icon, size: widget.iconSize, color: iconColor),
                   const SizedBox(width: 12),
                   Text(
                     widget.text,
