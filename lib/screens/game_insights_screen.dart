@@ -3,232 +3,109 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
 import '../services/game_state_provider.dart';
 import '../widgets/team_color_button.dart';
+import '../widgets/celebration_explosions_background.dart';
 
-class GameInsightsScreen extends ConsumerWidget {
+class GameInsightsScreen extends ConsumerStatefulWidget {
   const GameInsightsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GameInsightsScreen> createState() => _GameInsightsScreenState();
+}
+
+class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(viewportFraction: 0.86);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final gameState = ref.watch(gameStateProvider);
     if (gameState == null) return const SizedBox.shrink();
 
     // Calculate game insights
     final insights = _calculateGameInsights(gameState);
 
+    // Build top 5 interesting insight items (title, description, icon)
+    final List<Map<String, dynamic>> items = _selectTopInsights(insights);
+
     return Scaffold(
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(27.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Game Insights Section
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade50,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          'Game Insights',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.deepPurple,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Most Decisive Player
-                        if (insights['mostDecisive'] != null) ...[
-                          _buildInsightCard(
-                            'Most Decisive',
-                            insights['mostDecisive']['description'],
-                            Icons.flash_on,
-                            Colors.orange,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Skip Master
-                        if (insights['skipMaster'] != null) ...[
-                          _buildInsightCard(
-                            'Skip Master',
-                            insights['skipMaster']['description'],
-                            Icons.fast_forward,
-                            Colors.red,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Comeback King
-                        if (insights['comebackKing'] != null) ...[
-                          _buildInsightCard(
-                            'Comeback King',
-                            insights['comebackKing']['description'],
-                            Icons.trending_up,
-                            Colors.green,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Early Bird
-                        if (insights['earlyBird'] != null) ...[
-                          _buildInsightCard(
-                            'Early Bird',
-                            insights['earlyBird']['description'],
-                            Icons.wb_sunny,
-                            Colors.amber,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Category Specialist
-                        if (insights['categorySpecialist'] != null) ...[
-                          _buildInsightCard(
-                            'Category Specialist',
-                            insights['categorySpecialist']['description'],
-                            Icons.psychology,
-                            Colors.purple,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Category Struggler
-                        if (insights['categoryStruggler'] != null) ...[
-                          _buildInsightCard(
-                            'Category Struggler',
-                            insights['categoryStruggler']['description'],
-                            Icons.help_outline,
-                            Colors.orange,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Efficiency Paradox
-                        if (insights['efficiencyParadox'] != null) ...[
-                          _buildInsightCard(
-                            'Efficiency Paradox',
-                            insights['efficiencyParadox']['description'],
-                            Icons.auto_awesome,
-                            Colors.indigo,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Late Game Hero
-                        if (insights['lateGameHero'] != null) ...[
-                          _buildInsightCard(
-                            'Late Game Hero',
-                            insights['lateGameHero']['description'],
-                            Icons.sports_esports,
-                            Colors.deepPurple,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Pressure Player
-                        if (insights['pressurePlayer'] != null) ...[
-                          _buildInsightCard(
-                            'Pressure Player',
-                            insights['pressurePlayer']['description'],
-                            Icons.whatshot,
-                            Colors.red,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Dynamic Duo
-                        if (insights['dynamicDuo'] != null) ...[
-                          _buildInsightCard(
-                            'Dynamic Duo',
-                            insights['dynamicDuo']['description'],
-                            Icons.favorite,
-                            Colors.pink,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Steady Eddie
-                        if (insights['steadyEddie'] != null) ...[
-                          _buildInsightCard(
-                            'Steady Eddie',
-                            insights['steadyEddie']['description'],
-                            Icons.straighten,
-                            Colors.teal,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Rollercoaster
-                        if (insights['rollercoaster'] != null) ...[
-                          _buildInsightCard(
-                            'Rollercoaster',
-                            insights['rollercoaster']['description'],
-                            Icons.waves,
-                            Colors.cyan,
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Game Statistics
-                        _buildInsightCard(
-                          'Game Statistics',
-                          insights['gameStats'],
-                          Icons.bar_chart,
-                          Colors.grey,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
-              ),
+          const Positioned.fill(
+            child: CelebrationExplosionsBackground(
+              burstsPerSecond: 4.0,
+              strokeWidth: 2.0,
+              baseOpacity: 0.12,
+              highlightOpacity: 0.55,
+              ringSpacing: 8.0,
+              globalOpacity: 1.0,
             ),
           ),
-          // Bottom section with Home button (pinned)
-          Container(
-            padding: const EdgeInsets.all(27.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 3,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
+          SafeArea(
+            child: Column(
               children: [
+                // Header
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: const Center(
+                    child: Text(
+                      'Insights',
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                // Carousel
                 Expanded(
-                  child: TeamColorButton(
-                    text: 'Leaderboard',
-                    icon: Icons.leaderboard,
-                    color: teamColors[1], // Green
-                    onPressed: () {
-                      Navigator.of(context).pop();
+                  child: PageView.builder(
+                    controller: _pageController,
+                    scrollDirection: Axis.vertical,
+                    itemCount: items.length,
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        child: _buildCarouselCard(
+                          context,
+                          title: item['title'] as String,
+                          description: item['description'] as String,
+                          icon: item['icon'] as IconData,
+                          colorIndex: index,
+                        ),
+                      );
                     },
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TeamColorButton(
-                    text: 'Home',
-                    icon: Icons.home,
-                    color: uiColors[0], // Blue
-                    onPressed: () {
-                      Navigator.of(context).popUntil((route) => route.isFirst);
-                    },
+                // Bottom
+                Container(
+                  padding: const EdgeInsets.all(27.0),
+                  decoration: const BoxDecoration(color: Colors.transparent),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: TeamColorButton(
+                      text: 'Home',
+                      icon: Icons.home,
+                      color: uiColors[0],
+                      onPressed: () {
+                        Navigator.of(context)
+                            .popUntil((route) => route.isFirst);
+                      },
+                    ),
                   ),
                 ),
               ],
@@ -239,27 +116,43 @@ class GameInsightsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInsightCard(
-      String title, String content, IconData icon, Color color) {
+  Widget _buildCarouselCard(BuildContext context,
+      {required String title,
+      required String description,
+      required IconData icon,
+      required int colorIndex}) {
+    final themeBg = Theme.of(context).colorScheme.background;
+    final accent = teamColors[colorIndex % teamColors.length];
+    final overlay = accent.border.withOpacity(0.55);
+    final cardBg = Color.alphaBlend(overlay, themeBg);
+
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.border.withOpacity(0.85), width: 2),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
+            color: accent.border.withOpacity(0.18),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
+      padding: const EdgeInsets.all(18),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 24),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(accent.border.withOpacity(0.22), themeBg),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                  color: accent.border.withOpacity(0.75), width: 1.5),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -267,16 +160,20 @@ class GameInsightsScreen extends ConsumerWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: color,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
-                  content,
-                  style: const TextStyle(fontSize: 14),
+                  description,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
@@ -284,6 +181,43 @@ class GameInsightsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  List<Map<String, dynamic>> _selectTopInsights(Map<String, dynamic> insights) {
+    final order = <Map<String, dynamic>>[];
+
+    void addIfExists(String key, String title, IconData icon) {
+      final entry = insights[key];
+      if (entry != null) {
+        order.add({
+          'title': title,
+          'description': entry['description'],
+          'icon': icon
+        });
+      }
+    }
+
+    addIfExists('mostDecisive', 'Most Decisive', Icons.flash_on);
+    addIfExists('comebackKing', 'Comeback King', Icons.trending_up);
+    addIfExists('dynamicDuo', 'Dynamic Duo', Icons.favorite);
+    addIfExists('lateGameHero', 'Late Game Hero', Icons.sports_esports);
+    addIfExists('efficiencyParadox', 'Efficiency Paradox', Icons.auto_awesome);
+    addIfExists('pressurePlayer', 'Pressure Player', Icons.whatshot);
+    addIfExists('skipMaster', 'Skip Master', Icons.fast_forward);
+    addIfExists('categorySpecialist', 'Category Specialist', Icons.psychology);
+    addIfExists('steadyEddie', 'Steady Eddie', Icons.straighten);
+    addIfExists('rollercoaster', 'Rollercoaster', Icons.waves);
+
+    // Fallback: include game stats at the end if we still have capacity
+    if (order.length < 5 && insights['gameStats'] != null) {
+      order.add({
+        'title': 'Game Statistics',
+        'description': insights['gameStats'] as String,
+        'icon': Icons.bar_chart,
+      });
+    }
+
+    return order.take(5).toList();
   }
 
   Map<String, dynamic> _calculateGameInsights(gameState) {
