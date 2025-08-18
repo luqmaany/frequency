@@ -244,4 +244,3 @@ class _CelebrationPainter extends CustomPainter {
         trailRings != oldDelegate.trailRings;
   }
 }
-

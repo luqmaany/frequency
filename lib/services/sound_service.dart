@@ -31,7 +31,7 @@ class SoundService {
       final player = AudioPlayer();
       try {
         await player.setVolume(volume);
-        await player.play(AssetSource('sounds/$baseName.$ext'));
+        await player.play(AssetSource('assets/sounds/$baseName.$ext'));
         // Attach completion disposal and return on first success
         player.onPlayerComplete.listen((_) {
           player.dispose();
@@ -71,7 +71,7 @@ class SoundService {
       try {
         await player.setVolume(volume);
         await player.setReleaseMode(ReleaseMode.loop);
-        await player.play(AssetSource('sounds/$file'));
+        await player.play(AssetSource('assets/sounds/$file'));
         _musicPlayer = player;
         return;
       } catch (_) {

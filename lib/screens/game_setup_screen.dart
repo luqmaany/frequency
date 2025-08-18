@@ -173,7 +173,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                   child: Center(
                     child: Text(
-                      'Team Setup',
+                      'Teams',
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
