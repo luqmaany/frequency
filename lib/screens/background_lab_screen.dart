@@ -13,11 +13,13 @@ class BackgroundLabScreen extends StatelessWidget {
       body: const Center(
         child: SizedBox.expand(
           child: CelebrationExplosionsBackground(
-            burstsPerSecond: 3.5,
+            burstsPerSecond: 6,
             strokeWidth: 2.0,
             ringSpacing: 8.0,
             baseOpacity: 0.10,
-            highlightOpacity: 0.55,
+            highlightOpacity: 0.5,
+            minEndRadiusFactor: 0.10,
+            maxEndRadiusFactor: 0.40,
           ),
         ),
       ),
