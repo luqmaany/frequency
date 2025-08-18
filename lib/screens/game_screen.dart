@@ -7,6 +7,7 @@ import '../widgets/game_mechanics_mixin.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
 import '../widgets/game_countdown.dart';
+import '../services/sound_service.dart';
 import '../widgets/team_color_button.dart'; // Added import for TeamColorButton
 import '../widgets/confirm_on_back.dart';
 import '../widgets/quit_dialog.dart';
@@ -41,6 +42,10 @@ class _GameScreenState extends ConsumerState<GameScreen>
 
   @override
   void onTurnEnd() {
+    // Play turn end sound
+    try {
+      ref.read(soundServiceProvider).playTurnEnd();
+    } catch (_) {}
     if (widget.zenMode) {
       // In Zen mode, skip team/role flow and show a lightweight summary
       Navigator.of(context).pushReplacement(
@@ -86,6 +91,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
   @override
   void initState() {
     super.initState();
+    // Ensure menu music stops when gameplay starts
+    ref.read(soundServiceProvider).stopMenuMusic();
     final gameConfig = ref.read(gameSetupProvider);
     initializeGameMechanics(
         gameConfig.roundTimeSeconds, gameConfig.allowedSkips);

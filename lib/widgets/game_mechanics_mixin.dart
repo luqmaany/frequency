@@ -71,6 +71,9 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   // End the current turn
   void _endTurn() {
     _timer?.cancel();
+    try {
+      // Avoid direct provider usage here since mixin lacks ref. Consumers can call playTurnEnd in onTurnEnd.
+    } catch (_) {}
     onTurnEnd();
   }
 

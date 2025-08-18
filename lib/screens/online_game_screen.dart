@@ -5,6 +5,7 @@ import '../widgets/game_mechanics_mixin.dart';
 import '../widgets/game_header.dart';
 import '../widgets/game_cards.dart';
 import '../widgets/game_countdown.dart';
+import '../services/sound_service.dart';
 import '../widgets/team_color_button.dart';
 import '../widgets/confirm_on_back.dart';
 import '../widgets/quit_dialog.dart';
@@ -55,6 +56,9 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   void onTurnEnd() {
     // Use navigation service to navigate to turn over screen
     print('onTurnEnd');
+    try {
+      ref.read(soundServiceProvider).playTurnEnd();
+    } catch (_) {}
 
     final conveyor = widget.sessionData!['gameState']['currentConveyor']
         as String; // First player is conveyor
@@ -93,6 +97,8 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   @override
   void initState() {
     super.initState();
+    // Ensure menu music stops when gameplay starts
+    ref.read(soundServiceProvider).stopMenuMusic();
 
     // Get current device ID for online games
     _getCurrentDeviceId();

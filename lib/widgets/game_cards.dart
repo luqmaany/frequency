@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import '../models/category.dart';
 import 'word_card.dart';
+import '../services/sound_service.dart';
 
-class GameCards extends StatefulWidget {
+class GameCards extends ConsumerStatefulWidget {
   final List<Word> currentWords;
   final String categoryId;
   final int skipsLeft;
@@ -24,10 +26,11 @@ class GameCards extends StatefulWidget {
   });
 
   @override
-  State<GameCards> createState() => _GameCardsState();
+  ConsumerState<GameCards> createState() => _GameCardsState();
 }
 
-class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
+class _GameCardsState extends ConsumerState<GameCards>
+    with TickerProviderStateMixin {
   final CardSwiperController _topCardController = CardSwiperController();
   final CardSwiperController _bottomCardController = CardSwiperController();
 
@@ -204,12 +207,14 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                           onSwipe: (previousIndex, currentIndex, direction) {
                             if (direction == CardSwiperDirection.right) {
                               // Correct guess
+                              ref.read(soundServiceProvider).playCorrect();
                               widget.onWordGuessed(widget.currentWords[0].text);
                               _loadNewWord(0);
                               return true;
                             } else if (direction == CardSwiperDirection.left) {
                               // Skip
                               if (widget.skipsLeft > 0) {
+                                ref.read(soundServiceProvider).playSkip();
                                 widget
                                     .onWordSkipped(widget.currentWords[0].text);
                                 _loadNewWord(0);
@@ -318,12 +323,14 @@ class _GameCardsState extends State<GameCards> with TickerProviderStateMixin {
                           onSwipe: (previousIndex, currentIndex, direction) {
                             if (direction == CardSwiperDirection.right) {
                               // Correct guess
+                              ref.read(soundServiceProvider).playCorrect();
                               widget.onWordGuessed(widget.currentWords[1].text);
                               _loadNewWord(1);
                               return true;
                             } else if (direction == CardSwiperDirection.left) {
                               // Skip
                               if (widget.skipsLeft > 0) {
+                                ref.read(soundServiceProvider).playSkip();
                                 widget
                                     .onWordSkipped(widget.currentWords[1].text);
                                 _loadNewWord(1);

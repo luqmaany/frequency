@@ -5,6 +5,7 @@ import '../services/game_navigation_service.dart';
 import 'online_lobby_screen.dart';
 import 'background_lab_screen.dart';
 import '../widgets/wave_background.dart';
+import '../services/sound_service.dart';
 import 'zen_setup_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
@@ -90,11 +91,45 @@ class _AnimatedGradientTextState extends State<AnimatedGradientText>
 }
 
 /// --- HomeScreen with animated background + new title ------------------------
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // Start menu music
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(soundServiceProvider).playMenuMusic();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // Stop menu music when leaving home (safety; also stopped when gameplay starts)
+    ref.read(soundServiceProvider).stopMenuMusic();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Stop music when app is not active/visible
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      ref.read(soundServiceProvider).stopMenuMusic();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Palette aligned with the animated background hues
     const List<Color> buttonColors = [
       Color(0xFF5EB1FF), // blue

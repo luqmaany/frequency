@@ -7,6 +7,7 @@ import '../services/game_navigation_service.dart';
 import '../models/game_state.dart';
 import '../data/category_registry.dart';
 import '../providers/category_provider.dart';
+import '../services/sound_service.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../services/firestore_service.dart';
 import '../widgets/confirm_on_back.dart';
@@ -153,6 +154,9 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
 
   void _confirmScore() {
     // Record the turn in game state with final disputed score
+    try {
+      ref.read(soundServiceProvider).playTurnEnd();
+    } catch (_) {}
     final currentTeamPlayers = ref.read(currentTeamPlayersProvider);
     if (currentTeamPlayers.length >= 2) {
       final turnRecord = TurnRecord(

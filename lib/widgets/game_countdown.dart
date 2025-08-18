@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/category_registry.dart';
+import '../services/sound_service.dart';
 
-class GameCountdown extends StatefulWidget {
+class GameCountdown extends ConsumerStatefulWidget {
   final String player1Name;
   final String player2Name;
   final String categoryId;
@@ -16,10 +18,10 @@ class GameCountdown extends StatefulWidget {
   });
 
   @override
-  State<GameCountdown> createState() => _GameCountdownState();
+  ConsumerState<GameCountdown> createState() => _GameCountdownState();
 }
 
-class _GameCountdownState extends State<GameCountdown>
+class _GameCountdownState extends ConsumerState<GameCountdown>
     with TickerProviderStateMixin {
   bool _isCountdownActive = true;
   int _countdownNumber = 3;
@@ -57,6 +59,8 @@ class _GameCountdownState extends State<GameCountdown>
         setState(() {
           _countdownNumber--;
         });
+        // Play tick on each number change
+        ref.read(soundServiceProvider).playCountdownTick();
         _countdownAnimationController.reset();
         _countdownAnimationController.forward();
         _startCountdown();
@@ -64,6 +68,8 @@ class _GameCountdownState extends State<GameCountdown>
         setState(() {
           _isCountdownActive = false;
         });
+        // Final beep
+        ref.read(soundServiceProvider).playCountdownEnd();
         widget.onCountdownComplete();
       }
     });

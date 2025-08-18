@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/storage_service.dart';
+import '../services/sound_service.dart';
 import '../services/theme_provider.dart';
 import '../widgets/team_color_button.dart';
 import '../widgets/dual_radial_interference_background.dart';
@@ -61,6 +62,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _soundEnabled = value;
     });
     _saveSettings();
+    // Reflect immediately in SoundService
+    final soundService = ref.read(soundServiceProvider);
+    soundService.setEnabled(value);
   }
 
   void _updateVibrationEnabled(bool value) {
@@ -416,6 +420,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         soundEnabled: true,
         vibrationEnabled: true,
       );
+      // Immediately re-enable sounds if they were off
+      ref.read(soundServiceProvider).setEnabled(true);
       ref.read(themeProvider.notifier).setTheme(false);
       setState(() {
         _soundEnabled = true;
