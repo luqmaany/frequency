@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import '../services/storage_service.dart';
+import '../services/sound_service.dart';
 
 class TeamColor {
   final String name;
@@ -36,7 +38,7 @@ final List<TeamColor> teamColors = [
       const Color(0xFF808000), const Color(0xFF556B2F)),
 ];
 
-class TeamColorButton extends StatefulWidget {
+class TeamColorButton extends ConsumerStatefulWidget {
   final String text;
   final IconData icon;
   final TeamColor color;
@@ -59,10 +61,10 @@ class TeamColorButton extends StatefulWidget {
   });
 
   @override
-  State<TeamColorButton> createState() => _TeamColorButtonState();
+  ConsumerState<TeamColorButton> createState() => _TeamColorButtonState();
 }
 
-class _TeamColorButtonState extends State<TeamColorButton> {
+class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
   double _scale = 1.0;
 
   void _onTapDown(TapDownDetails details) {
@@ -89,6 +91,8 @@ class _TeamColorButtonState extends State<TeamColorButton> {
     if (prefs['vibrationEnabled'] == true) {
       HapticFeedback.lightImpact();
     }
+    // Play button press sound (respects SoundService enabled)
+    ref.read(soundServiceProvider).playButtonPress();
     if (widget.onPressed != null) {
       widget.onPressed!();
     }

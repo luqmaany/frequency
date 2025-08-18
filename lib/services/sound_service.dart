@@ -55,6 +55,9 @@ class SoundService {
   Future<void> playTurnEnd() =>
       _playAssetVariants('turn_end_buzzer', volume: 1.0);
 
+  Future<void> playButtonPress() =>
+      _playAssetVariants('button_press', volume: 0.5);
+
   // ===== Background music APIs =====
   Future<void> playMenuMusic({double volume = 0.5}) async {
     if (!_enabled) return;

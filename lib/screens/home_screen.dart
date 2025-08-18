@@ -125,6 +125,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       ref.read(soundServiceProvider).stopMenuMusic();
+    } else if (state == AppLifecycleState.resumed) {
+      // Resume music when app comes back and we're still on Home
+      ref.read(soundServiceProvider).playMenuMusic();
     }
   }
 
