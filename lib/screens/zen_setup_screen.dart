@@ -18,11 +18,12 @@ class _ZenSetupScreenState extends ConsumerState<ZenSetupScreen> {
   // Defaults
   int _selectedTime = GameSettingsState.timeOptions[3]; // 60s
   int _selectedSkips = GameSettingsState.skipOptions[3]; // 3
-  String _selectedCategoryId = CategoryRegistry.getFreeCategories().first.id;
+  String _selectedCategoryId =
+      CategoryRegistry.getUnlockedCategories().first.id;
 
   @override
   Widget build(BuildContext context) {
-    final categories = CategoryRegistry.getFreeCategories();
+    final categories = CategoryRegistry.getUnlockedCategories();
 
     return Scaffold(
       body: Stack(

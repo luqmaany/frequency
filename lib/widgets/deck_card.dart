@@ -6,12 +6,14 @@ class DeckCard extends StatefulWidget {
   final Category category;
   final bool isOwned;
   final VoidCallback? onTap;
+  final double height;
 
   const DeckCard({
     super.key,
     required this.category,
     required this.isOwned,
     this.onTap,
+    this.height = 80,
   });
 
   @override
@@ -43,8 +45,8 @@ class _DeckCardState extends State<DeckCard> {
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: SizedBox(
-                    width: 69,
-                    height: 72,
+                    width: 150,
+                    height: 100,
                     child: FittedBox(
                       fit: BoxFit.fitHeight,
                       alignment: Alignment.centerLeft,
@@ -156,7 +158,7 @@ class _DeckCardState extends State<DeckCard> {
                 widget.onTap?.call();
               },
               child: Container(
-                height: 80,
+                height: widget.height,
                 decoration: BoxDecoration(
                   color: background,
                   borderRadius: BorderRadius.circular(10),

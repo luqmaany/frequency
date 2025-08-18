@@ -69,7 +69,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   bool _swipeLeftDone = false;
   String? _currentDeviceId;
 
-  // TODO: Make text in swipe tutorial cards smaller to prevent overflow
   final List<_SwipeTutorialStep> _swipeSteps = [
     _SwipeTutorialStep(
       text: 'Swipe right for correct',

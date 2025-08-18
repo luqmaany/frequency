@@ -67,16 +67,84 @@ class CategoryRegistry {
       type: CategoryType.free,
       isUnlocked: true,
     ),
+    'animal': Category(
+      id: 'animal',
+      displayName: 'Animals',
+      color: Colors.teal,
+      icon: Icons.pets,
+      description: 'Animals from around the world',
+      words: WordLists.animals
+          .map((text) => Word(
+                text: text,
+                categoryId: 'animal',
+              ))
+          .toList(),
+      type: CategoryType.free,
+      isUnlocked: true,
+      imageAsset: 'assets/images/categories/lion.png',
+    ),
     'anime': Category(
       id: 'anime',
       displayName: 'Anime',
       color: Colors.yellow,
       icon: Icons.movie, // fallback icon if image fails
       description: 'Anime characters, shows, and terms',
-      words: const <Word>[], // placeholder list; populate later
+      words: WordLists.anime
+          .map((text) => Word(
+                text: text,
+                categoryId: 'anime',
+              ))
+          .toList(),
       type: CategoryType.premium,
-      isUnlocked: false,
+      isUnlocked: true,
       imageAsset: 'assets/images/categories/naruto.png',
+    ),
+    'food': Category(
+      id: 'food',
+      displayName: 'Food',
+      color: Colors.red,
+      icon: Icons.fastfood,
+      description: 'Foods, dishes, ingredients, and drinks',
+      words: WordLists.foods
+          .map((text) => Word(
+                text: text,
+                categoryId: 'food',
+              ))
+          .toList(),
+      type: CategoryType.free,
+      isUnlocked: true,
+    ),
+    'company': Category(
+      id: 'company',
+      displayName: 'Companies',
+      color: Colors.indigo,
+      icon: Icons.business,
+      description: 'Brands and companies across industries',
+      words: WordLists.companies
+          .map((text) => Word(
+                text: text,
+                categoryId: 'company',
+              ))
+          .toList(),
+      type: CategoryType.free,
+      isUnlocked: true,
+      imageAsset: 'assets/images/categories/narutofreq2.JPG',
+    ),
+    'tv': Category(
+      id: 'tv',
+      displayName: 'Film',
+      color: Colors.cyan,
+      icon: Icons.movie,
+      description: 'TV shows and movies',
+      words: WordLists.films
+          .map((text) => Word(
+                text: text,
+                categoryId: 'tv',
+              ))
+          .toList(),
+      type: CategoryType.free,
+      isUnlocked: true,
+      imageAsset: 'assets/images/categories/narutofreq2.JPG',
     ),
   };
 
@@ -105,13 +173,18 @@ class CategoryRegistry {
         .toList();
   }
 
-  // Get unlocked categories for current user (for now, just free categories)
-  static List<Category> getUnlockedCategories(
-      List<String> purchasedCategoryIds) {
+  // Get unlocked categories. If purchasedCategoryIds is provided, include those too.
+  static List<Category> getUnlockedCategories([
+    List<String>? purchasedCategoryIds,
+  ]) {
     final allCats = _categories.values.toList();
-    return allCats.where((category) {
-      return category.isFree || purchasedCategoryIds.contains(category.id);
-    }).toList();
+    if (purchasedCategoryIds == null) {
+      return allCats.where((category) => category.isUnlocked).toList();
+    }
+    return allCats
+        .where((category) =>
+            category.isUnlocked || purchasedCategoryIds.contains(category.id))
+        .toList();
   }
 
   static String getCategoryFromDisplayName(String displayName) {

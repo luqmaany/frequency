@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:convey/widgets/dual_radial_interference_background.dart';
+import 'package:convey/widgets/celebration_explosions_background.dart';
 
 class BackgroundLabScreen extends StatelessWidget {
   const BackgroundLabScreen({super.key});
@@ -12,10 +12,12 @@ class BackgroundLabScreen extends StatelessWidget {
       ),
       body: const Center(
         child: SizedBox.expand(
-          child: DualRadialInterferenceBackground(
-            verticalPositionFactor: 0.5,
-            sourcesHorizontalOffsetFactor: 0.52,
-            colorCyclesPerLoop: 0.05,
+          child: CelebrationExplosionsBackground(
+            burstsPerSecond: 3.5,
+            strokeWidth: 2.0,
+            ringSpacing: 8.0,
+            baseOpacity: 0.10,
+            highlightOpacity: 0.55,
           ),
         ),
       ),
