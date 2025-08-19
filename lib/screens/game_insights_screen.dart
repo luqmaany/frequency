@@ -13,20 +13,6 @@ class GameInsightsScreen extends ConsumerStatefulWidget {
 }
 
 class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
-  late final PageController _pageController;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(viewportFraction: 0.86);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameStateProvider);
@@ -49,6 +35,8 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
               highlightOpacity: 0.55,
               ringSpacing: 8.0,
               globalOpacity: 1.0,
+              totalSectors: 12,
+              removedSectors: 6,
             ),
           ),
           SafeArea(
@@ -69,43 +57,73 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
                     ),
                   ),
                 ),
-                // Carousel
+                // Centered top 3 insight cards
                 Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    scrollDirection: Axis.vertical,
-                    itemCount: items.length,
-                    itemBuilder: (context, index) {
-                      final item = items[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 10),
-                        child: _buildCarouselCard(
-                          context,
-                          title: item['title'] as String,
-                          description: item['description'] as String,
-                          icon: item['icon'] as IconData,
-                          colorIndex: index,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          items.length > 3 ? 3 : items.length,
+                          (index) {
+                            final item = items[index];
+                            return Padding(
+                              padding: EdgeInsets.only(
+                                top: index == 0 ? 0 : 12,
+                                bottom: index ==
+                                        (items.length > 3
+                                            ? 2
+                                            : items.length - 1)
+                                    ? 0
+                                    : 12,
+                              ),
+                              child: _buildCarouselCard(
+                                context,
+                                title: item['title'] as String,
+                                description: item['description'] as String,
+                                icon: item['icon'] as IconData,
+                                colorIndex: index,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
                 // Bottom
                 Container(
                   padding: const EdgeInsets.all(27.0),
                   decoration: const BoxDecoration(color: Colors.transparent),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: TeamColorButton(
-                      text: 'Home',
-                      icon: Icons.home,
-                      color: uiColors[0],
-                      onPressed: () {
-                        Navigator.of(context)
-                            .popUntil((route) => route.isFirst);
-                      },
-                    ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TeamColorButton(
+                          text: 'Back',
+                          icon: Icons.arrow_back,
+                          color:
+                              uiColors.length > 1 ? uiColors[1] : uiColors[0],
+                          onPressed: () {
+                            // Go back to the previous screen (Game Over)
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TeamColorButton(
+                          text: 'Home',
+                          icon: Icons.home,
+                          color: uiColors[0],
+                          onPressed: () {
+                            Navigator.of(context)
+                                .popUntil((route) => route.isFirst);
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -127,6 +145,8 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
     final cardBg = Color.alphaBlend(overlay, themeBg);
 
     return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(minHeight: 120),
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(16),
@@ -139,7 +159,7 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
           ),
         ],
       ),
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(22),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -184,6 +204,7 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
   }
 
   List<Map<String, dynamic>> _selectTopInsights(Map<String, dynamic> insights) {
+    // Build candidate list with metadata from insights
     final order = <Map<String, dynamic>>[];
 
     void addIfExists(String key, String title, IconData icon) {
@@ -192,7 +213,9 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
         order.add({
           'title': title,
           'description': entry['description'],
-          'icon': icon
+          'icon': icon,
+          'teamIndex': entry['teamIndex'],
+          'subject': entry['subject'],
         });
       }
     }
@@ -208,16 +231,46 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
     addIfExists('steadyEddie', 'Steady Eddie', Icons.straighten);
     addIfExists('rollercoaster', 'Rollercoaster', Icons.waves);
 
-    // Fallback: include game stats at the end if we still have capacity
-    if (order.length < 5 && insights['gameStats'] != null) {
+    // Optional global stats
+    if (insights['gameStats'] != null) {
       order.add({
         'title': 'Game Statistics',
         'description': insights['gameStats'] as String,
         'icon': Icons.bar_chart,
+        'teamIndex': null,
+        'subject': null,
       });
     }
 
-    return order.take(5).toList();
+    // Prefer three items from different teams when possible
+    final selected = <Map<String, dynamic>>[];
+    final usedTeamIndexes = <int>{};
+    final usedTitles = <String>{};
+
+    for (final item in order) {
+      if (selected.length >= 3) break;
+      final teamIndex = item['teamIndex'] as int?;
+      final title = item['title'] as String;
+      if (teamIndex != null && !usedTeamIndexes.contains(teamIndex)) {
+        selected.add(item);
+        usedTeamIndexes.add(teamIndex);
+        usedTitles.add(title);
+      }
+    }
+
+    // Fill remaining slots regardless of team
+    if (selected.length < 3) {
+      for (final item in order) {
+        if (selected.length >= 3) break;
+        final title = item['title'] as String;
+        if (!usedTitles.contains(title)) {
+          selected.add(item);
+          usedTitles.add(title);
+        }
+      }
+    }
+
+    return selected;
   }
 
   Map<String, dynamic> _calculateGameInsights(gameState) {
@@ -298,6 +351,27 @@ Average Score per Turn: ${avgScorePerTurn.toStringAsFixed(1)} points
 Game Duration: ${gameState.currentRound} rounds''';
 
     return insights;
+  }
+
+  int? _teamIndexForPlayer(dynamic gameState, String playerName) {
+    for (int i = 0; i < gameState.config.teams.length; i++) {
+      if (gameState.config.teams[i].contains(playerName)) {
+        return i;
+      }
+    }
+    return null;
+  }
+
+  int? _teamIndexForPair(dynamic gameState, String a, String b) {
+    for (int i = 0; i < gameState.config.teams.length; i++) {
+      final team = gameState.config.teams[i];
+      if (team.contains(a) && team.contains(b)) {
+        return i;
+      }
+    }
+    // Fallback to first player's team if both not found together
+    return _teamIndexForPlayer(gameState, a) ??
+        _teamIndexForPlayer(gameState, b);
   }
 
   Map<String, dynamic> _analyzeSkipPatterns(gameState) {
@@ -385,12 +459,16 @@ Game Duration: ${gameState.currentRound} rounds''';
           ? {
               'description':
                   '$mostDecisive scores ${bestSkipEfficiency.toStringAsFixed(1)} more points when using skips',
+              'subject': mostDecisive,
+              'teamIndex': _teamIndexForPlayer(gameState, mostDecisive),
             }
           : null,
       'skipMaster': skipMaster != null
           ? {
               'description':
                   '$skipMaster used skips in ${(highestSkipRate * 100).toStringAsFixed(0)}% of turns',
+              'subject': skipMaster,
+              'teamIndex': _teamIndexForPlayer(gameState, skipMaster),
             }
           : null,
     };
@@ -406,7 +484,9 @@ Game Duration: ${gameState.currentRound} rounds''';
     }
 
     String? comebackKing;
+    int? comebackKingTeamIndex;
     String? earlyBird;
+    int? earlyBirdTeamIndex;
     double bestComeback = 0.0;
     double bestEarlyPerformance = 0.0;
 
@@ -431,6 +511,7 @@ Game Duration: ${gameState.currentRound} rounds''';
             bestComeback = improvement;
             final teamNames = gameState.config.teams[teamIndex].join(' & ');
             comebackKing = teamNames;
+            comebackKingTeamIndex = teamIndex;
           }
 
           // Early bird: best early performance
@@ -438,6 +519,7 @@ Game Duration: ${gameState.currentRound} rounds''';
             bestEarlyPerformance = earlyAvg;
             final teamNames = gameState.config.teams[teamIndex].join(' & ');
             earlyBird = teamNames;
+            earlyBirdTeamIndex = teamIndex;
           }
         }
       }
@@ -448,12 +530,16 @@ Game Duration: ${gameState.currentRound} rounds''';
           ? {
               'description':
                   '$comebackKing improved by ${bestComeback.toStringAsFixed(1)} points in later turns',
+              'subject': comebackKing,
+              'teamIndex': comebackKingTeamIndex,
             }
           : null,
       'earlyBird': earlyBird != null
           ? {
               'description':
                   '$earlyBird had the strongest start with ${bestEarlyPerformance.toStringAsFixed(1)} avg early score',
+              'subject': earlyBird,
+              'teamIndex': earlyBirdTeamIndex,
             }
           : null,
     };
@@ -469,7 +555,9 @@ Game Duration: ${gameState.currentRound} rounds''';
     }
 
     String? categorySpecialist;
+    int? categorySpecialistTeamIndex;
     String? categoryStruggler;
+    int? categoryStrugglerTeamIndex;
     double bestSpecialization = 0.0;
     double worstSpecialization = double.infinity;
 
@@ -506,11 +594,14 @@ Game Duration: ${gameState.currentRound} rounds''';
           if (specialization > bestSpecialization) {
             bestSpecialization = specialization;
             categorySpecialist = '$player in $bestCategory';
+            categorySpecialistTeamIndex =
+                _teamIndexForPlayer(gameState, player);
           }
 
           if (specialization < worstSpecialization) {
             worstSpecialization = specialization;
             categoryStruggler = '$player struggles with $worstCategory';
+            categoryStrugglerTeamIndex = _teamIndexForPlayer(gameState, player);
           }
         }
       }
@@ -521,12 +612,16 @@ Game Duration: ${gameState.currentRound} rounds''';
           ? {
               'description':
                   '$categorySpecialist (${bestSpecialization.toStringAsFixed(1)} pt difference)',
+              'subject': categorySpecialist,
+              'teamIndex': categorySpecialistTeamIndex,
             }
           : null,
       'categoryStruggler': categoryStruggler != null
           ? {
               'description':
                   '$categoryStruggler (${worstSpecialization.toStringAsFixed(1)} pt difference)',
+              'subject': categoryStruggler,
+              'teamIndex': categoryStrugglerTeamIndex,
             }
           : null,
     };
@@ -564,6 +659,7 @@ Game Duration: ${gameState.currentRound} rounds''';
 
     // Find the efficiency paradox: team with high points per word but low points per turn
     String? efficiencyParadox;
+    int? efficiencyParadoxTeamIndex;
     double bestParadox = 0.0;
 
     for (final entry in teamEfficiency.entries) {
@@ -577,6 +673,7 @@ Game Duration: ${gameState.currentRound} rounds''';
         bestParadox = paradoxScore;
         final teamNames = gameState.config.teams[teamIndex].join(' & ');
         efficiencyParadox = teamNames;
+        efficiencyParadoxTeamIndex = teamIndex;
       }
     }
 
@@ -585,6 +682,8 @@ Game Duration: ${gameState.currentRound} rounds''';
           ? {
               'description':
                   '$efficiencyParadox is efficient per word but takes fewer turns',
+              'subject': efficiencyParadox,
+              'teamIndex': efficiencyParadoxTeamIndex,
             }
           : null,
     };
@@ -600,7 +699,9 @@ Game Duration: ${gameState.currentRound} rounds''';
     }
 
     String? lateGameHero;
+    int? lateGameHeroTeamIndex;
     String? pressurePlayer;
+    int? pressurePlayerTeamIndex;
     double bestLateGame = 0.0;
     double bestPressure = 0.0;
 
@@ -641,6 +742,7 @@ Game Duration: ${gameState.currentRound} rounds''';
             bestLateGame = lateGameImprovement;
             final teamNames = gameState.config.teams[teamIndex].join(' & ');
             lateGameHero = teamNames;
+            lateGameHeroTeamIndex = teamIndex;
           }
 
           // Pressure player: performs best in the final round
@@ -652,6 +754,7 @@ Game Duration: ${gameState.currentRound} rounds''';
               bestPressure = finalRoundAvg;
               final teamNames = gameState.config.teams[teamIndex].join(' & ');
               pressurePlayer = teamNames;
+              pressurePlayerTeamIndex = teamIndex;
             }
           }
         }
@@ -663,12 +766,16 @@ Game Duration: ${gameState.currentRound} rounds''';
           ? {
               'description':
                   '$lateGameHero improves by ${bestLateGame.toStringAsFixed(1)} pts in later rounds',
+              'subject': lateGameHero,
+              'teamIndex': lateGameHeroTeamIndex,
             }
           : null,
       'pressurePlayer': pressurePlayer != null
           ? {
               'description':
                   '$pressurePlayer scored ${bestPressure.toStringAsFixed(1)} pts in the final round',
+              'subject': pressurePlayer,
+              'teamIndex': pressurePlayerTeamIndex,
             }
           : null,
     };
@@ -697,6 +804,7 @@ Game Duration: ${gameState.currentRound} rounds''';
     }
 
     String? dynamicDuo;
+    int? dynamicDuoTeamIndex;
     double bestPartnership = 0.0;
 
     for (final entry in partnershipStats.entries) {
@@ -708,6 +816,13 @@ Game Duration: ${gameState.currentRound} rounds''';
         if (avgScore > bestPartnership) {
           bestPartnership = avgScore;
           dynamicDuo = partnership;
+          final parts = partnership.split(' & ');
+          if (parts.length == 2) {
+            dynamicDuoTeamIndex =
+                _teamIndexForPair(gameState, parts[0].trim(), parts[1].trim());
+          } else {
+            dynamicDuoTeamIndex = null;
+          }
         }
       }
     }
@@ -717,6 +832,8 @@ Game Duration: ${gameState.currentRound} rounds''';
           ? {
               'description':
                   '$dynamicDuo averages ${bestPartnership.toStringAsFixed(1)} points together',
+              'subject': dynamicDuo,
+              'teamIndex': dynamicDuoTeamIndex,
             }
           : null,
     };
@@ -731,7 +848,9 @@ Game Duration: ${gameState.currentRound} rounds''';
     }
 
     String? steadyEddie;
+    int? steadyEddieTeamIndex;
     String? rollercoaster;
+    int? rollercoasterTeamIndex;
     double bestConsistency = double.infinity;
     double worstConsistency = 0.0;
 
@@ -752,11 +871,13 @@ Game Duration: ${gameState.currentRound} rounds''';
         if (coefficientOfVariation < bestConsistency) {
           bestConsistency = coefficientOfVariation;
           steadyEddie = player;
+          steadyEddieTeamIndex = _teamIndexForPlayer(gameState, player);
         }
 
         if (coefficientOfVariation > worstConsistency) {
           worstConsistency = coefficientOfVariation;
           rollercoaster = player;
+          rollercoasterTeamIndex = _teamIndexForPlayer(gameState, player);
         }
       }
     }
@@ -765,12 +886,16 @@ Game Duration: ${gameState.currentRound} rounds''';
       'steadyEddie': steadyEddie != null
           ? {
               'description': '$steadyEddie is the most consistent player',
+              'subject': steadyEddie,
+              'teamIndex': steadyEddieTeamIndex,
             }
           : null,
       'rollercoaster': rollercoaster != null
           ? {
               'description':
                   '$rollercoaster has the most unpredictable performance',
+              'subject': rollercoaster,
+              'teamIndex': rollercoasterTeamIndex,
             }
           : null,
     };

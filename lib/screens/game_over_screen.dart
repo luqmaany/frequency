@@ -116,44 +116,38 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                           ),
                         );
                       }
-                      // Show Insights + Home, centered fixed widths
-                      return Center(
-                        child: Wrap(
-                          alignment: WrapAlignment.center,
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: [
-                            SizedBox(
-                              width: 160,
-                              child: TeamColorButton(
-                                text: 'Insights',
-                                icon: Icons.analytics_outlined,
-                                color: teamColors[2],
-                                variant: TeamButtonVariant.outline,
-                                onPressed: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const GameInsightsScreen(),
-                                    ),
-                                  );
-                                },
-                              ),
+                      // Show Insights (left) + Home (right) in a single row
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: TeamColorButton(
+                              text: 'Insights',
+                              icon: Icons.analytics_outlined,
+                              color: teamColors[2],
+                              variant: TeamButtonVariant.outline,
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const GameInsightsScreen(),
+                                  ),
+                                );
+                              },
                             ),
-                            SizedBox(
-                              width: 160,
-                              child: TeamColorButton(
-                                text: 'Home',
-                                icon: Icons.home,
-                                color: uiColors[0],
-                                onPressed: () {
-                                  Navigator.of(context)
-                                      .popUntil((route) => route.isFirst);
-                                },
-                              ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TeamColorButton(
+                              text: 'Home',
+                              icon: Icons.home,
+                              color: uiColors[0],
+                              onPressed: () {
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst);
+                              },
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       );
                     }),
                   ),

@@ -35,6 +35,19 @@ class CelebrationExplosionsBackground extends StatefulWidget {
   /// Overall opacity multiplier for the entire effect.
   final double globalOpacity;
 
+  /// Total number of equal angular sectors in a ring (for fan effect).
+  /// Also used as the default gap width baseline (2π / totalSectors) if
+  /// [gapAngleRadians] is 0.
+  final int totalSectors;
+
+  /// Number of gaps to remove around the ring. Set to 0 to draw full circles.
+  final int removedSectors;
+
+  /// Optional explicit gap angle in radians for each gap. When > 0, this
+  /// overrides the default gap width of one sector (2π / [totalSectors]).
+  /// Used together with [removedSectors] to create multiple gaps per ring.
+  final double gapAngleRadians;
+
   const CelebrationExplosionsBackground({
     super.key,
     this.burstsPerSecond = 3.0,
@@ -48,6 +61,9 @@ class CelebrationExplosionsBackground extends StatefulWidget {
     this.maxEndRadiusFactor = 0.18,
     this.trailRings = 6,
     this.globalOpacity = 1.0,
+    this.totalSectors = 12,
+    this.removedSectors = 0,
+    this.gapAngleRadians = 0.0,
   });
 
   @override
@@ -116,6 +132,7 @@ class _CelebrationExplosionsBackgroundState
       relCenter: Offset(x, y),
       endRadiusFactor: endRFactor,
       baseColor: color,
+      rotationRad: _rng.nextDouble() * math.pi * 2.0,
     );
   }
 
@@ -135,6 +152,9 @@ class _CelebrationExplosionsBackgroundState
           highlightOpacity: widget.highlightOpacity * widget.globalOpacity,
           ringSpacing: widget.ringSpacing,
           trailRings: widget.trailRings,
+          totalSectors: widget.totalSectors,
+          removedSectors: widget.removedSectors,
+          gapAngleRadians: widget.gapAngleRadians,
         ),
       ),
     );
@@ -147,6 +167,7 @@ class _Burst {
   final Offset relCenter; // 0..1 in both axes
   final double endRadiusFactor; // fraction of min(size)
   final Color baseColor;
+  final double rotationRad; // orientation for fan gap
 
   _Burst({
     required this.startMs,
@@ -154,6 +175,7 @@ class _Burst {
     required this.relCenter,
     required this.endRadiusFactor,
     required this.baseColor,
+    required this.rotationRad,
   });
 }
 
@@ -165,6 +187,9 @@ class _CelebrationPainter extends CustomPainter {
   final double highlightOpacity;
   final double ringSpacing;
   final int trailRings;
+  final int totalSectors;
+  final int removedSectors;
+  final double gapAngleRadians;
 
   _CelebrationPainter({
     required this.nowMs,
@@ -174,6 +199,9 @@ class _CelebrationPainter extends CustomPainter {
     required this.highlightOpacity,
     required this.ringSpacing,
     required this.trailRings,
+    required this.totalSectors,
+    required this.removedSectors,
+    required this.gapAngleRadians,
   });
 
   @override
@@ -221,7 +249,27 @@ class _CelebrationPainter extends CustomPainter {
         final double opacity =
             (baseOpacity + highlightOpacity * localFade) * fadeEnvelope;
         ringPaint.color = ringColor.withOpacity(opacity.clamp(0.0, 1.0));
-        canvas.drawCircle(c, radius, ringPaint);
+        final bool useFan = totalSectors > 0 && removedSectors > 0;
+        if (!useFan) {
+          canvas.drawCircle(c, radius, ringPaint);
+        } else {
+          final Rect rect = Rect.fromCircle(center: c, radius: radius);
+          final int numGaps = removedSectors;
+          final double sectorAngle = 2.0 * math.pi / totalSectors;
+          final double period = (2.0 * math.pi) / numGaps;
+          final double gapAngle = (gapAngleRadians > 0.0)
+              ? gapAngleRadians
+              : sectorAngle; // default: one sector wide
+          final double paintedSweep = period - gapAngle;
+          if (paintedSweep > 0) {
+            final double gapHalf = gapAngle / 2.0;
+            for (int i = 0; i < numGaps; i++) {
+              final double gapCenter = b.rotationRad + i * period;
+              final double arcStart = gapCenter + gapHalf;
+              canvas.drawArc(rect, arcStart, paintedSweep, false, ringPaint);
+            }
+          }
+        }
       }
     }
   }
@@ -241,6 +289,9 @@ class _CelebrationPainter extends CustomPainter {
         baseOpacity != oldDelegate.baseOpacity ||
         highlightOpacity != oldDelegate.highlightOpacity ||
         ringSpacing != oldDelegate.ringSpacing ||
-        trailRings != oldDelegate.trailRings;
+        trailRings != oldDelegate.trailRings ||
+        totalSectors != oldDelegate.totalSectors ||
+        removedSectors != oldDelegate.removedSectors ||
+        gapAngleRadians != oldDelegate.gapAngleRadians;
   }
 }

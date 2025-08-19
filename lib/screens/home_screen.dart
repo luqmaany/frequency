@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:math';
 import '../services/game_navigation_service.dart';
+import '../services/game_state_provider.dart';
+import '../models/game_state.dart';
+import '../models/game_config.dart';
+import 'game_over_screen.dart';
 import 'online_lobby_screen.dart';
-import 'background_lab_screen.dart';
 import '../widgets/wave_background.dart';
 import '../services/sound_service.dart';
 import 'zen_setup_screen.dart';
@@ -100,6 +104,77 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
+  void _startMockEndgame(BuildContext context) {
+    final notifier = ref.read(gameStateProvider.notifier);
+    // Build a complex config with 4 teams and target score reached
+    final config = GameConfig(
+      playerNames: [
+        'Alice',
+        'Bob',
+        'Cara',
+        'Dan',
+        'Eve',
+        'Finn',
+        'Gigi',
+        'Hank'
+      ],
+      teams: [
+        ['Alice', 'Bob'],
+        ['Cara', 'Dan'],
+        ['Eve', 'Finn'],
+        ['Gigi', 'Hank'],
+      ],
+      teamColorIndices: [0, 1, 2, 3],
+      roundTimeSeconds: 60,
+      targetScore: 50,
+      allowedSkips: 3,
+    );
+    notifier.initializeGame(config);
+
+    final Random rng = Random(42);
+    int turnNumber = 1;
+    // Simulate 8 rounds x 4 teams = 32 turns with variety to trigger insights
+    for (int roundNumber = 1; roundNumber <= 8; roundNumber++) {
+      for (int teamIndex = 0; teamIndex < config.teams.length; teamIndex++) {
+        final i = (roundNumber - 1) * config.teams.length + teamIndex;
+        final conveyor = config.teams[teamIndex][0];
+        final guesser = config.teams[teamIndex][1];
+        final category = 'Category ${(i % 5) + 1}';
+        final skips = rng.nextInt(3);
+        int score = 2 + rng.nextInt(9) - (skips > 1 ? 2 : 0);
+        final words =
+            List<String>.generate(3 + rng.nextInt(4), (k) => 'W${i}_$k');
+        final skipped = List<String>.generate(skips, (k) => 'S${i}_$k');
+
+        // On the final round's first team, ensure target is crossed by team 0
+        if (roundNumber == 8 && teamIndex == 0) {
+          final gs = ref.read(gameStateProvider);
+          final current = gs?.teamScores[0] ?? 0;
+          final need = max(0, config.targetScore - current + 5);
+          score = max(score, need);
+        }
+
+        notifier.recordTurn(TurnRecord(
+          teamIndex: teamIndex,
+          roundNumber: roundNumber,
+          turnNumber: turnNumber,
+          conveyor: conveyor,
+          guesser: guesser,
+          category: category,
+          score: score.clamp(0, 20),
+          skipsUsed: skips,
+          wordsGuessed: words,
+          wordsSkipped: skipped,
+        ));
+      }
+      turnNumber++;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const GameOverScreen()),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -242,14 +317,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   const SizedBox(height: 16),
                   _buildMenuButton(
                     context,
-                    'Background Lab',
-                    () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const BackgroundLabScreen(),
-                        ),
-                      );
-                    },
+                    'Mock Big Game (Insights)',
+                    () => _startMockEndgame(context),
                     buttonColors[0],
                   ),
                   const Spacer(),
