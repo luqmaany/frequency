@@ -6,12 +6,20 @@ import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'services/theme_provider.dart';
 import 'services/storage_service.dart';
+import 'data/category_registry.dart';
+import 'services/purchase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await CategoryRegistry.loadDynamicCategories();
+  await PurchaseService.init();
+  // Try background restore without blocking startup; ignore errors offline
+  // No unawaited available; fire-and-forget
+  // ignore: discarded_futures
+  PurchaseService.restorePurchases();
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);

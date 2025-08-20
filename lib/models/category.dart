@@ -91,3 +91,84 @@ class WordStats {
   double get successRate =>
       appearanceCount > 0 ? guessedCount / appearanceCount : 0.0;
 }
+
+// Firestore serialization helpers for Category and basic icon mapping.
+extension CategoryMap on Category {
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'displayName': displayName,
+        'description': description,
+        'type': type.name,
+        'isUnlocked': isUnlocked,
+        'color': color.value,
+        'icon': _iconToString(icon),
+        // Use imageAsset as a generic image field; may contain an asset path or URL
+        'imageUrl': imageAsset,
+        'words': words.map((w) => w.text).toList(),
+      };
+
+  static Category fromMap(Map<String, dynamic> map) {
+    final String id = map['id'] as String;
+    final List<String> rawWords =
+        (map['words'] as List?)?.map((e) => (e as String)).toList() ?? const [];
+    final List<Word> words =
+        rawWords.map((text) => Word(text: text, categoryId: id)).toList();
+
+    final String typeName = (map['type'] as String?) ?? 'free';
+    final CategoryType type = CategoryType.values.firstWhere(
+      (t) => t.name == typeName,
+      orElse: () => CategoryType.free,
+    );
+
+    final int colorValue = (map['color'] as num?)?.toInt() ?? Colors.blue.value;
+    final String iconName = (map['icon'] as String?) ?? 'category';
+
+    return Category(
+      id: id,
+      displayName: (map['displayName'] as String?) ?? id,
+      description: (map['description'] as String?) ?? '',
+      type: type,
+      isUnlocked: (map['isUnlocked'] as bool?) ?? false,
+      color: Color(colorValue),
+      icon: _iconFromString(iconName),
+      words: words,
+      // Accept URL or asset path under the same field name for simplicity
+      imageAsset: map['imageUrl'] as String?,
+    );
+  }
+}
+
+String _iconToString(IconData icon) {
+  if (icon == Icons.person) return 'person';
+  if (icon == Icons.pets) return 'pets';
+  if (icon == Icons.public) return 'public';
+  if (icon == Icons.movie) return 'movie';
+  if (icon == Icons.fastfood) return 'fastfood';
+  if (icon == Icons.business) return 'business';
+  if (icon == Icons.shuffle) return 'shuffle';
+  if (icon == Icons.directions_run) return 'directions_run';
+  return 'category';
+}
+
+IconData _iconFromString(String name) {
+  switch (name) {
+    case 'person':
+      return Icons.person;
+    case 'pets':
+      return Icons.pets;
+    case 'public':
+      return Icons.public;
+    case 'movie':
+      return Icons.movie;
+    case 'fastfood':
+      return Icons.fastfood;
+    case 'business':
+      return Icons.business;
+    case 'shuffle':
+      return Icons.shuffle;
+    case 'directions_run':
+      return Icons.directions_run;
+    default:
+      return Icons.category;
+  }
+}

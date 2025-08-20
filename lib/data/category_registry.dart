@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/category.dart';
+import '../services/category_service.dart';
+import '../services/storage_service.dart';
 import 'word_lists.dart';
 
 // TODO: Add dynamic category management methods (addCategory, removeCategory, updateCategory)
@@ -150,6 +152,43 @@ class CategoryRegistry {
 
   // Get all categories
   static Map<String, Category> get allCategories => _categories;
+
+  // Offline cache key for dynamic categories
+  static const String _cacheKey = 'categories_cache_v1';
+
+  // Load dynamic categories from Firestore with local fallback cache
+  static Future<void> loadDynamicCategories() async {
+    try {
+      final remote = await CategoryService.fetchAllOnce();
+      _merge(remote);
+      await StorageService.saveObject(_cacheKey, {
+        'items': remote.map((c) => c.toMap()).toList(),
+      });
+    } catch (e) {
+      final cached = await StorageService.loadObject(_cacheKey);
+      final items = (cached?['items'] as List?) ?? const [];
+      final fromCache = items
+          .map((m) => CategoryMap.fromMap(Map<String, dynamic>.from(m)))
+          .toList();
+      _merge(fromCache);
+    }
+  }
+
+  static void _merge(List<Category> dynamicCategories) {
+    for (final c in dynamicCategories) {
+      _categories[c.id] = c;
+    }
+  }
+
+  static Future<void> upsertCategory(Category category) async {
+    await CategoryService.upsert(category);
+    _categories[category.id] = category;
+  }
+
+  static Future<void> removeCategory(String id) async {
+    await CategoryService.delete(id);
+    _categories.remove(id);
+  }
 
   // Get category by ID
   static Category getCategory(String categoryId) {
