@@ -37,6 +37,7 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
               globalOpacity: 1.0,
               totalSectors: 12,
               removedSectors: 6,
+              gapAngleRadians: 0.8,
             ),
           ),
           SafeArea(
