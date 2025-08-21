@@ -51,13 +51,16 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
           children: [
             const Positioned.fill(
               child: CelebrationExplosionsBackground(
-                  burstsPerSecond: 5.0,
-                  strokeWidth: 2.0,
-                  baseOpacity: 0.12,
-                  highlightOpacity: 0.55,
-                  ringSpacing: 8.0,
-                  globalOpacity: 1.0,
-                  maxEndRadiusFactor: 0.40),
+                burstsPerSecond: 7.0,
+                strokeWidth: 2.0,
+                baseOpacity: 0.12,
+                highlightOpacity: 0.55,
+                ringSpacing: 8.0,
+                globalOpacity: 1.0,
+                totalSectors: 12,
+                removedSectors: 6,
+                gapAngleRadians: 0.8,
+              ),
             ),
             SafeArea(
               child: Column(
@@ -86,8 +89,87 @@ class _GameOverScreenState extends ConsumerState<GameOverScreen> {
                           PodiumDisplay(
                             teams: podiumTeams,
                             teamColors: teamColors,
+                            showOthers: false,
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 10),
+                          // Standings from 4th place onward styled like the scoreboard rows
+                          if (sortedTeamIndices.length > 3)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: List.generate(
+                                sortedTeamIndices.length - 3,
+                                (i) {
+                                  final teamIndex = sortedTeamIndices[i + 3];
+                                  final playerNames = gameState
+                                      .config.teams[teamIndex]
+                                      .join(' & ');
+                                  final totalScore =
+                                      gameState.teamScores[teamIndex];
+
+                                  final colorIndex =
+                                      gameState.config.teamColorIndices.length >
+                                              teamIndex
+                                          ? gameState.config
+                                              .teamColorIndices[teamIndex]
+                                          : teamIndex % teamColors.length;
+                                  final colorDef = teamColors[
+                                      colorIndex % teamColors.length];
+
+                                  final Color fillColor = colorDef.border;
+                                  final Color outlineColor =
+                                      colorDef.background.withOpacity(0.3);
+
+                                  return Container(
+                                    margin: const EdgeInsets.symmetric(
+                                        vertical: 8.0),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10.0, horizontal: 10.0),
+                                    decoration: BoxDecoration(
+                                      color: fillColor,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: outlineColor,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            playerNames,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleLarge
+                                                ?.copyWith(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white
+                                                      .withOpacity(0.95),
+                                                ),
+                                          ),
+                                        ),
+                                        CircleAvatar(
+                                          backgroundColor:
+                                              colorDef.border.withOpacity(0.8),
+                                          radius: 18,
+                                          child: Text(
+                                            totalScore.toString(),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleLarge
+                                                ?.copyWith(
+                                                  fontSize: 22,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                         ],
                       ),
                     ),

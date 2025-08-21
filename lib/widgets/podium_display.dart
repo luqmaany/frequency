@@ -5,11 +5,13 @@ class PodiumDisplay extends StatefulWidget {
   final List<Map<String, dynamic>>
       teams; // [{name, score, isWinner, teamIndex}]
   final List<TeamColor> teamColors;
+  final bool showOthers;
 
   const PodiumDisplay({
     super.key,
     required this.teams,
     required this.teamColors,
+    this.showOthers = true,
   });
 
   @override
@@ -61,7 +63,7 @@ class _PodiumDisplayState extends State<PodiumDisplay>
               const SizedBox(height: 16),
               _buildPodiumBars(),
               const SizedBox(height: 16),
-              _buildOthersList(),
+              if (widget.showOthers) _buildOthersList(),
             ],
           ),
         );
@@ -168,118 +170,105 @@ class _PodiumDisplayState extends State<PodiumDisplay>
     if (widget.teams.isEmpty) return const SizedBox.shrink();
 
     // Champion is displayed as a banner; no bar needed
-    // final Map<String, dynamic>? first =
-    //     widget.teams.isNotEmpty ? widget.teams[0] : null;
     final Map<String, dynamic>? second =
         widget.teams.length > 1 ? widget.teams[1] : null;
     final Map<String, dynamic>? third =
         widget.teams.length > 2 ? widget.teams[2] : null;
 
-    // Heights relative to available space
-    // const double h1 = 1.0; // champion bar omitted
-    const double h2 = 0.78;
-    const double h3 = 0.62;
+    if (second == null && third == null) {
+      return const SizedBox.shrink();
+    }
 
-    return SizedBox(
-      height: 200,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (second != null)
-            Expanded(
-                child: _buildPodiumBar(second, place: '2nd', heightFactor: h2)),
-          if (second != null && third != null) const SizedBox(width: 0),
-          if (third != null)
-            Expanded(
-                child: _buildPodiumBar(third, place: '3rd', heightFactor: h3)),
-        ],
-      ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (second != null) Expanded(child: _buildPlaceCard(second, '2nd')),
+        if (second != null && third != null) const SizedBox(width: 12),
+        if (third != null) Expanded(child: _buildPlaceCard(third, '3rd')),
+      ],
     );
   }
 
-  Widget _buildPodiumBar(Map<String, dynamic> team,
-      {required String place, required double heightFactor}) {
-    final teamIndex = team['teamIndex'] as int;
+  Widget _buildPlaceCard(Map<String, dynamic> team, String place) {
+    final int teamIndex = team['teamIndex'] as int;
     final color = widget.teamColors[teamIndex % widget.teamColors.length];
     final Color baseBg = Theme.of(context).colorScheme.background;
     final Color overlay = color.border.withOpacity(0.5);
-    final Color barBg = Color.alphaBlend(overlay, baseBg);
+    final Color cardBg = Color.alphaBlend(overlay, baseBg);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: FractionallySizedBox(
-              heightFactor: heightFactor,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: barBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                      color: color.border.withOpacity(0.9), width: 2),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.border.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.border.withOpacity(0.9), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: color.border.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.border,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: color.border.withOpacity(0.5),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Text(
-                      team['name'] as String,
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Color.alphaBlend(
-                            color.border.withOpacity(0.18), baseBg),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(
-                            color: color.border.withOpacity(0.75), width: 1.5),
-                      ),
-                      child: Text(
-                        '${team['score']}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              ],
+            ),
+            child: Text(
+              place.toUpperCase(),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
           ),
-        ),
-        if (place.isNotEmpty) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
           Text(
-            place,
+            team['name'] as String,
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
               color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: Color.alphaBlend(color.border.withOpacity(0.18), baseBg),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: color.border.withOpacity(0.75),
+                width: 1.5,
+              ),
+            ),
+            child: Text(
+              '${team['score']}',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
         ],
-      ],
+      ),
     );
   }
 

@@ -117,8 +117,10 @@ class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
         ? widget.color.border.withOpacity(0.7)
         : widget.color.border.withOpacity(1));
     final Color text = enabled
-        ? (isOutline ? Colors.white.withOpacity(0.95) : Colors.white)
-        : Colors.white.withOpacity(0.1);
+        ? (isOutline ? widget.color.border : Colors.white)
+        : (isOutline
+            ? widget.color.border.withOpacity(0.3)
+            : Colors.white.withOpacity(0.1));
     final Color iconColor =
         enabled ? widget.color.border : widget.color.border.withOpacity(0.2);
 
