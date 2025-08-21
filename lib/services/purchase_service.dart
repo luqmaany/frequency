@@ -1,16 +1,14 @@
 import 'dart:async';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'storage_service.dart';
+import '../data/category_registry.dart';
 
 class PurchaseService {
   static final InAppPurchase _inAppPurchase = InAppPurchase.instance;
   static StreamSubscription<List<PurchaseDetails>>? _subscription;
 
-  // Map premium category IDs to Play Console product IDs
-  static const Map<String, String> skuByCategoryId = {
-    'anime': 'convey_category_anime',
-    'tv': 'convey_category_tv',
-  };
+  // Deprecated: hardcoded map. Prefer reading SKU from Category.sku.
+  static const Map<String, String> skuByCategoryId = {};
 
   static Future<void> init() async {
     final available = await _inAppPurchase.isAvailable();
@@ -28,8 +26,14 @@ class PurchaseService {
   }
 
   static Future<List<ProductDetails>> loadProducts() async {
-    final response = await _inAppPurchase
-        .queryProductDetails(skuByCategoryId.values.toSet());
+    // Collect SKUs from dynamic categories
+    final List<String> skus = CategoryRegistry.getAllCategories()
+        .where((c) => c.sku != null && c.sku!.isNotEmpty)
+        .map((c) => c.sku!)
+        .toSet()
+        .toList();
+    if (skus.isEmpty) return const <ProductDetails>[];
+    final response = await _inAppPurchase.queryProductDetails(skus.toSet());
     return response.productDetails;
   }
 
@@ -79,8 +83,9 @@ class PurchaseService {
   }
 
   static String? _categoryIdForSku(String sku) {
-    for (final entry in skuByCategoryId.entries) {
-      if (entry.value == sku) return entry.key;
+    // Map back from SKU to category by checking Category.sku
+    for (final c in CategoryRegistry.getAllCategories()) {
+      if (c.sku != null && c.sku == sku) return c.id;
     }
     return null;
   }

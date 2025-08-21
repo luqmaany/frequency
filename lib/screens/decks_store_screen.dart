@@ -97,8 +97,7 @@ class DecksStoreScreen extends ConsumerWidget {
                               onTap: () async {
                                 final products =
                                     await PurchaseService.loadProducts();
-                                final sku =
-                                    PurchaseService.skuByCategoryId[cat.id];
+                                final sku = cat.sku;
                                 if (sku == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(

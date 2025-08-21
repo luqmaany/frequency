@@ -17,6 +17,8 @@ class Category {
   final CategoryType type;
   final bool isUnlocked;
   final String? imageAsset;
+  // Optional in-app product SKU (e.g., Play Console product ID)
+  final String? sku;
 
   const Category({
     required this.id,
@@ -28,6 +30,7 @@ class Category {
     required this.type,
     this.isUnlocked = false,
     this.imageAsset,
+    this.sku,
   });
 
   // Convenience getters
@@ -104,6 +107,7 @@ extension CategoryMap on Category {
         'icon': _iconToString(icon),
         // Use imageAsset as a generic image field; may contain an asset path or URL
         'imageUrl': imageAsset,
+        'sku': sku,
         'words': words.map((w) => w.text).toList(),
       };
 
@@ -134,6 +138,7 @@ extension CategoryMap on Category {
       words: words,
       // Accept URL or asset path under the same field name for simplicity
       imageAsset: map['imageUrl'] as String?,
+      sku: map['sku'] as String?,
     );
   }
 }
