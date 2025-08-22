@@ -4,3 +4,43 @@
 [x] - add a game insights screen
 [x] - Add clear data functionality to allow users to reset all saved player names and teams
 [] - Add dynamic category management to CategoryRegistry (addCategory, removeCategory, updateCategory methods)
+
+[] - App name, Android applicationId, and iOS bundle identifier finalized
+[] - App version and build numbers updated in pubspec.yaml and native projects
+[] - App icons updated (Android adaptive icons, iOS asset catalog)
+[] - Launch screen/splash implemented for Android (styles.xml) and iOS (storyboard)
+[] - Firebase configs verified: android/app/google-services.json and ios/Runner/GoogleService-Info.plist
+[] - Firestore security rules finalized and deployed
+[] - Third‑party licenses and attributions audited and added if required
+[] - Privacy Policy and Terms of Service URLs published and linked in-app
+[] - Support and marketing website links prepared
+[] - Remove debug flags/logging and verify analytics/tracking compliance
+
+[] - Google Play: App listing text completed (title, short, full description)
+[] - Google Play: Screenshots prepared for all required device classes
+[] - Google Play: Feature graphic created (1024x500) and optional promo video
+[] - Google Play: Data Safety form and app content policies completed
+[] - Google Play: Country availability and pricing configured
+[] - Google Play: Play App Signing configured
+[] - Google Play: Internal testing track created and testers invited
+[] - Google Play: Release AAB built (flutter build appbundle) and uploaded
+[] - Google Play: In‑app products created (IDs match skuByCategoryId)
+[] - Google Play: IAP buy/restore tested on internal track
+[] - Google Play: Production rollout strategy planned (staged rollout)
+
+[] - App Store Connect: App record created
+[] - App Store Connect: Metadata completed (name, subtitle, description, keywords)
+[] - App Store Connect: Screenshots prepared for all required devices
+[] - App Store Connect: App Privacy details filled (data collection/usage)
+[] - App Store Connect: Export Compliance and content rating questionnaires answered
+[] - App Store Connect: Pricing and availability set
+[] - iOS signing configured (Team, Bundle ID, provisioning profiles)
+[] - iOS Info.plist usage strings and privacy manifest configured (if needed)
+[] - iOS IAPs created (IDs match skuByCategoryId) and submitted for review
+[] - iOS: Build IPA (flutter build ipa or Xcode Archive) and upload (Transporter/Xcode)
+[] - TestFlight build created and testers invited
+[] - TestFlight: IAP buy/restore verified
+
+[] - Cross‑platform QA: crashes/ANRs, performance, offline, background/foreground resume
+[] - Cross‑platform QA: audio behaviors verified and assets optimized
+[] - Release housekeeping: tag in git and archive build artifacts
