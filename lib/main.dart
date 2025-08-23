@@ -23,6 +23,8 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
+  // Hide status/navigation bars globally for the whole app
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   debugPrint('=== App Starting ===');
   runApp(
     const ProviderScope(
@@ -53,7 +55,7 @@ class _MyAppState extends ConsumerState<MyApp> {
     final darkTheme = ref.watch(darkThemeProvider);
 
     return MaterialApp(
-      title: 'Convey',
+      title: 'Frequency',
       theme: darkTheme,
       darkTheme: darkTheme,
       themeMode: ThemeMode.dark,

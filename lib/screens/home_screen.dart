@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show GestureTapDownCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math';
@@ -11,6 +12,8 @@ import 'online_lobby_screen.dart';
 import '../widgets/wave_background.dart';
 import '../services/sound_service.dart';
 import 'zen_setup_screen.dart';
+import '../services/transition_service.dart';
+import 'mock_game_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
 class AnimatedGradientText extends StatefulWidget {
@@ -104,6 +107,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
+  AppTransitionStyle _selectedStyle = AppTransitionStyle.material;
+  Offset? _revealCenterFraction;
+
   void _startMockEndgame(BuildContext context) {
     final notifier = ref.read(gameStateProvider.notifier);
     // Build a complex config with 4 teams and target score reached
@@ -175,6 +181,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  void _navigateToMockWithTransition(BuildContext context) {
+    Navigator.of(context).push(
+      TransitionService.buildRoute(
+        const MockGameScreen(title: 'Mock Game (Transition Demo)'),
+        style: _selectedStyle,
+        revealCenterFraction: _revealCenterFraction,
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -232,97 +248,183 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: 30),
-                  Center(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final double width = constraints.maxWidth;
-                        final double computed = width * 0.16; // 16% of width
-                        final double fontSize = computed.clamp(44.0, 96.0);
-                        final textStyle = GoogleFonts.kanit(
-                          fontSize: fontSize,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 2,
-                          color: Colors.white,
-                        );
-                        return Text(
-                          'FREQUENCY',
-                          textAlign: TextAlign.center,
-                          style: textStyle,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 30),
+                    Center(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final double width = constraints.maxWidth;
+                          final double computed = width * 0.16; // 16% of width
+                          final double fontSize = computed.clamp(44.0, 96.0);
+                          final textStyle = GoogleFonts.kanit(
+                            fontSize: fontSize,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2,
+                            color: Colors.white,
+                          );
+                          return Text(
+                            'FREQUENCY',
+                            textAlign: TextAlign.center,
+                            style: textStyle,
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildMenuButton(
+                      context,
+                      'Start Game',
+                      () => GameNavigationService.navigateToGameSetup(context),
+                      buttonColors[0],
+                    ),
+                    const SizedBox(height: 16),
+                    // Transition tester controls
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            'Transition Style',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(color: Colors.white70),
+                          ),
+                          const SizedBox(height: 8),
+                          DropdownButton<AppTransitionStyle>(
+                            value: _selectedStyle,
+                            dropdownColor: Colors.grey.shade900,
+                            iconEnabledColor: Colors.white70,
+                            isExpanded: true,
+                            items: const [
+                              DropdownMenuItem(
+                                value: AppTransitionStyle.material,
+                                child: Text('Material (default)'),
+                              ),
+                              DropdownMenuItem(
+                                value: AppTransitionStyle.fade,
+                                child: Text('Fade'),
+                              ),
+                              DropdownMenuItem(
+                                value: AppTransitionStyle.slideFromRight,
+                                child: Text('Slide from right'),
+                              ),
+                              DropdownMenuItem(
+                                value: AppTransitionStyle.slideFromBottom,
+                                child: Text('Slide from bottom'),
+                              ),
+                              DropdownMenuItem(
+                                value: AppTransitionStyle.scale,
+                                child: Text('Scale'),
+                              ),
+                              DropdownMenuItem(
+                                value: AppTransitionStyle.rotation,
+                                child: Text('Rotation + fade'),
+                              ),
+                              DropdownMenuItem(
+                                value: AppTransitionStyle.circularReveal,
+                                child: Text('Circular reveal'),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                setState(() {
+                                  _selectedStyle = value;
+                                });
+                              }
+                            },
+                          ),
+                          const SizedBox(height: 8),
+                          _buildMenuButton(
+                            context,
+                            'Open Mock Game (Test Transition)',
+                            () => _navigateToMockWithTransition(context),
+                            buttonColors[2],
+                            onTapDown: (details) {
+                              final size = MediaQuery.of(context).size;
+                              final dx =
+                                  (details.globalPosition.dx / size.width)
+                                      .clamp(0.0, 1.0);
+                              final dy =
+                                  (details.globalPosition.dy / size.height)
+                                      .clamp(0.0, 1.0);
+                              setState(() {
+                                _revealCenterFraction = Offset(dx, dy);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMenuButton(
+                      context,
+                      'Zen Mode',
+                      () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const ZenSetupScreen(),
+                          ),
                         );
                       },
+                      buttonColors[1],
                     ),
-                  ),
-                  const Spacer(),
-                  _buildMenuButton(
-                    context,
-                    'Start Game',
-                    () => GameNavigationService.navigateToGameSetup(context),
-                    buttonColors[0],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    'Zen Mode',
-                    () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const ZenSetupScreen(),
-                        ),
-                      );
-                    },
-                    buttonColors[1],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    'Online',
-                    () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const OnlineLobbyScreen(),
-                        ),
-                      );
-                    },
-                    buttonColors.length > 5
-                        ? buttonColors[5 % buttonColors.length]
-                        : buttonColors[1],
-                  ),
-                  const SizedBox(height: 16),
-                  // Removed 'Stats & History' button
-                  _buildMenuButton(
-                    context,
-                    'Decks',
-                    () => GameNavigationService.navigateToDecksStore(context),
-                    buttonColors[3],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    'Categories',
-                    () => GameNavigationService.navigateToWordListsManager(
-                        context),
-                    buttonColors[4 % buttonColors.length],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    'Settings',
-                    () => GameNavigationService.navigateToSettings(context),
-                    buttonColors[2],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildMenuButton(
-                    context,
-                    'Mock Big Game (Insights)',
-                    () => _startMockEndgame(context),
-                    buttonColors[0],
-                  ),
-                  const Spacer(),
-                ],
+                    const SizedBox(height: 16),
+                    _buildMenuButton(
+                      context,
+                      'Online',
+                      () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const OnlineLobbyScreen(),
+                          ),
+                        );
+                      },
+                      buttonColors.length > 5
+                          ? buttonColors[5 % buttonColors.length]
+                          : buttonColors[1],
+                    ),
+                    const SizedBox(height: 16),
+                    // Removed 'Stats & History' button
+                    _buildMenuButton(
+                      context,
+                      'Decks',
+                      () => GameNavigationService.navigateToDecksStore(context),
+                      buttonColors[3],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMenuButton(
+                      context,
+                      'Categories',
+                      () => GameNavigationService.navigateToWordListsManager(
+                          context),
+                      buttonColors[4 % buttonColors.length],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMenuButton(
+                      context,
+                      'Settings',
+                      () => GameNavigationService.navigateToSettings(context),
+                      buttonColors[2],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMenuButton(
+                      context,
+                      'Mock Big Game (Insights)',
+                      () => _startMockEndgame(context),
+                      buttonColors[0],
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                ),
               ),
             ),
           ),
@@ -332,11 +434,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   Widget _buildMenuButton(
-    BuildContext context,
-    String text,
-    VoidCallback onPressed,
-    Color color,
-  ) {
+      BuildContext context, String text, VoidCallback onPressed, Color color,
+      {GestureTapDownCallback? onTapDown}) {
     final HSLColor hsl = HSLColor.fromColor(color);
     final double darkerLightness = (hsl.lightness * 0.25).clamp(0.0, 1.0);
     final Color buttonColor = hsl.withLightness(darkerLightness).toColor();
@@ -346,6 +445,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
+        onTapDown: onTapDown,
         onTap: onPressed,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
