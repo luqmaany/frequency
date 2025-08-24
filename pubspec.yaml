@@ -77,23 +77,23 @@ flutter:
     - assets/images/categories/
     - assets/sounds/
 flutter_launcher_icons:
-  image_path: assets/images/categories/frequency.png
+  image_path: assets/images/categories/frequency22.png
   android: true
   ios: true
   remove_alpha_ios: true
   adaptive_icon_background: "#121212"
-  adaptive_icon_foreground: assets/images/categories/frequency.png
+  adaptive_icon_foreground: assets/images/categories/frequency2.png
   web:
     generate: true
-    image_path: assets/images/categories/frequency.png
+    image_path: assets/images/categories/frequency2.png
     background_color: "#121212"
     theme_color: "#121212"
   macos:
     generate: true
-    image_path: assets/images/categories/frequency.png
+    image_path: assets/images/categories/frequency2.png
   windows:
     generate: true
-    image_path: assets/images/categories/frequency.png
+    image_path: assets/images/categories/frequency2.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
