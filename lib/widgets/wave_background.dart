@@ -56,17 +56,21 @@ class _WavesPainter extends CustomPainter {
     final bg = Paint()
       ..shader = const RadialGradient(
         center: Alignment(0, -0.2),
-        radius: 1.2,
+        // Larger radius so gradient reaches the far corners on tall/wide screens
+        radius: 1.6,
         colors: [Color(0xFF0B1020), Color(0xFF0E162A)],
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, bg);
 
     // Contour lines (higher = tighter spacing)
-    const lines = 34;
+    // Scale the number of lines with height so it feels proportional on tablets
+    final int lines = (size.height / 20).clamp(26, 72).floor();
     for (int i = 0; i < lines; i++) {
       final yBase = size.height * (i / (lines - 1));
       final path = Path();
-      for (double x = 0; x <= size.width; x += 6) {
+      // Scale sampling step with width to keep smoothness consistent
+      final double step = (size.width / 120).clamp(3.0, 8.0);
+      for (double x = 0; x <= size.width; x += step) {
         // Two sine layers + slow drift for "radio" feel
         // Use integer multiples of 2π for time terms so the loop is seamless when t resets
         final y = yBase +
@@ -85,6 +89,8 @@ class _WavesPainter extends CustomPainter {
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..isAntiAlias = true
         ..color = color.withOpacity(0.9);
       canvas.drawPath(path, paint);
     }
