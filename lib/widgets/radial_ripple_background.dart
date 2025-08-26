@@ -62,6 +62,9 @@ class _RadialRipplesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Scale so ring spacing and thickness feel proportional across devices
+    final double scale =
+        (math.min(size.width, size.height) / 400.0).clamp(0.8, 2.0);
     // Dark background gradient, smoother and centered on ripple origin
     final Paint bg = Paint()
       ..shader = RadialGradient(
@@ -126,8 +129,8 @@ class _RadialRipplesPainter extends CustomPainter {
     const double targetLightness = 0.50; // tweak as needed to match Home
 
     // Base spacing and speed
-    const double baseSpacing = 22.0;
-    const double speedSpacingPerLoop =
+    final double baseSpacing = 22.0 * scale;
+    final double speedSpacingPerLoop =
         baseSpacing * 10; // outward per loop (faster waves)
 
     // Distance travelled by the innermost ring so that a ring always starts at center
@@ -138,12 +141,12 @@ class _RadialRipplesPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 2.0;
+      ..strokeWidth = 2.0 * scale;
 
     // Cap the number of rings conservatively for performance
     for (int i = 0; i < 120; i++) {
       // Fixed spacing ensures shifting by an integer multiple of baseSpacing loops seamlessly
-      const double ringSpacing = baseSpacing;
+      final double ringSpacing = baseSpacing;
       final double radius = travelled + i * ringSpacing;
       if (radius > maxRadius + baseSpacing * 2) break;
 

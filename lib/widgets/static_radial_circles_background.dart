@@ -206,6 +206,9 @@ class _StaticCirclesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Scale to keep ring spacing and stroke proportional to screen size
+    final double scale =
+        (math.min(size.width, size.height) / 400.0).clamp(0.8, 2.0);
     // Background fill: solid color when provided, otherwise gradient
     // Always paint the default gradient background; waves are colored by ringColor
     final Paint bg = Paint()
@@ -267,7 +270,7 @@ class _StaticCirclesPainter extends CustomPainter {
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = strokeWidth * scale
       ..blendMode = blendMode; // additive default for brighter overlaps
 
     // Lightness baseline matches ParallelPulseWavesBackground
@@ -280,9 +283,10 @@ class _StaticCirclesPainter extends CustomPainter {
     // Pulse center ring index advances with t based on pulseBaseRings,
     // wrapping by the actual ring count to cover the full set
     final double pulseCenter = (t * pulseBaseRings) % maxRings;
+    final double spacing = baseSpacing * scale;
     for (int i = 0; i < maxRings; i++) {
       // Uniform spacing only
-      final double radius = i * baseSpacing;
+      final double radius = i * spacing;
       if (radius > size.longestSide) break;
 
       // Base HSL color (override or palette-based with slight per-ring hue drift)

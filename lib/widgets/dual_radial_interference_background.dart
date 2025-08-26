@@ -157,6 +157,9 @@ class _DualRadialInterferencePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Scale to keep spacing and thickness proportional on tablets/phones
+    final double scale =
+        (math.min(size.width, size.height) / 400.0).clamp(0.8, 2.0);
     // Background gradient consistent with other ripple widgets
     final Paint bg = Paint()
       ..shader = RadialGradient(
@@ -230,19 +233,21 @@ class _DualRadialInterferencePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = strokeWidth
+      ..strokeWidth = strokeWidth * scale
       ..blendMode = BlendMode.plus; // additive for brighter overlaps
 
     // Determine ring range for each source: start when circle touches the rect
+    final double spacing = baseSpacing * scale;
+
     int startIndexFor(Offset c) {
       final double dMin = _distancePointToRect(c, size);
-      final int start = math.max(0, (dMin / baseSpacing).floor() - 1);
+      final int start = math.max(0, (dMin / spacing).floor() - 1);
       return start;
     }
 
     int maxIndexFor(Offset c) {
       final double dMax = _maxDistanceToRectCorners(c, size);
-      return (dMax / baseSpacing).ceil() + 2;
+      return (dMax / spacing).ceil() + 2;
     }
 
     final int startLeft = startIndexFor(leftCenter);
@@ -260,7 +265,7 @@ class _DualRadialInterferencePainter extends CustomPainter {
     void drawSource(Offset center, int iStart, int iEnd, double pulseCenter,
         double colorPhaseOffset) {
       for (int i = iStart; i <= iEnd; i++) {
-        final double radius = i * baseSpacing.toDouble();
+        final double radius = i * spacing.toDouble();
 
         // Base HSL color (override or palette-based with subtle per-ring hue drift)
         HSLColor baseHsl;

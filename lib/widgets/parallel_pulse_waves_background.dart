@@ -142,6 +142,9 @@ class _ParallelWavesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Scale to keep amplitude, spacing, and stroke proportional across devices
+    final double scale =
+        (math.min(size.width, size.height) / 400.0).clamp(0.8, 2.0);
     // Background gradient consistent with other backgrounds
     final Paint bg = Paint()
       ..shader = RadialGradient(
@@ -197,13 +200,14 @@ class _ParallelWavesPainter extends CustomPainter {
       ..isAntiAlias = true
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = strokeWidth;
+      ..strokeWidth = strokeWidth * scale;
 
     // Normalize lightness to align with other widgets
     const double baseTargetLightness = 0.50;
 
     // Determine number of rows covering the height
-    final int numWaves = math.max(1, (size.height / baseSpacing).ceil() + 2);
+    final double spacing = baseSpacing * scale;
+    final int numWaves = math.max(1, (size.height / spacing).ceil() + 2);
 
     // Pulse center across rows, 0..numWaves
     final double pulseCenter = (t * numWaves) % numWaves;
@@ -214,7 +218,7 @@ class _ParallelWavesPainter extends CustomPainter {
 
     // Build each row path
     for (int row = 0; row < numWaves; row++) {
-      final double y = row * baseSpacing;
+      final double y = row * spacing;
       if (y > size.height + baseSpacing) break;
 
       // Base color (override or palette with subtle drift)
@@ -263,12 +267,12 @@ class _ParallelWavesPainter extends CustomPainter {
 
       // Start slightly before and after to avoid clipping at edges
       // Smaller dx -> smoother curves. Tie to wavelength to keep stable detail.
-      final double dx = math.max(1.5, wavelength / 28.0);
+      final double dx = math.max(1.5, (wavelength * scale) / 28.0);
       double x = -dx;
-      double yOffset = amplitude * math.sin(k * x + phase + rowPhase);
+      double yOffset = (amplitude * scale) * math.sin(k * x + phase + rowPhase);
       path.moveTo(x, y + yOffset);
       for (; x <= size.width + dx; x += dx) {
-        yOffset = amplitude * math.sin(k * x + phase + rowPhase);
+        yOffset = (amplitude * scale) * math.sin(k * x + phase + rowPhase);
         path.lineTo(x, y + yOffset);
       }
 

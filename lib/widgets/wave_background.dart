@@ -52,6 +52,9 @@ class _WavesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Scale factors so visuals look proportionate on phones and tablets
+    final double scale =
+        (math.min(size.width, size.height) / 400.0).clamp(0.8, 2.0);
     // Background gradient
     final bg = Paint()
       ..shader = const RadialGradient(
@@ -63,7 +66,7 @@ class _WavesPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, bg);
 
     // Contour lines (higher = tighter spacing)
-    // Scale the number of lines with height so it feels proportional on tablets
+    // Keep density tied to height (already proportional). Amplitude scales below.
     final int lines = (size.height / 20).clamp(26, 72).floor();
     for (int i = 0; i < lines; i++) {
       final yBase = size.height * (i / (lines - 1));
@@ -74,8 +77,10 @@ class _WavesPainter extends CustomPainter {
         // Two sine layers + slow drift for "radio" feel
         // Use integer multiples of 2π for time terms so the loop is seamless when t resets
         final y = yBase +
-            10 * math.sin((x * 0.012) + (t * math.pi * 2 * 1.0) + i * 0.55) +
-            4 * math.sin((x * 0.02) - (t * math.pi * 2 * 2.0) + i * 1.1);
+            (10 * scale) *
+                math.sin((x * 0.012) + (t * math.pi * 2 * 1.0) + i * 0.55) +
+            (4 * scale) *
+                math.sin((x * 0.02) - (t * math.pi * 2 * 2.0) + i * 1.1);
         if (x == 0) {
           path.moveTo(x, y);
         } else {
@@ -88,7 +93,7 @@ class _WavesPainter extends CustomPainter {
       final color = HSLColor.fromAHSL(0.20, hue, 0.65, 0.55).toColor();
       final paint = Paint()
         ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
+        ..strokeWidth = strokeWidth * scale
         ..strokeCap = StrokeCap.round
         ..isAntiAlias = true
         ..color = color.withOpacity(0.9);
