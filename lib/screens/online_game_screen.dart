@@ -209,7 +209,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                 size: 64,
                 color: Colors.grey,
               ),
-              SizedBox(height: 16),
+              SizedBox(height: 17),
               Text(
                 'No more words available!',
                 style: TextStyle(

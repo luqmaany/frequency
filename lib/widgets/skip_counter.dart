@@ -18,7 +18,7 @@ class SkipCounter extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: CategoryRegistry.getCategory(categoryId).color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
         'Skips: $skipsLeft',
