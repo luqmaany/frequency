@@ -40,6 +40,7 @@ class _WaveBackgroundState extends State<WaveBackground>
     return RepaintBoundary(
       child: CustomPaint(
         painter: _WavesPainter(t: t, strokeWidth: widget.strokeWidth),
+        size: Size.infinite,
       ),
     );
   }
