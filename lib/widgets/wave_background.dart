@@ -38,9 +38,10 @@ class _WaveBackgroundState extends State<WaveBackground>
         ((nowMs % _loop.inMilliseconds) / _loop.inMilliseconds).clamp(0.0, 1.0);
 
     return RepaintBoundary(
-      child: CustomPaint(
-        painter: _WavesPainter(t: t, strokeWidth: widget.strokeWidth),
-        size: Size.infinite,
+      child: SizedBox.expand(
+        child: CustomPaint(
+          painter: _WavesPainter(t: t, strokeWidth: widget.strokeWidth),
+        ),
       ),
     );
   }
@@ -66,33 +67,36 @@ class _WavesPainter extends CustomPainter {
       ).createShader(Offset.zero & size);
     canvas.drawRect(Offset.zero & size, bg);
 
-    // Contour lines (higher = tighter spacing)
-    // Keep density tied to height (already proportional). Amplitude scales below.
-    final int lines = (size.height / 20).clamp(26, 72).floor();
-    for (int i = 0; i < lines; i++) {
-      final yBase = size.height * (i / (lines - 1));
-      final path = Path();
-      // Scale sampling step with width to keep smoothness consistent
-      final double step = (size.width / 120).clamp(3.0, 8.0);
-      for (double x = 0; x <= size.width; x += step) {
-        // Two sine layers + slow drift for "radio" feel
-        // Use integer multiples of 2π for time terms so the loop is seamless when t resets
-        final y = yBase +
-            (10 * scale) *
-                math.sin((x * 0.012) + (t * math.pi * 2 * 1.0) + i * 0.55) +
-            (4 * scale) *
-                math.sin((x * 0.02) - (t * math.pi * 2 * 2.0) + i * 1.1);
-        if (x == 0) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
+    // Contour lines: mimic parallel pulse background strategy
+    final double spacing = 12.0 * scale;
+    final int numRows = math.max(1, (size.height / spacing).ceil() + 3);
+
+    for (int row = 0; row < numRows; row++) {
+      final double yBase = row * spacing;
+      if (yBase > size.height + spacing) break;
+
+      final Path path = Path();
+      final double dx = (size.width / 160.0).clamp(2.0, 6.0);
+      double x = -dx;
+      double y = yBase +
+          (8 * scale) *
+              math.sin((x * 0.012) + (t * math.pi * 2 * 1.0) + row * 0.55) +
+          (3 * scale) *
+              math.sin((x * 0.02) - (t * math.pi * 2 * 2.0) + row * 1.1);
+      path.moveTo(x, y);
+      for (; x <= size.width + dx; x += dx) {
+        y = yBase +
+            (8 * scale) *
+                math.sin((x * 0.012) + (t * math.pi * 2 * 1.0) + row * 0.55) +
+            (3 * scale) *
+                math.sin((x * 0.02) - (t * math.pi * 2 * 2.0) + row * 1.1);
+        path.lineTo(x, y);
       }
 
       // Subtle hue shift across lines, with glow-like opacity
-      final hue = (210 + i * 7) % 360.0; // blues → purples → reds
-      final color = HSLColor.fromAHSL(0.20, hue, 0.65, 0.55).toColor();
-      final paint = Paint()
+      final double hue = (210 + row * 7) % 360.0; // blues → purples → reds
+      final Color color = HSLColor.fromAHSL(0.18, hue, 0.65, 0.55).toColor();
+      final Paint paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth * scale
         ..strokeCap = StrokeCap.round
@@ -100,6 +104,8 @@ class _WavesPainter extends CustomPainter {
         ..color = color.withOpacity(0.9);
       canvas.drawPath(path, paint);
     }
+
+    // No bottom-edge safety needed; rows are computed to cover height
   }
 
   @override
