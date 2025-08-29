@@ -445,161 +445,398 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         ),
                       ),
                     ],
-                    const SizedBox(height: 50),
-                    if (!_isTransitioning) ...[
-                      Expanded(
-                        child: FadeTransition(
-                          opacity: _preOpacity,
-                          child: Column(
-                            children: [
-                              // Transmitter title + card
-                              Expanded(
+                    // Center middle content vertically between title and bottom actions
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(
+                                minHeight: constraints.maxHeight,
+                              ),
+                              child: Center(
                                 child: Column(
+                                  mainAxisSize: MainAxisSize.min,
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    Padding(
-                                      padding:
-                                          const EdgeInsets.only(bottom: 10.0),
-                                      child: Text(
-                                        'Transmitter',
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .headlineSmall
-                                            ?.copyWith(
-                                              fontSize: 26,
-                                              color:
-                                                  Colors.white.withOpacity(0.9),
-                                            ),
-                                      ),
-                                    ),
-                                    SizedBox(
-                                      height: 90,
-                                      child: AnimatedBuilder(
-                                        animation: _animation,
-                                        builder: (context, child) {
-                                          return Transform.scale(
-                                            scale:
-                                                1 + (_animation.value * 0.03),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: Color.alphaBlend(
-                                                  teamColor.border
-                                                      .withOpacity(0.3),
-                                                  Theme.of(context)
-                                                      .scaffoldBackgroundColor,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color: Color.alphaBlend(
-                                                    teamColor.border
-                                                        .withOpacity(1),
-                                                    Theme.of(context)
-                                                        .scaffoldBackgroundColor,
-                                                  ),
-                                                  width: 2,
-                                                ),
-                                              ),
-                                              alignment: Alignment.center,
+                                    if (!_isTransitioning) ...[
+                                      FadeTransition(
+                                        opacity: _preOpacity,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            // Transmitter title + card
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 10.0),
                                               child: Text(
-                                                _selectedConveyor!,
+                                                'Transmitter',
+                                                textAlign: TextAlign.center,
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .displayLarge,
+                                                    .headlineSmall
+                                                    ?.copyWith(
+                                                      fontSize: 26,
+                                                      color: Colors.white
+                                                          .withOpacity(0.9),
+                                                    ),
                                               ),
                                             ),
-                                          );
-                                        },
+                                            SizedBox(
+                                              height: 90,
+                                              child: AnimatedBuilder(
+                                                animation: _animation,
+                                                builder: (context, child) {
+                                                  return Transform.scale(
+                                                    scale: 1 +
+                                                        (_animation.value *
+                                                            0.03),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Color.alphaBlend(
+                                                          teamColor.border
+                                                              .withOpacity(0.3),
+                                                          Theme.of(context)
+                                                              .scaffoldBackgroundColor,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        border: Border.all(
+                                                          color:
+                                                              Color.alphaBlend(
+                                                            teamColor.border
+                                                                .withOpacity(1),
+                                                            Theme.of(context)
+                                                                .scaffoldBackgroundColor,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Text(
+                                                        _selectedConveyor!,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .displayLarge,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(height: 24),
+                                            // Swap Button
+                                            Center(
+                                              child: IconButton(
+                                                onPressed: _isCurrentTeamActive
+                                                    ? _switchRoles
+                                                    : null,
+                                                icon: Icon(
+                                                  Icons.swap_vert,
+                                                  size: 48,
+                                                  color: _isCurrentTeamActive
+                                                      ? teamColor.border
+                                                          .withOpacity(0.95)
+                                                      : teamColor.border
+                                                          .withOpacity(0.4),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(height: 24),
+                                            // Receiver card with title beneath
+                                            SizedBox(
+                                              height: 90,
+                                              child: AnimatedBuilder(
+                                                animation: _animation,
+                                                builder: (context, child) {
+                                                  return Transform.scale(
+                                                    scale: 1.0 +
+                                                        (_animation.value *
+                                                            0.03),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Color.alphaBlend(
+                                                          teamColor.border
+                                                              .withOpacity(0.3),
+                                                          Theme.of(context)
+                                                              .scaffoldBackgroundColor,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        border: Border.all(
+                                                          color:
+                                                              Color.alphaBlend(
+                                                            teamColor.border
+                                                                .withOpacity(1),
+                                                            Theme.of(context)
+                                                                .scaffoldBackgroundColor,
+                                                          ),
+                                                          width: 2,
+                                                        ),
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Text(
+                                                        _selectedGuesser!,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .displayLarge,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Receiver',
+                                              textAlign: TextAlign.center,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .headlineSmall
+                                                  ?.copyWith(
+                                                    fontSize: 26,
+                                                    color: Colors.white
+                                                        .withOpacity(0.9),
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
-                                    ),
+                                    ] else ...[
+                                      AnimatedOpacity(
+                                        duration:
+                                            const Duration(milliseconds: 250),
+                                        opacity: _postOpacity,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                  bottom: 10.0),
+                                              child: Text(
+                                                'Transmitter',
+                                                textAlign: TextAlign.center,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .headlineSmall
+                                                    ?.copyWith(
+                                                      fontSize: 26,
+                                                      color: Colors.white
+                                                          .withOpacity(0.9),
+                                                    ),
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              height: 90,
+                                              child: AnimatedBuilder(
+                                                animation: _animation,
+                                                builder: (context, child) {
+                                                  return Transform.scale(
+                                                    scale: 1 +
+                                                        (_animation.value *
+                                                            0.03),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color:
+                                                            Colors.transparent,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(10),
+                                                        border: Border.all(
+                                                          color: Colors
+                                                              .transparent,
+                                                          width: 2,
+                                                        ),
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Text(
+                                                        _selectedConveyor!,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .displayLarge,
+                                                      ),
+                                                    ),
+                                                  );
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(height: 24),
+                                            Center(
+                                              child: (_isCurrentTeamActive &&
+                                                      !(_swipeRightDone &&
+                                                          _swipeLeftDone))
+                                                  ? Dismissible(
+                                                      key: ValueKey(_swipeStep),
+                                                      direction: _swipeSteps[
+                                                              _swipeStep]
+                                                          .direction,
+                                                      onDismissed: (direction) {
+                                                        setState(() {
+                                                          if (_swipeStep == 0 &&
+                                                              direction ==
+                                                                  DismissDirection
+                                                                      .startToEnd) {
+                                                            _swipeRightDone =
+                                                                true;
+                                                            _swipeStep = 1;
+                                                          } else if (_swipeStep ==
+                                                                  1 &&
+                                                              direction ==
+                                                                  DismissDirection
+                                                                      .endToStart) {
+                                                            _swipeLeftDone =
+                                                                true;
+                                                          }
+                                                        });
+                                                      },
+                                                      child: Container(
+                                                        width: double.infinity,
+                                                        height: 120,
+                                                        margin: const EdgeInsets
+                                                            .symmetric(
+                                                            horizontal: 16,
+                                                            vertical: 0),
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 24,
+                                                                vertical: 20),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: cardBackground,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(16),
+                                                          border: Border.all(
+                                                            color: cardBorder,
+                                                            width: 2,
+                                                          ),
+                                                        ),
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            if (_swipeStep == 1)
+                                                              const Icon(
+                                                                  Icons
+                                                                      .arrow_back,
+                                                                  color: Colors
+                                                                      .red,
+                                                                  size: 32),
+                                                            if (_swipeStep == 1)
+                                                              const SizedBox(
+                                                                  width: 12),
+                                                            Flexible(
+                                                              child: Text(
+                                                                _swipeSteps[
+                                                                        _swipeStep]
+                                                                    .text,
+                                                                textAlign:
+                                                                    TextAlign
+                                                                        .center,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .ellipsis,
+                                                                maxLines: 2,
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: _swipeSteps[
+                                                                          _swipeStep]
+                                                                      .color,
+                                                                  fontSize: 18,
+                                                                  height: 1.2,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            if (_swipeStep == 0)
+                                                              const SizedBox(
+                                                                  width: 12),
+                                                            if (_swipeStep == 0)
+                                                              const Icon(
+                                                                  Icons
+                                                                      .arrow_forward,
+                                                                  color: Colors
+                                                                      .green,
+                                                                  size: 32),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    )
+                                                  : (!_isCurrentTeamActive)
+                                                      ? Container(
+                                                          width:
+                                                              double.infinity,
+                                                          height: 120,
+                                                          margin:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      16,
+                                                                  vertical: 0),
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      24,
+                                                                  vertical: 20),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color:
+                                                                cardBackground,
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        16),
+                                                            border: Border.all(
+                                                              color: cardBorder,
+                                                              width: 2,
+                                                            ),
+                                                          ),
+                                                          child: Center(
+                                                            child: Text(
+                                                              'Waiting for the active team to continue...',
+                                                              textAlign:
+                                                                  TextAlign
+                                                                      .center,
+                                                              style: TextStyle(
+                                                                color: teamColor
+                                                                    .text,
+                                                                fontSize: 18,
+                                                                height: 1.2,
+                                                              ),
+                                                              maxLines: 2,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                            ),
+                                                          ),
+                                                        )
+                                                      : const SizedBox.shrink(),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 ),
                               ),
-                              // Swap Button
-                              Center(
-                                child: IconButton(
-                                  onPressed: _isCurrentTeamActive
-                                      ? _switchRoles
-                                      : null,
-                                  icon: Icon(
-                                    Icons.swap_vert,
-                                    size: 48,
-                                    color: _isCurrentTeamActive
-                                        ? teamColor.border.withOpacity(0.95)
-                                        : teamColor.border.withOpacity(0.4),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 50),
-                              // Receiver card with title beneath
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    SizedBox(
-                                      height: 90,
-                                      child: AnimatedBuilder(
-                                        animation: _animation,
-                                        builder: (context, child) {
-                                          return Transform.scale(
-                                            scale:
-                                                1.0 + (_animation.value * 0.03),
-                                            child: Container(
-                                              decoration: BoxDecoration(
-                                                color: Color.alphaBlend(
-                                                  teamColor.border
-                                                      .withOpacity(0.3),
-                                                  Theme.of(context)
-                                                      .scaffoldBackgroundColor,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                border: Border.all(
-                                                  color: Color.alphaBlend(
-                                                    teamColor.border
-                                                        .withOpacity(1),
-                                                    Theme.of(context)
-                                                        .scaffoldBackgroundColor,
-                                                  ),
-                                                  width: 2,
-                                                ),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: Text(
-                                                _selectedGuesser!,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .displayLarge,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Receiver',
-                                      textAlign: TextAlign.center,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall
-                                          ?.copyWith(
-                                            fontSize: 26,
-                                            color:
-                                                Colors.white.withOpacity(0.9),
-                                          ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 32),
+                    ),
+                    const SizedBox(height: 32),
+                    if (!_isTransitioning) ...[
                       // Bottom actions row (pre-next)
                       FadeTransition(
                         opacity: _preOpacity,
@@ -638,165 +875,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         ),
                       ),
                     ] else ...[
-                      // Post-next: simplified layout with tutorial + Start
-                      Expanded(
-                        child: AnimatedOpacity(
-                          duration: const Duration(milliseconds: 250),
-                          opacity: _postOpacity,
-                          child: Center(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10.0),
-                                  child: Text(
-                                    'Transmitter',
-                                    textAlign: TextAlign.center,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .headlineSmall
-                                        ?.copyWith(
-                                          fontSize: 26,
-                                          color: Colors.white.withOpacity(0.9),
-                                        ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 90,
-                                  child: AnimatedBuilder(
-                                    animation: _animation,
-                                    builder: (context, child) {
-                                      return Transform.scale(
-                                        scale: 1 + (_animation.value * 0.03),
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(10),
-                                            border: Border.all(
-                                              color: Colors.transparent,
-                                              width: 2,
-                                            ),
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Text(
-                                            _selectedConveyor!,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .displayLarge,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Center(
-                          child: (_isCurrentTeamActive &&
-                                  !(_swipeRightDone && _swipeLeftDone))
-                              ? Dismissible(
-                                  key: ValueKey(_swipeStep),
-                                  direction: _swipeSteps[_swipeStep].direction,
-                                  onDismissed: (direction) {
-                                    setState(() {
-                                      if (_swipeStep == 0 &&
-                                          direction ==
-                                              DismissDirection.startToEnd) {
-                                        _swipeRightDone = true;
-                                        _swipeStep = 1;
-                                      } else if (_swipeStep == 1 &&
-                                          direction ==
-                                              DismissDirection.endToStart) {
-                                        _swipeLeftDone = true;
-                                      }
-                                    });
-                                  },
-                                  child: Container(
-                                    width: double.infinity,
-                                    height: 120,
-                                    margin: const EdgeInsets.symmetric(
-                                        horizontal: 16, vertical: 0),
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 20),
-                                    decoration: BoxDecoration(
-                                      color: cardBackground,
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
-                                        color: cardBorder,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        if (_swipeStep == 1)
-                                          const Icon(Icons.arrow_back,
-                                              color: Colors.red, size: 32),
-                                        if (_swipeStep == 1)
-                                          const SizedBox(width: 12),
-                                        Flexible(
-                                          child: Text(
-                                            _swipeSteps[_swipeStep].text,
-                                            textAlign: TextAlign.center,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 2,
-                                            style: TextStyle(
-                                              color:
-                                                  _swipeSteps[_swipeStep].color,
-                                              fontSize: 18,
-                                              height: 1.2,
-                                            ),
-                                          ),
-                                        ),
-                                        if (_swipeStep == 0)
-                                          const SizedBox(width: 12),
-                                        if (_swipeStep == 0)
-                                          const Icon(Icons.arrow_forward,
-                                              color: Colors.green, size: 32),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              : (!_isCurrentTeamActive)
-                                  ? Container(
-                                      width: double.infinity,
-                                      height: 120,
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 0),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 24, vertical: 20),
-                                      decoration: BoxDecoration(
-                                        color: cardBackground,
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(
-                                          color: cardBorder,
-                                          width: 2,
-                                        ),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          'Waiting for the active team to continue...',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: teamColor.text,
-                                            fontSize: 18,
-                                            height: 1.2,
-                                          ),
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    )
-                                  : const SizedBox.shrink(),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
                       AnimatedOpacity(
                         duration: const Duration(milliseconds: 250),
                         opacity: _postOpacity,
