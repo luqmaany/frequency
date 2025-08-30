@@ -205,7 +205,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     // Stop menu music when leaving home (safety; also stopped when gameplay starts)
-    ref.read(soundServiceProvider).stopMenuMusic();
+    if (mounted) {
+      ref.read(soundServiceProvider).stopMenuMusic();
+    }
     super.dispose();
   }
 
@@ -215,10 +217,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (state == AppLifecycleState.inactive ||
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      ref.read(soundServiceProvider).stopMenuMusic();
+      if (mounted) {
+        ref.read(soundServiceProvider).stopMenuMusic();
+      }
     } else if (state == AppLifecycleState.resumed) {
       // Resume music when app comes back and we're still on Home
-      ref.read(soundServiceProvider).playMenuMusic();
+      if (mounted) {
+        ref.read(soundServiceProvider).playMenuMusic();
+      }
     }
   }
 

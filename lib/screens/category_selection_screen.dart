@@ -81,6 +81,7 @@ class _CategorySelectionScreenState
   }
 
   bool _isSpinning = false;
+  bool _hasSpun = false; // Track if spin has been used
   String? _selectedCategory;
   String _currentCategory = '';
   Timer? _categoryTimer;
@@ -156,7 +157,7 @@ class _CategorySelectionScreenState
   }
 
   void _spinCategories() async {
-    if (_isSpinning) return;
+    if (_isSpinning || _hasSpun) return; // Prevent spinning if already spun
 
     // Only the active team can trigger the spin
     if (!_isCurrentTeamActive) return;
@@ -166,6 +167,7 @@ class _CategorySelectionScreenState
     // Update local state for both local and online games
     setState(() {
       _isSpinning = true;
+      _hasSpun = true; // Mark that spin has been used
       _selectedCategory = null;
       _spinCount = 0;
       _currentCategory = '';
@@ -265,6 +267,7 @@ class _CategorySelectionScreenState
             _currentCategory = selectedCategory;
             _isSpinning =
                 false; // Stop local spinning when category is selected
+            _hasSpun = true; // Mark as spun when category is received
           });
         }
       });
@@ -320,7 +323,9 @@ class _CategorySelectionScreenState
                           ),
                           const SizedBox(height: 40),
                           GestureDetector(
-                            onTap: (_isCurrentTeamActive && !_isSpinning)
+                            onTap: (_isCurrentTeamActive &&
+                                    !_isSpinning &&
+                                    !_hasSpun)
                                 ? _spinCategories
                                 : null,
                             child: AnimatedBuilder(
@@ -360,7 +365,9 @@ class _CategorySelectionScreenState
                                         child: Text(
                                           _currentCategory.isEmpty
                                               ? (_isCurrentTeamActive
-                                                  ? 'TAP TO SPIN\nFOR CATEGORY!'
+                                                  ? (_hasSpun
+                                                      ? 'SPINNING...'
+                                                      : 'TAP TO SPIN\nFOR CATEGORY!')
                                                   : 'WAITING...')
                                               : _currentCategory,
                                           key: ValueKey<String>(
