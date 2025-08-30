@@ -130,11 +130,11 @@ class _RadialRipplesPainter extends CustomPainter {
 
     // Base spacing and speed
     final double baseSpacing = 22.0 * scale;
-    final double speedSpacingPerLoop =
-        baseSpacing * 10; // outward per loop (faster waves)
+    final double cycleDistance =
+        maxRadius + baseSpacing * 2; // Total distance for one complete cycle
 
-    // Distance travelled by the innermost ring so that a ring always starts at center
-    final double travelled = t * speedSpacingPerLoop;
+    // Distance travelled by the innermost ring
+    final double travelled = t * cycleDistance;
 
     // Draw outward-moving concentric rings (seamless loop)
     final Paint ringPaint = Paint()
@@ -143,16 +143,23 @@ class _RadialRipplesPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeWidth = 2.0 * scale;
 
-    // Cap the number of rings conservatively for performance
-    for (int i = 0; i < 120; i++) {
-      // Fixed spacing ensures shifting by an integer multiple of baseSpacing loops seamlessly
-      final double ringSpacing = baseSpacing;
-      final double radius = travelled + i * ringSpacing;
-      if (radius > maxRadius + baseSpacing * 2) break;
+    // Calculate how many rings we need to fill the entire space seamlessly
+    final int numRings = (cycleDistance / baseSpacing).ceil() + 2;
+
+    for (int i = 0; i < numRings; i++) {
+      // Calculate ring position with wrapping
+      final double baseRadius = travelled + i * baseSpacing;
+      final double radius = baseRadius % cycleDistance;
+
+      // Skip rings that are outside visible area and not about to wrap
+      if (radius > maxRadius + baseSpacing) continue;
 
       // Small pulsation with exactly 1 cycle per animation loop (seamless)
       final double pulsate = 3.0 * math.sin((t * math.pi * 2 * 1.0) + i * 0.55);
       final double r = radius + pulsate;
+
+      // Skip if ring is not visible (too far out)
+      if (r < 0 || r > maxRadius + baseSpacing) continue;
 
       // Determine ring color
       Color color;
@@ -168,6 +175,7 @@ class _RadialRipplesPainter extends CustomPainter {
             .withOpacity((0.62 * radialFade).clamp(0.06, 0.82));
       } else {
         // Default: expanded palette with subtle, seamless hue drift
+        // Use original ring index for consistent color progression
         final int pi0 = i % palette.length;
         final Color base = palette[pi0];
         final HSLColor hsl = HSLColor.fromColor(base);
