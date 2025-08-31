@@ -10,8 +10,11 @@ class SoundService {
     try {
       final prefs = await StorageService.loadAppPreferences();
       _enabled = prefs['soundEnabled'] ?? true;
-    } catch (_) {
+      print('SoundService: Initialized with sound enabled: $_enabled');
+    } catch (e) {
       _enabled = true;
+      print(
+          'SoundService: Failed to load preferences, defaulting to enabled: $e');
     }
   }
 
@@ -26,12 +29,20 @@ class SoundService {
   Future<void> _playAssetVariants(String baseName,
       {double volume = 1.0,
       List<String> extensions = const ['wav', 'mp3']}) async {
-    if (!_enabled) return;
+    if (!_enabled) {
+      print('SoundService: Sound disabled, skipping $baseName');
+      return;
+    }
+
+    print('SoundService: Attempting to play $baseName');
     for (final ext in extensions) {
       final player = AudioPlayer();
       try {
         await player.setVolume(volume);
-        await player.play(AssetSource('assets/sounds/$baseName.$ext'));
+        final assetPath = 'sounds/$baseName.$ext';
+        print('SoundService: Trying to load $assetPath');
+        await player.play(AssetSource(assetPath));
+        print('SoundService: Successfully playing $assetPath');
         // Attach completion disposal and return on first success
         player.onPlayerComplete.listen((_) {
           player.dispose();
@@ -39,11 +50,13 @@ class SoundService {
           player.dispose();
         });
         return;
-      } catch (_) {
+      } catch (e) {
+        print('SoundService: Failed to load $baseName.$ext: $e');
         await player.dispose();
         // Try next extension
       }
     }
+    print('SoundService: All attempts failed for $baseName');
   }
 
   Future<void> playCorrect() => _playAssetVariants('correct', volume: 1.0);
@@ -71,7 +84,7 @@ class SoundService {
       try {
         await player.setVolume(volume);
         await player.setReleaseMode(ReleaseMode.loop);
-        await player.play(AssetSource('assets/sounds/$file'));
+        await player.play(AssetSource('sounds/$file'));
         _musicPlayer = player;
         return;
       } catch (_) {
