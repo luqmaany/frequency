@@ -717,6 +717,18 @@ class FirestoreService {
     }
   }
 
+  /// Check if a session exists (with authentication and rate limiting)
+  static Future<bool> sessionExists(String sessionId) async {
+    if (!_canRead(sessionId)) {
+      throw Exception('Rate limit exceeded for reads');
+    }
+
+    print(
+        '🔥 FIRESTORE READ: sessionExists($sessionId) - checking session existence');
+    final doc = await sessions.doc(sessionId).get();
+    return doc.exists;
+  }
+
   /// Clear cached stream for a session (call when leaving a session)
   static void clearSessionStreamCache(String sessionId) {
     _sessionStreamCache.remove(sessionId);

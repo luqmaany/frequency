@@ -85,10 +85,7 @@ final sessionTurnOverProvider =
 /// Provider for checking if a session exists
 final sessionExistsProvider =
     FutureProvider.family<bool, String>((ref, sessionId) async {
-  print(
-      '🔥 FIRESTORE READ: sessionExistsProvider($sessionId) - checking session existence');
-  final doc = await FirestoreService.sessions.doc(sessionId).get();
-  return doc.exists;
+  return FirestoreService.sessionExists(sessionId);
 });
 
 /// Provider for creating a new session
