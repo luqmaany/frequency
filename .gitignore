@@ -47,3 +47,9 @@ app.*.map.json
 # Firebase configuration files (contain API keys)
 /android/app/google-services.json
 /ios/Runner/GoogleService-Info.plist
+
+# Google Cloud Service Account Keys (EXTREMELY SENSITIVE)
+/**/*-*.json
+/*.json
+!pubspec.yaml
+!analysis_options.yaml
