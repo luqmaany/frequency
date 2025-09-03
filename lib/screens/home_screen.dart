@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/gestures.dart' show GestureTapDownCallback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/game_navigation_service.dart';
 import 'online_lobby_screen.dart';
 import '../widgets/wave_background.dart';
+import '../widgets/menu_button.dart';
 import '../services/sound_service.dart';
 import 'zen_setup_screen.dart';
 
@@ -126,6 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   'Play with friends locally',
                   Icons.group,
                   () {
+                    unawaited(ref.read(soundServiceProvider).playButtonPress());
                     Navigator.of(context).pop();
                     GameNavigationService.navigateToGameSetup(context);
                   },
@@ -138,6 +140,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   'Quick single turn',
                   Icons.spa,
                   () {
+                    unawaited(ref.read(soundServiceProvider).playButtonPress());
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -154,6 +157,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   'Play from afar',
                   Icons.public,
                   () {
+                    unawaited(ref.read(soundServiceProvider).playButtonPress());
                     Navigator.of(context).pop();
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -180,6 +184,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     Color color,
   ) {
     return InkWell(
+      onTapDown: (_) {
+        print('$title dialog option pressed down - playing sound');
+        unawaited(ref.read(soundServiceProvider).playButtonPress());
+      },
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
@@ -225,9 +233,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    // Start menu music
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(soundServiceProvider).playMenuMusic();
+    // Start menu music after sound service is fully initialized
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final soundService = ref.read(soundServiceProvider);
+      // Wait for sound service to initialize with preferences
+      await soundService.init();
+      // Only play music if sound is enabled
+      if (soundService.isEnabled) {
+        soundService.playMenuMusic();
+      }
     });
   }
 
@@ -253,7 +267,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     } else if (state == AppLifecycleState.resumed) {
       // Resume music when app comes back and we're still on Home
       if (mounted) {
-        ref.read(soundServiceProvider).playMenuMusic();
+        final soundService = ref.read(soundServiceProvider);
+        if (soundService.isEnabled) {
+          soundService.playMenuMusic();
+        }
       }
     }
   }
@@ -315,37 +332,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildMenuButton(
-                          context,
-                          'Play',
-                          () => _showPlayDialog(context),
-                          buttonColors[0],
+                        MenuButton(
+                          text: 'Play',
+                          onPressed: () => _showPlayDialog(context),
+                          color: buttonColors[0],
                         ),
                         const SizedBox(height: 16),
                         // Removed 'Stats & History' button
-                        _buildMenuButton(
-                          context,
-                          'Decks',
-                          () => GameNavigationService.navigateToDecksStore(
-                              context),
-                          buttonColors[3],
+                        MenuButton(
+                          text: 'Decks',
+                          onPressed: () =>
+                              GameNavigationService.navigateToDecksStore(
+                                  context),
+                          color: buttonColors[3],
                         ),
                         const SizedBox(height: 16),
-                        _buildMenuButton(
-                          context,
-                          'Categories',
-                          () =>
+                        MenuButton(
+                          text: 'Categories',
+                          onPressed: () =>
                               GameNavigationService.navigateToWordListsManager(
                                   context),
-                          buttonColors[4 % buttonColors.length],
+                          color: buttonColors[4 % buttonColors.length],
                         ),
                         const SizedBox(height: 16),
-                        _buildMenuButton(
-                          context,
-                          'Settings',
-                          () =>
+                        MenuButton(
+                          text: 'Settings',
+                          onPressed: () =>
                               GameNavigationService.navigateToSettings(context),
-                          buttonColors[2],
+                          color: buttonColors[2],
                         ),
                       ],
                     ),
@@ -358,52 +372,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildMenuButton(
-      BuildContext context, String text, VoidCallback onPressed, Color color,
-      {GestureTapDownCallback? onTapDown}) {
-    final HSLColor hsl = HSLColor.fromColor(color);
-    final double darkerLightness = (hsl.lightness * 0.25).clamp(0.0, 1.0);
-    final Color buttonColor = hsl.withLightness(darkerLightness).toColor();
-    final Color borderColor = color.withOpacity(0.7);
-    const Color textColor = Color(0xFFE6EEF8);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTapDown: onTapDown,
-        onTap: onPressed,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
-          decoration: BoxDecoration(
-            color: buttonColor,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: borderColor, width: 2.0),
-            boxShadow: [
-              BoxShadow(
-                color: borderColor.withOpacity(0.08),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                text,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 18,
-                    ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

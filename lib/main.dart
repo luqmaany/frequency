@@ -11,9 +11,13 @@ import 'services/purchase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
+  // Prevent duplicate Firebase app initialization
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
   await CategoryRegistry.loadDynamicCategories();
   await PurchaseService.init();
   // Try background restore without blocking startup; ignore errors offline

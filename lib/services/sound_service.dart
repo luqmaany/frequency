@@ -6,6 +6,8 @@ class SoundService {
   bool _enabled = true;
   AudioPlayer? _musicPlayer;
 
+  bool get isEnabled => _enabled;
+
   Future<void> init() async {
     try {
       final prefs = await StorageService.loadAppPreferences();
@@ -68,8 +70,10 @@ class SoundService {
   Future<void> playTurnEnd() =>
       _playAssetVariants('turn_end_buzzer', volume: 1.0);
 
-  Future<void> playButtonPress() =>
-      _playAssetVariants('button_press', volume: 0.5);
+  Future<void> playButtonPress() {
+    print('SoundService: playButtonPress called');
+    return _playAssetVariants('button2', volume: 0.3);
+  }
 
   // ===== Background music APIs =====
   Future<void> playMenuMusic({double volume = 0.5}) async {

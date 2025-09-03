@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -71,6 +72,9 @@ class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
     setState(() {
       _scale = 0.97; // adjust to taste
     });
+    // Play sound immediately on press down
+    print('${widget.text} team color button pressed down - playing sound');
+    unawaited(ref.read(soundServiceProvider).playButtonPress());
   }
 
   void _onTapUp(TapUpDetails details) {
@@ -91,8 +95,7 @@ class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
     if (prefs['vibrationEnabled'] == true) {
       HapticFeedback.lightImpact();
     }
-    // Play button press sound (respects SoundService enabled)
-    ref.read(soundServiceProvider).playButtonPress();
+    // Sound is now played in _onTapDown for immediate feedback
     if (widget.onPressed != null) {
       widget.onPressed!();
     }

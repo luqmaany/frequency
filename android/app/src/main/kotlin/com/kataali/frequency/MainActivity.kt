@@ -1,4 +1,4 @@
-package com.convey.game
+package com.kataali.frequency
 
 import io.flutter.embedding.android.FlutterActivity
 
