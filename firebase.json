@@ -5,7 +5,8 @@
         "default": {
           "projectId": "convey-7",
           "appId": "1:178068463522:android:9bf7cb7f7497528b185cfb",
-          "fileOutput": "android/app/google-services.json"
+          "fileOutput": "android/app/google-services.json",
+          "packageName": "com.convey.game"
         }
       },
       "dart": {
