@@ -5,6 +5,7 @@ class GameConfig {
   final int roundTimeSeconds;
   final int targetScore;
   final int allowedSkips;
+  final bool useWeightedWordSelection;
 
   GameConfig({
     required this.playerNames,
@@ -13,6 +14,8 @@ class GameConfig {
     required this.roundTimeSeconds,
     required this.targetScore,
     required this.allowedSkips,
+    this.useWeightedWordSelection =
+        true, // Default to true for better experience
   }) : teamColorIndices = teamColorIndices ?? [];
 
   GameConfig copyWith({
@@ -22,6 +25,7 @@ class GameConfig {
     int? roundTimeSeconds,
     int? targetScore,
     int? allowedSkips,
+    bool? useWeightedWordSelection,
   }) {
     return GameConfig(
       playerNames: playerNames ?? this.playerNames,
@@ -30,6 +34,8 @@ class GameConfig {
       roundTimeSeconds: roundTimeSeconds ?? this.roundTimeSeconds,
       targetScore: targetScore ?? this.targetScore,
       allowedSkips: allowedSkips ?? this.allowedSkips,
+      useWeightedWordSelection:
+          useWeightedWordSelection ?? this.useWeightedWordSelection,
     );
   }
 

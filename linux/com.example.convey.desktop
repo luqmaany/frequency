@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Frequency
+Comment=A fun word guessing game with multiple categories and premium decks
+Exec=convey
+Icon=neon.png
+Terminal=false
+Categories=Game;Education;
+StartupWMClass=convey

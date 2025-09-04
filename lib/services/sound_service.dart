@@ -61,7 +61,7 @@ class SoundService {
     print('SoundService: All attempts failed for $baseName');
   }
 
-  Future<void> playCorrect() => _playAssetVariants('correct', volume: 1.0);
+  Future<void> playCorrect() => _playAssetVariants('correct', volume: 0.1);
   Future<void> playSkip() => _playAssetVariants('skip', volume: 0.9);
   Future<void> playCountdownTick() =>
       _playAssetVariants('countdown_tick', volume: 0.8);

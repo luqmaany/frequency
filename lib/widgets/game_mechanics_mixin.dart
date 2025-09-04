@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_state_provider.dart';
+import '../services/game_setup_provider.dart';
 import '../models/category.dart';
 import '../providers/category_provider.dart';
 
@@ -139,9 +141,27 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
 
-    // Get two random words from the unused category words
-    unusedCategoryWords.shuffle();
-    _currentWords = unusedCategoryWords.take(2).toList();
+    // Get two words using weighted selection (if enabled) to favor words with fewer appearances
+    final gameConfig = ref.read(gameSetupProvider);
+    final selectedWords = <Word>[];
+
+    if (gameConfig.useWeightedWordSelection) {
+      // Use weighted selection
+      for (int i = 0; i < 2 && unusedCategoryWords.isNotEmpty; i++) {
+        final selectedWord = _selectWordWithWeights(unusedCategoryWords);
+        if (selectedWord != null) {
+          selectedWords.add(selectedWord);
+          // Remove the selected word from the pool to avoid duplicates
+          unusedCategoryWords.removeWhere((w) => w.text == selectedWord.text);
+        }
+      }
+    } else {
+      // Use traditional random selection
+      unusedCategoryWords.shuffle();
+      selectedWords.addAll(unusedCategoryWords.take(2));
+    }
+
+    _currentWords = selectedWords;
     _usedWords.addAll(_currentWords.map((w) => w.text));
 
     // Add to global game used words
@@ -157,7 +177,7 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     });
   }
 
-  // Get next word for a category
+  // Get next word for a category using weighted selection
   Word? getNextWord(String categoryId) {
     final categories = ref.read(categoryProvider);
     final category = categories[categoryId];
@@ -176,8 +196,15 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return null;
     }
 
-    categoryWords.shuffle();
-    return categoryWords.first;
+    // Use weighted selection (if enabled) to favor words with fewer appearances
+    final gameConfig = ref.read(gameSetupProvider);
+    if (gameConfig.useWeightedWordSelection) {
+      return _selectWordWithWeights(categoryWords);
+    } else {
+      // Use traditional random selection
+      categoryWords.shuffle();
+      return categoryWords.first;
+    }
   }
 
   // Load new word at specific index
@@ -200,6 +227,55 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       // No more words available - end the turn
       _endTurn();
     }
+  }
+
+  // Helper method to select a word using weighted random selection
+  // Words with fewer appearances have higher probability of being selected
+  Word? _selectWordWithWeights(List<Word> words) {
+    if (words.isEmpty) return null;
+    if (words.length == 1) return words.first;
+
+    // Calculate weights (inverse of appearance count + 1 to avoid division by zero)
+    final weights = words.map((word) => _calculateWordWeight(word)).toList();
+    final totalWeight = weights.fold(0.0, (sum, weight) => sum + weight);
+
+    if (totalWeight == 0) {
+      // Fallback to random selection if all weights are zero
+      words.shuffle();
+      return words.first;
+    }
+
+    // Generate random number between 0 and totalWeight
+    final random = Random();
+    final randomValue = random.nextDouble() * totalWeight;
+
+    // Find the word corresponding to this random value
+    double cumulativeWeight = 0.0;
+    for (int i = 0; i < words.length; i++) {
+      cumulativeWeight += weights[i];
+      if (randomValue <= cumulativeWeight) {
+        return words[i];
+      }
+    }
+
+    // Fallback (should not reach here, but just in case)
+    return words.last;
+  }
+
+  // Calculate weight for a word (higher weight = higher probability)
+  // Uses inverse relationship: fewer appearances = higher weight
+  double _calculateWordWeight(Word word) {
+    final appearanceCount = word.stats.appearanceCount;
+
+    // Base weight calculation: 1 / (appearances + 1)
+    // +1 to avoid division by zero and give new words the highest weight
+    final baseWeight = 1.0 / (appearanceCount + 1);
+
+    // Apply exponential scaling to make the difference more pronounced
+    // Words with 0 appearances get weight ~2.0
+    // Words with 1 appearance get weight ~1.0
+    // Words with 5+ appearances get weight ~0.16 or less
+    return baseWeight * 2.0;
   }
 
   // Clean up resources

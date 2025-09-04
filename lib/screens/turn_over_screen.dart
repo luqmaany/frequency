@@ -176,16 +176,11 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
 
       ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
 
-      // TODO: Update word statistics using CategoryProvider
+      // Update word statistics using CategoryProvider
       final categoryNotifier = ref.read(categoryProvider.notifier);
 
-      // Increment appearance count for all words that appeared in this turn
-      for (final word in widget.wordsGuessed) {
-        categoryNotifier.incrementWordAppearance(widget.category, word);
-      }
-      for (final word in widget.wordsSkipped) {
-        categoryNotifier.incrementWordAppearance(widget.category, word);
-      }
+      // Note: Appearance counts are already incremented when words are shown during gameplay
+      // in game_mechanics_mixin.dart, so we don't need to increment them again here.
 
       // Increment guessed count only for words that were not disputed
       for (final word in widget.wordsGuessed) {
