@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/game_navigation_service.dart';
@@ -7,6 +8,7 @@ import 'online_lobby_screen.dart';
 import '../widgets/wave_background.dart';
 import '../widgets/menu_button.dart';
 import '../services/sound_service.dart';
+import '../services/storage_service.dart';
 import 'zen_setup_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
@@ -106,68 +108,79 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          backgroundColor: Colors.grey.shade900,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
           insetPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           child: Container(
-            width:
-                MediaQuery.of(context).size.width * 0.95, // 95% of screen width
-            constraints: const BoxConstraints(
-                maxWidth: 650), // Max width for larger screens
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildDialogOption(
-                  context,
-                  'Local',
-                  'Play with friends locally',
-                  Icons.group,
-                  () {
-                    unawaited(ref.read(soundServiceProvider).playButtonPress());
-                    Navigator.of(context).pop();
-                    GameNavigationService.navigateToGameSetup(context);
-                  },
-                  const Color(0xFF5EB1FF), // blue
-                ),
-                const SizedBox(height: 12),
-                _buildDialogOption(
-                  context,
-                  'Zen',
-                  'Quick single turn',
-                  Icons.spa,
-                  () {
-                    unawaited(ref.read(soundServiceProvider).playButtonPress());
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const ZenSetupScreen(),
-                      ),
-                    );
-                  },
-                  const Color(0xFF7A5CFF), // purple
-                ),
-                const SizedBox(height: 12),
-                _buildDialogOption(
-                  context,
-                  'Online',
-                  'Play from afar',
-                  Icons.public,
-                  () {
-                    unawaited(ref.read(soundServiceProvider).playButtonPress());
-                    Navigator.of(context).pop();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const OnlineLobbyScreen(),
-                      ),
-                    );
-                  },
-                  const Color(0xFF4CD295), // green
-                ),
-              ],
+            constraints: const BoxConstraints(maxWidth: 560),
+            padding: const EdgeInsets.all(2), // Border width
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF5EB1FF), // Blue
+                  Color(0xFF7A5CFF), // Purple
+                  Color(0xFF4CD295), // Green
+                ],
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(22), // 24 - 2 for border
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900,
+                borderRadius: BorderRadius.circular(18), // 20 - 2 for border
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildDialogOption(
+                    context,
+                    'Local',
+                    'Play with friends locally',
+                    Icons.group,
+                    () {
+                      Navigator.of(context).pop();
+                      GameNavigationService.navigateToGameSetup(context);
+                    },
+                    const Color(0xFF5EB1FF), // blue
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDialogOption(
+                    context,
+                    'Zen',
+                    'Quick single turn',
+                    Icons.spa,
+                    () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const ZenSetupScreen(),
+                        ),
+                      );
+                    },
+                    const Color(0xFF7A5CFF), // purple
+                  ),
+                  const SizedBox(height: 12),
+                  _buildDialogOption(
+                    context,
+                    'Online',
+                    'Play from afar',
+                    Icons.public,
+                    () {
+                      Navigator.of(context).pop();
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const OnlineLobbyScreen(),
+                        ),
+                      );
+                    },
+                    const Color(0xFF4CD295), // green
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -184,8 +197,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     Color color,
   ) {
     return InkWell(
-      onTapDown: (_) {
+      onTapDown: (_) async {
         print('$title dialog option pressed down - playing sound');
+
+        // Check vibration setting and provide haptic feedback
+        final prefs = await StorageService.loadAppPreferences();
+        if (prefs['vibrationEnabled'] == true) {
+          HapticFeedback.lightImpact();
+        }
+
         unawaited(ref.read(soundServiceProvider).playButtonPress());
       },
       onTap: onTap,
@@ -195,7 +215,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         decoration: BoxDecoration(
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+          border: Border.all(color: color, width: 2),
         ),
         child: Row(
           children: [
@@ -222,7 +242,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: color),
           ],
         ),
       ),
@@ -249,8 +268,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     // Stop menu music when leaving home (safety; also stopped when gameplay starts)
-    if (mounted) {
-      ref.read(soundServiceProvider).stopMenuMusic();
+    // Get the sound service reference before calling super.dispose()
+    try {
+      final soundService = ref.read(soundServiceProvider);
+      soundService.stopMenuMusic();
+    } catch (e) {
+      // Ignore errors if the provider is no longer accessible
+      print('Could not stop menu music during dispose: $e');
     }
     super.dispose();
   }
@@ -262,14 +286,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       if (mounted) {
-        ref.read(soundServiceProvider).stopMenuMusic();
+        try {
+          ref.read(soundServiceProvider).stopMenuMusic();
+        } catch (e) {
+          // Ignore errors if the provider is no longer accessible
+          print('Could not stop menu music during lifecycle change: $e');
+        }
       }
     } else if (state == AppLifecycleState.resumed) {
       // Resume music when app comes back and we're still on Home
       if (mounted) {
-        final soundService = ref.read(soundServiceProvider);
-        if (soundService.isEnabled) {
-          soundService.playMenuMusic();
+        try {
+          final soundService = ref.read(soundServiceProvider);
+          if (soundService.isEnabled) {
+            soundService.playMenuMusic();
+          }
+        } catch (e) {
+          // Ignore errors if the provider is no longer accessible
+          print('Could not resume menu music during lifecycle change: $e');
         }
       }
     }

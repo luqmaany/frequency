@@ -72,7 +72,7 @@ class SoundService {
 
   Future<void> playButtonPress() {
     print('SoundService: playButtonPress called');
-    return _playAssetVariants('button2', volume: 0.3);
+    return _playAssetVariants('radio_switch2', volume: 0.15);
   }
 
   // ===== Background music APIs =====

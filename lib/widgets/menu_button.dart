@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/sound_service.dart';
+import '../services/storage_service.dart';
 
 /// A reusable menu button widget with consistent styling and sound effects.
 /// Plays button sound on press down for immediate feedback.
@@ -32,8 +34,15 @@ class MenuButton extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2.0),
       child: GestureDetector(
-        onTapDown: (_) {
+        onTapDown: (_) async {
           print('$text button pressed down - playing sound');
+
+          // Check vibration setting and provide haptic feedback
+          final prefs = await StorageService.loadAppPreferences();
+          if (prefs['vibrationEnabled'] == true) {
+            HapticFeedback.lightImpact();
+          }
+
           unawaited(ref.read(soundServiceProvider).playButtonPress());
         },
         onTap: onPressed,

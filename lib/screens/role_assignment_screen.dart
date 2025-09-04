@@ -445,394 +445,303 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         ),
                       ),
                     ],
-                    // Center middle content vertically between title and bottom actions
+                    // Fixed positioning content area to prevent transmitter movement
                     Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SingleChildScrollView(
-                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                minHeight: constraints.maxHeight,
-                              ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    if (!_isTransitioning) ...[
-                                      FadeTransition(
-                                        opacity: _preOpacity,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            // Transmitter title + card
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 10.0),
-                                              child: Text(
-                                                'Transmitter',
-                                                textAlign: TextAlign.center,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headlineSmall
-                                                    ?.copyWith(
-                                                      fontSize: 26,
-                                                      color: Colors.white
-                                                          .withOpacity(0.9),
-                                                    ),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 90,
-                                              child: AnimatedBuilder(
-                                                animation: _animation,
-                                                builder: (context, child) {
-                                                  return Transform.scale(
-                                                    scale: 1 +
-                                                        (_animation.value *
-                                                            0.03),
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        color: Color.alphaBlend(
-                                                          teamColor.border
-                                                              .withOpacity(0.3),
-                                                          Theme.of(context)
-                                                              .scaffoldBackgroundColor,
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        border: Border.all(
-                                                          color:
-                                                              Color.alphaBlend(
-                                                            teamColor.border
-                                                                .withOpacity(1),
-                                                            Theme.of(context)
-                                                                .scaffoldBackgroundColor,
-                                                          ),
-                                                          width: 2,
-                                                        ),
-                                                      ),
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: Text(
-                                                        _selectedConveyor!,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .displayLarge,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            const SizedBox(height: 24),
-                                            // Swap Button
-                                            Center(
-                                              child: IconButton(
-                                                onPressed: _isCurrentTeamActive
-                                                    ? _switchRoles
-                                                    : null,
-                                                icon: Icon(
-                                                  Icons.swap_vert,
-                                                  size: 48,
-                                                  color: _isCurrentTeamActive
-                                                      ? teamColor.border
-                                                          .withOpacity(0.95)
-                                                      : teamColor.border
-                                                          .withOpacity(0.4),
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 24),
-                                            // Receiver card with title beneath
-                                            SizedBox(
-                                              height: 90,
-                                              child: AnimatedBuilder(
-                                                animation: _animation,
-                                                builder: (context, child) {
-                                                  return Transform.scale(
-                                                    scale: 1.0 +
-                                                        (_animation.value *
-                                                            0.03),
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        color: Color.alphaBlend(
-                                                          teamColor.border
-                                                              .withOpacity(0.3),
-                                                          Theme.of(context)
-                                                              .scaffoldBackgroundColor,
-                                                        ),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        border: Border.all(
-                                                          color:
-                                                              Color.alphaBlend(
-                                                            teamColor.border
-                                                                .withOpacity(1),
-                                                            Theme.of(context)
-                                                                .scaffoldBackgroundColor,
-                                                          ),
-                                                          width: 2,
-                                                        ),
-                                                      ),
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: Text(
-                                                        _selectedGuesser!,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .displayLarge,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Receiver',
-                                              textAlign: TextAlign.center,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .headlineSmall
-                                                  ?.copyWith(
-                                                    fontSize: 26,
-                                                    color: Colors.white
-                                                        .withOpacity(0.9),
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ] else ...[
-                                      AnimatedOpacity(
-                                        duration:
-                                            const Duration(milliseconds: 250),
-                                        opacity: _postOpacity,
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.stretch,
-                                          children: [
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 10.0),
-                                              child: Text(
-                                                'Transmitter',
-                                                textAlign: TextAlign.center,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .headlineSmall
-                                                    ?.copyWith(
-                                                      fontSize: 26,
-                                                      color: Colors.white
-                                                          .withOpacity(0.9),
-                                                    ),
-                                              ),
-                                            ),
-                                            SizedBox(
-                                              height: 90,
-                                              child: AnimatedBuilder(
-                                                animation: _animation,
-                                                builder: (context, child) {
-                                                  return Transform.scale(
-                                                    scale: 1 +
-                                                        (_animation.value *
-                                                            0.03),
-                                                    child: Container(
-                                                      decoration: BoxDecoration(
-                                                        color:
-                                                            Colors.transparent,
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(10),
-                                                        border: Border.all(
-                                                          color: Colors
-                                                              .transparent,
-                                                          width: 2,
-                                                        ),
-                                                      ),
-                                                      alignment:
-                                                          Alignment.center,
-                                                      child: Text(
-                                                        _selectedConveyor!,
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .displayLarge,
-                                                      ),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                            ),
-                                            const SizedBox(height: 24),
-                                            Center(
-                                              child: (_isCurrentTeamActive &&
-                                                      !(_swipeRightDone &&
-                                                          _swipeLeftDone))
-                                                  ? Dismissible(
-                                                      key: ValueKey(_swipeStep),
-                                                      direction: _swipeSteps[
-                                                              _swipeStep]
-                                                          .direction,
-                                                      onDismissed: (direction) {
-                                                        setState(() {
-                                                          if (_swipeStep == 0 &&
-                                                              direction ==
-                                                                  DismissDirection
-                                                                      .startToEnd) {
-                                                            _swipeRightDone =
-                                                                true;
-                                                            _swipeStep = 1;
-                                                          } else if (_swipeStep ==
-                                                                  1 &&
-                                                              direction ==
-                                                                  DismissDirection
-                                                                      .endToStart) {
-                                                            _swipeLeftDone =
-                                                                true;
-                                                          }
-                                                        });
-                                                      },
-                                                      child: Container(
-                                                        width: double.infinity,
-                                                        height: 120,
-                                                        margin: const EdgeInsets
-                                                            .symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 0),
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .symmetric(
-                                                                horizontal: 24,
-                                                                vertical: 20),
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: cardBackground,
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(16),
-                                                          border: Border.all(
-                                                            color: cardBorder,
-                                                            width: 2,
-                                                          ),
-                                                        ),
-                                                        child: Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            if (_swipeStep == 1)
-                                                              const Icon(
-                                                                  Icons
-                                                                      .arrow_back,
-                                                                  color: Colors
-                                                                      .red,
-                                                                  size: 32),
-                                                            if (_swipeStep == 1)
-                                                              const SizedBox(
-                                                                  width: 12),
-                                                            Flexible(
-                                                              child: Text(
-                                                                _swipeSteps[
-                                                                        _swipeStep]
-                                                                    .text,
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                                maxLines: 2,
-                                                                style:
-                                                                    TextStyle(
-                                                                  color: _swipeSteps[
-                                                                          _swipeStep]
-                                                                      .color,
-                                                                  fontSize: 18,
-                                                                  height: 1.2,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            if (_swipeStep == 0)
-                                                              const SizedBox(
-                                                                  width: 12),
-                                                            if (_swipeStep == 0)
-                                                              const Icon(
-                                                                  Icons
-                                                                      .arrow_forward,
-                                                                  color: Colors
-                                                                      .green,
-                                                                  size: 32),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    )
-                                                  : (!_isCurrentTeamActive)
-                                                      ? Container(
-                                                          width:
-                                                              double.infinity,
-                                                          height: 120,
-                                                          margin:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      16,
-                                                                  vertical: 0),
-                                                          padding:
-                                                              const EdgeInsets
-                                                                  .symmetric(
-                                                                  horizontal:
-                                                                      24,
-                                                                  vertical: 20),
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color:
-                                                                cardBackground,
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        16),
-                                                            border: Border.all(
-                                                              color: cardBorder,
-                                                              width: 2,
-                                                            ),
-                                                          ),
-                                                          child: Center(
-                                                            child: Text(
-                                                              'Waiting for the active team to continue...',
-                                                              textAlign:
-                                                                  TextAlign
-                                                                      .center,
-                                                              style: TextStyle(
-                                                                color: teamColor
-                                                                    .text,
-                                                                fontSize: 18,
-                                                                height: 1.2,
-                                                              ),
-                                                              maxLines: 2,
-                                                              overflow:
-                                                                  TextOverflow
-                                                                      .ellipsis,
-                                                            ),
-                                                          ),
-                                                        )
-                                                      : const SizedBox.shrink(),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 75, 10, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Fixed transmitter section - always at top of content area
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10.0),
+                              child: Text(
+                                'Transmitter',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .headlineSmall
+                                    ?.copyWith(
+                                      fontSize: 26,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
                               ),
                             ),
-                          );
-                        },
+                            SizedBox(
+                              height: 90,
+                              child: AnimatedBuilder(
+                                animation: _animation,
+                                builder: (context, child) {
+                                  return Transform.scale(
+                                    scale: 1 + (_animation.value * 0.03),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: _isTransitioning
+                                            ? Colors.transparent
+                                            : Color.alphaBlend(
+                                                teamColor.border
+                                                    .withOpacity(0.3),
+                                                Theme.of(context)
+                                                    .scaffoldBackgroundColor,
+                                              ),
+                                        borderRadius: BorderRadius.circular(
+                                            _isTransitioning ? 10 : 12),
+                                        border: Border.all(
+                                          color: _isTransitioning
+                                              ? Colors.transparent
+                                              : Color.alphaBlend(
+                                                  teamColor.border
+                                                      .withOpacity(1),
+                                                  Theme.of(context)
+                                                      .scaffoldBackgroundColor,
+                                                ),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        _selectedConveyor!,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .displayLarge,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Flexible content area for the rest
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (!_isTransitioning) ...[
+                                    FadeTransition(
+                                      opacity: _preOpacity,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          // Swap Button
+                                          Center(
+                                            child: IconButton(
+                                              onPressed: _isCurrentTeamActive
+                                                  ? _switchRoles
+                                                  : null,
+                                              icon: Icon(
+                                                Icons.swap_vert,
+                                                size: 48,
+                                                color: _isCurrentTeamActive
+                                                    ? teamColor.border
+                                                        .withOpacity(0.95)
+                                                    : teamColor.border
+                                                        .withOpacity(0.4),
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 24),
+                                          // Receiver card with title beneath
+                                          SizedBox(
+                                            height: 90,
+                                            child: AnimatedBuilder(
+                                              animation: _animation,
+                                              builder: (context, child) {
+                                                return Transform.scale(
+                                                  scale: 1.0 +
+                                                      (_animation.value * 0.03),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Color.alphaBlend(
+                                                        teamColor.border
+                                                            .withOpacity(0.3),
+                                                        Theme.of(context)
+                                                            .scaffoldBackgroundColor,
+                                                      ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              12),
+                                                      border: Border.all(
+                                                        color: Color.alphaBlend(
+                                                          teamColor.border
+                                                              .withOpacity(1),
+                                                          Theme.of(context)
+                                                              .scaffoldBackgroundColor,
+                                                        ),
+                                                        width: 2,
+                                                      ),
+                                                    ),
+                                                    alignment: Alignment.center,
+                                                    child: Text(
+                                                      _selectedGuesser!,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .displayLarge,
+                                                    ),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Receiver',
+                                            textAlign: TextAlign.center,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headlineSmall
+                                                ?.copyWith(
+                                                  fontSize: 26,
+                                                  color: Colors.white
+                                                      .withOpacity(0.9),
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ] else ...[
+                                    AnimatedOpacity(
+                                      duration:
+                                          const Duration(milliseconds: 250),
+                                      opacity: _postOpacity,
+                                      child: Center(
+                                        child: (_isCurrentTeamActive &&
+                                                !(_swipeRightDone &&
+                                                    _swipeLeftDone))
+                                            ? Dismissible(
+                                                key: ValueKey(_swipeStep),
+                                                direction:
+                                                    _swipeSteps[_swipeStep]
+                                                        .direction,
+                                                onDismissed: (direction) {
+                                                  setState(() {
+                                                    if (_swipeStep == 0 &&
+                                                        direction ==
+                                                            DismissDirection
+                                                                .startToEnd) {
+                                                      _swipeRightDone = true;
+                                                      _swipeStep = 1;
+                                                    } else if (_swipeStep ==
+                                                            1 &&
+                                                        direction ==
+                                                            DismissDirection
+                                                                .endToStart) {
+                                                      _swipeLeftDone = true;
+                                                    }
+                                                  });
+                                                },
+                                                child: Container(
+                                                  width: double.infinity,
+                                                  height: 120,
+                                                  margin: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 0),
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal: 24,
+                                                      vertical: 20),
+                                                  decoration: BoxDecoration(
+                                                    color: cardBackground,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            16),
+                                                    border: Border.all(
+                                                      color: cardBorder,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      if (_swipeStep == 1)
+                                                        const Icon(
+                                                            Icons.arrow_back,
+                                                            color: Colors.red,
+                                                            size: 32),
+                                                      if (_swipeStep == 1)
+                                                        const SizedBox(
+                                                            width: 12),
+                                                      Flexible(
+                                                        child: Text(
+                                                          _swipeSteps[
+                                                                  _swipeStep]
+                                                              .text,
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          maxLines: 2,
+                                                          style: TextStyle(
+                                                            color: _swipeSteps[
+                                                                    _swipeStep]
+                                                                .color,
+                                                            fontSize: 18,
+                                                            height: 1.2,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      if (_swipeStep == 0)
+                                                        const SizedBox(
+                                                            width: 12),
+                                                      if (_swipeStep == 0)
+                                                        const Icon(
+                                                            Icons.arrow_forward,
+                                                            color: Colors.green,
+                                                            size: 32),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )
+                                            : (!_isCurrentTeamActive)
+                                                ? Container(
+                                                    width: double.infinity,
+                                                    height: 120,
+                                                    margin: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 0),
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 24,
+                                                        vertical: 20),
+                                                    decoration: BoxDecoration(
+                                                      color: cardBackground,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              16),
+                                                      border: Border.all(
+                                                        color: cardBorder,
+                                                        width: 2,
+                                                      ),
+                                                    ),
+                                                    child: Center(
+                                                      child: Text(
+                                                        'Waiting for the active team to continue...',
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        style: TextStyle(
+                                                          color: teamColor.text,
+                                                          fontSize: 18,
+                                                          height: 1.2,
+                                                        ),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                      ),
+                                                    ),
+                                                  )
+                                                : const SizedBox.shrink(),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),

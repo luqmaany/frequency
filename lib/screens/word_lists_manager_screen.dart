@@ -1,238 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/word_lists.dart';
 import '../models/category.dart';
-import '../data/category_registry.dart';
-
-// TODO: Move to a separate providers file later
-final wordsProvider = StateNotifierProvider<WordsNotifier, List<Word>>((ref) {
-  return WordsNotifier();
-});
-
-class WordsNotifier extends StateNotifier<List<Word>> {
-  WordsNotifier() : super([]) {
-    _initializeWords();
-  }
-
-  void _initializeWords() {
-    // Add all words to state
-    final allWords = [
-      ...WordLists.people.map((word) => Word(text: word, categoryId: 'person')),
-      ...WordLists.actions
-          .map((word) => Word(text: word, categoryId: 'action')),
-      ...WordLists.locations
-          .map((word) => Word(text: word, categoryId: 'world')),
-      ...WordLists.random.map((word) => Word(text: word, categoryId: 'random')),
-    ];
-
-    // Remove duplicates by keeping the first occurrence of each word
-    final uniqueWords = <String, Word>{};
-    for (final word in allWords) {
-      if (!uniqueWords.containsKey(word.text)) {
-        uniqueWords[word.text] = word;
-      } else {
-        // If duplicate found, merge the counts (though they should be 0 initially)
-        final existing = uniqueWords[word.text]!;
-        uniqueWords[word.text] = Word(
-          text: existing.text,
-          categoryId: existing.categoryId,
-          stats: WordStats(
-            appearanceCount:
-                existing.stats.appearanceCount + word.stats.appearanceCount,
-            skipCount: existing.stats.skipCount + word.stats.skipCount,
-            guessedCount: existing.stats.guessedCount + word.stats.guessedCount,
-          ),
-        );
-      }
-    }
-
-    state = uniqueWords.values.toList();
-  }
-
-  void addWord(Word word) {
-    // Check if word already exists to prevent duplicates
-    final existingWord = state.where((w) => w.text == word.text).firstOrNull;
-    if (existingWord != null) {
-      // Update the existing word instead of adding a duplicate
-      state = state.map((w) {
-        if (w.text == word.text) {
-          return Word(
-            text: w.text,
-            categoryId: word.categoryId, // Use the new category if different
-            stats: WordStats(
-              appearanceCount: w.stats.appearanceCount,
-              skipCount: w.stats.skipCount,
-              guessedCount: w.stats.guessedCount,
-            ),
-          );
-        }
-        return w;
-      }).toList();
-    } else {
-      state = [...state, word];
-    }
-  }
-
-  void deleteWord(Word word) {
-    state = state.where((w) => w.text != word.text).toList();
-  }
-
-  void resetAppearanceCounts() {
-    state = state
-        .map((word) => Word(
-              text: word.text,
-              categoryId: word.categoryId,
-              stats: WordStats(
-                appearanceCount: 0,
-                skipCount: word.stats.skipCount,
-                guessedCount: word.stats.guessedCount,
-              ),
-            ))
-        .toList();
-  }
-
-  void resetSkipCounts() {
-    state = state
-        .map((word) => Word(
-              text: word.text,
-              categoryId: word.categoryId,
-              stats: WordStats(
-                appearanceCount: word.stats.appearanceCount,
-                skipCount: 0,
-                guessedCount: word.stats.guessedCount,
-              ),
-            ))
-        .toList();
-  }
-
-  void resetGuessedCounts() {
-    state = state
-        .map((word) => Word(
-              text: word.text,
-              categoryId: word.categoryId,
-              stats: WordStats(
-                appearanceCount: word.stats.appearanceCount,
-                skipCount: word.stats.skipCount,
-                guessedCount: 0,
-              ),
-            ))
-        .toList();
-  }
-
-  void resetAllCounts() {
-    state = state
-        .map((word) => Word(
-              text: word.text,
-              categoryId: word.categoryId,
-              stats: const WordStats(
-                appearanceCount: 0,
-                skipCount: 0,
-                guessedCount: 0,
-              ),
-            ))
-        .toList();
-  }
-
-  void incrementWordSkip(String wordText) {
-    state = state.map((word) {
-      if (word.text == wordText) {
-        return Word(
-          text: word.text,
-          categoryId: word.categoryId,
-          stats: WordStats(
-            appearanceCount: word.stats.appearanceCount,
-            skipCount: word.stats.skipCount + 1,
-            guessedCount: word.stats.guessedCount,
-          ),
-        );
-      }
-      return word;
-    }).toList();
-  }
-
-  void incrementWordAppearance(String wordText) {
-    state = state.map((word) {
-      if (word.text == wordText) {
-        return Word(
-          text: word.text,
-          categoryId: word.categoryId,
-          stats: WordStats(
-            appearanceCount: word.stats.appearanceCount + 1,
-            skipCount: word.stats.skipCount,
-            guessedCount: word.stats.guessedCount,
-          ),
-        );
-      }
-      return word;
-    }).toList();
-  }
-
-  void incrementWordGuessed(String wordText) {
-    state = state.map((word) {
-      if (word.text == wordText) {
-        return Word(
-          text: word.text,
-          categoryId: word.categoryId,
-          stats: WordStats(
-            appearanceCount: word.stats.appearanceCount,
-            skipCount: word.stats.skipCount,
-            guessedCount: word.stats.guessedCount + 1,
-          ),
-        );
-      }
-      return word;
-    }).toList();
-  }
-
-  void purgeLowFrequencyWords(int threshold) {
-    state =
-        state.where((word) => word.stats.appearanceCount >= threshold).toList();
-  }
-
-  void updateWords(List<Word> updatedWords) {
-    state = updatedWords;
-  }
-
-  List<Word> getWordsSortedBySkipCount() {
-    final sortedWords = List<Word>.from(state);
-    sortedWords.sort((a, b) => b.stats.skipCount.compareTo(a.stats.skipCount));
-    return sortedWords;
-  }
-
-  List<Word> getWordsSortedByAppearanceCount() {
-    final sortedWords = List<Word>.from(state);
-    sortedWords.sort(
-        (a, b) => b.stats.appearanceCount.compareTo(a.stats.appearanceCount));
-    return sortedWords;
-  }
-
-  List<Word> getWordsSortedByGuessedCount() {
-    final sortedWords = List<Word>.from(state);
-    sortedWords
-        .sort((a, b) => b.stats.guessedCount.compareTo(a.stats.guessedCount));
-    return sortedWords;
-  }
-
-  List<Word> getWordsSortedByDifficulty() {
-    final sortedWords = List<Word>.from(state);
-    sortedWords.sort((a, b) {
-      // Calculate difficulty score: skip rate (skips / total appearances)
-      final aTotalAppearances = a.stats.appearanceCount;
-      final bTotalAppearances = b.stats.appearanceCount;
-
-      if (aTotalAppearances == 0 && bTotalAppearances == 0) return 0;
-      if (aTotalAppearances == 0) return -1;
-      if (bTotalAppearances == 0) return 1;
-
-      final aSkipRate = a.stats.skipCount / aTotalAppearances;
-      final bSkipRate = b.stats.skipCount / bTotalAppearances;
-
-      return bSkipRate
-          .compareTo(aSkipRate); // Higher skip rate = more difficult
-    });
-    return sortedWords;
-  }
-}
+import '../providers/category_provider.dart';
 
 class WordListsManagerScreen extends ConsumerStatefulWidget {
   const WordListsManagerScreen({super.key});
@@ -251,12 +20,17 @@ class _WordListsManagerScreenState
 
   @override
   Widget build(BuildContext context) {
-    final words = ref.watch(wordsProvider);
+    final categories = ref.watch(categoryProvider);
+    final allCategories = categories.values.toList();
+
+    // Get words from the selected category
+    final selectedCategory = categories[_selectedCategory];
+    final words = selectedCategory?.words ?? [];
+
     final filteredWords = words.where((word) {
-      final matchesCategory = word.categoryId == _selectedCategory;
       final matchesSearch =
           word.text.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
+      return matchesSearch;
     }).toList();
 
     // Apply sorting
@@ -313,118 +87,50 @@ class _WordListsManagerScreenState
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Word Lists Manager'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            tooltip: 'Word Management Options',
-            onSelected: (value) {
-              switch (value) {
-                case 'purge':
-                  _showPurgeDialog(context);
-                  break;
-                case 'reset_appearances':
-                  _showResetAppearanceDialog(context);
-                  break;
-                case 'reset_skips':
-                  _showResetSkipDialog(context);
-                  break;
-                case 'reset_guessed':
-                  _showResetGuessedDialog(context);
-                  break;
-                case 'reset_all':
-                  _showResetAllDialog(context);
-                  break;
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'purge',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_sweep),
-                    SizedBox(width: 8),
-                    Text('Purge Low Frequency Words'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'reset_appearances',
-                child: Row(
-                  children: [
-                    Icon(Icons.refresh),
-                    SizedBox(width: 8),
-                    Text('Reset Appearance Counts'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'reset_skips',
-                child: Row(
-                  children: [
-                    Icon(Icons.skip_next),
-                    SizedBox(width: 8),
-                    Text('Reset Skip Counts'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'reset_guessed',
-                child: Row(
-                  children: [
-                    Icon(Icons.check_circle),
-                    SizedBox(width: 8),
-                    Text('Reset Guessed Counts'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'reset_all',
-                child: Row(
-                  children: [
-                    Icon(Icons.clear_all),
-                    SizedBox(width: 8),
-                    Text('Reset All Counts'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               children: [
-                // Category selector
-                SegmentedButton<String>(
-                  showSelectedIcon: false,
-                  segments: const [
-                    ButtonSegment(
-                      value: 'person',
-                      label: Text('Person'),
+                const SizedBox(height: 48),
+                Center(
+                  child: Text(
+                    'Categories',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
-                    ButtonSegment(
-                      value: 'action',
-                      label: Text('Action'),
-                    ),
-                    ButtonSegment(
-                      value: 'world',
-                      label: Text('World'),
-                    ),
-                    ButtonSegment(
-                      value: 'random',
-                      label: Text('Random'),
-                    ),
-                  ],
-                  selected: {_selectedCategory},
-                  onSelectionChanged: (Set<String> selected) {
-                    setState(() {
-                      _selectedCategory = selected.first;
-                    });
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Category selector - dynamic dropdown
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    labelText: 'Category',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category),
+                  ),
+                  items: allCategories.map((category) {
+                    return DropdownMenuItem(
+                      value: category.id,
+                      child: Row(
+                        children: [
+                          Icon(category.icon, color: category.color, size: 20),
+                          const SizedBox(width: 8),
+                          Text(category.displayName),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedCategory = value;
+                      });
+                    }
                   },
                 ),
                 const SizedBox(height: 16),
@@ -442,31 +148,54 @@ class _WordListsManagerScreenState
                   },
                 ),
                 const SizedBox(height: 16),
-                // Sort dropdown
-                DropdownButtonFormField<String>(
-                  value: _sortBy,
-                  decoration: const InputDecoration(
-                    labelText: 'Sort by',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'name', child: Text('Name')),
-                    DropdownMenuItem(
-                        value: 'appearances', child: Text('Most Appeared')),
-                    DropdownMenuItem(
-                        value: 'guessed', child: Text('Most Guessed')),
-                    DropdownMenuItem(
-                        value: 'skips', child: Text('Most Skipped')),
-                    DropdownMenuItem(
-                        value: 'difficulty', child: Text('Most Difficult')),
+                // Controls row - Sort dropdown and Actions
+                Row(
+                  children: [
+                    // Sort dropdown
+                    Expanded(
+                      flex: 2,
+                      child: DropdownButtonFormField<String>(
+                        value: _sortBy,
+                        decoration: const InputDecoration(
+                          labelText: 'Sort by',
+                          border: OutlineInputBorder(),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'name', child: Text('Name')),
+                          DropdownMenuItem(
+                              value: 'appearances',
+                              child: Text('Most Appeared')),
+                          DropdownMenuItem(
+                              value: 'guessed', child: Text('Most Guessed')),
+                          DropdownMenuItem(
+                              value: 'skips', child: Text('Most Skipped')),
+                          DropdownMenuItem(
+                              value: 'difficulty',
+                              child: Text('Most Difficult')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              _sortBy = value;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Actions button
+                    Expanded(
+                      flex: 1,
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.more_vert),
+                        label: const Text('Actions'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        onPressed: () => _showActionsBottomSheet(context),
+                      ),
+                    ),
                   ],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        _sortBy = value;
-                      });
-                    }
-                  },
                 ),
               ],
             ),
@@ -501,6 +230,9 @@ class _WordListsManagerScreenState
 
   void _showAddWordDialog(BuildContext context) {
     final textController = TextEditingController();
+    final categories = ref.read(categoryProvider);
+    final allCategories = categories.values.toList();
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -541,10 +273,16 @@ class _WordListsManagerScreenState
                   labelText: 'Category',
                   border: OutlineInputBorder(),
                 ),
-                items: CategoryRegistry.getFreeCategories().map((category) {
+                items: allCategories.map((category) {
                   return DropdownMenuItem(
                     value: category.id,
-                    child: Text(category.displayName),
+                    child: Row(
+                      children: [
+                        Icon(category.icon, color: category.color, size: 20),
+                        const SizedBox(width: 8),
+                        Text(category.displayName),
+                      ],
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -569,7 +307,7 @@ class _WordListsManagerScreenState
                     child: FilledButton(
                       onPressed: () {
                         if (textController.text.isNotEmpty) {
-                          ref.read(wordsProvider.notifier).addWord(
+                          ref.read(categoryProvider.notifier).addWord(
                                 Word(
                                   text: textController.text,
                                   categoryId: _selectedCategory,
@@ -630,7 +368,7 @@ class _WordListsManagerScreenState
                   Expanded(
                     child: FilledButton(
                       onPressed: () {
-                        ref.read(wordsProvider.notifier).deleteWord(word);
+                        ref.read(categoryProvider.notifier).deleteWord(word);
                         Navigator.pop(context);
                       },
                       child: const Text('Delete'),
@@ -698,8 +436,9 @@ class _WordListsManagerScreenState
                         final threshold =
                             int.tryParse(thresholdController.text) ?? 3;
                         ref
-                            .read(wordsProvider.notifier)
-                            .purgeLowFrequencyWords(threshold);
+                            .read(categoryProvider.notifier)
+                            .purgeLowFrequencyWords(
+                                _selectedCategory, threshold);
                         Navigator.pop(context);
                       },
                       child: const Text('Purge'),
@@ -756,8 +495,8 @@ class _WordListsManagerScreenState
                     child: FilledButton(
                       onPressed: () {
                         ref
-                            .read(wordsProvider.notifier)
-                            .resetAppearanceCounts();
+                            .read(categoryProvider.notifier)
+                            .resetAppearanceCounts(_selectedCategory);
                         Navigator.pop(context);
                       },
                       child: const Text('Reset'),
@@ -813,7 +552,9 @@ class _WordListsManagerScreenState
                   Expanded(
                     child: FilledButton(
                       onPressed: () {
-                        ref.read(wordsProvider.notifier).resetSkipCounts();
+                        ref
+                            .read(categoryProvider.notifier)
+                            .resetSkipCounts(_selectedCategory);
                         Navigator.pop(context);
                       },
                       child: const Text('Reset'),
@@ -869,7 +610,9 @@ class _WordListsManagerScreenState
                   Expanded(
                     child: FilledButton(
                       onPressed: () {
-                        ref.read(wordsProvider.notifier).resetGuessedCounts();
+                        ref
+                            .read(categoryProvider.notifier)
+                            .resetGuessedCounts(_selectedCategory);
                         Navigator.pop(context);
                       },
                       child: const Text('Reset'),
@@ -925,7 +668,9 @@ class _WordListsManagerScreenState
                   Expanded(
                     child: FilledButton(
                       onPressed: () {
-                        ref.read(wordsProvider.notifier).resetAllCounts();
+                        ref
+                            .read(categoryProvider.notifier)
+                            .resetAllCounts(_selectedCategory);
                         Navigator.pop(context);
                       },
                       child: const Text('Reset'),
@@ -937,6 +682,84 @@ class _WordListsManagerScreenState
           ),
         ),
       ),
+    );
+  }
+
+  void _showActionsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Word Management Actions',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            _buildActionTile(
+              'Purge Low Frequency Words',
+              Icons.delete_sweep,
+              Colors.orange,
+              () {
+                Navigator.pop(context);
+                _showPurgeDialog(context);
+              },
+            ),
+            _buildActionTile(
+              'Reset Appearance Counts',
+              Icons.refresh,
+              Colors.blue,
+              () {
+                Navigator.pop(context);
+                _showResetAppearanceDialog(context);
+              },
+            ),
+            _buildActionTile(
+              'Reset Skip Counts',
+              Icons.skip_next,
+              Colors.purple,
+              () {
+                Navigator.pop(context);
+                _showResetSkipDialog(context);
+              },
+            ),
+            _buildActionTile(
+              'Reset Guessed Counts',
+              Icons.check_circle,
+              Colors.green,
+              () {
+                Navigator.pop(context);
+                _showResetGuessedDialog(context);
+              },
+            ),
+            _buildActionTile(
+              'Reset All Counts',
+              Icons.clear_all,
+              Colors.red,
+              () {
+                Navigator.pop(context);
+                _showResetAllDialog(context);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionTile(
+      String title, IconData icon, Color color, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(title),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
     );
   }
 
