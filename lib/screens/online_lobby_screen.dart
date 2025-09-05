@@ -69,7 +69,6 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
           MaterialPageRoute(
             builder: (context) => OnlineTeamLobbyScreen(
               sessionId: code,
-              teamName: myTeam['teamName'] ?? 'Team',
               player1Name: (myTeam['players'] as List?)?[0] ?? 'Player 1',
               player2Name: (myTeam['players'] as List?)?[1] ?? 'Player 2',
             ),
@@ -81,7 +80,6 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
           MaterialPageRoute(
             builder: (context) => OnlineTeamLobbyScreen(
               sessionId: code,
-              teamName: '', // Empty - user will set this
               player1Name: '', // Empty - user will set this
               player2Name: '', // Empty - user will set this
             ),
@@ -175,7 +173,6 @@ class _OnlineLobbyScreenState extends ConsumerState<OnlineLobbyScreen> {
         MaterialPageRoute(
           builder: (context) => OnlineTeamLobbyScreen(
             sessionId: newCode,
-            teamName: '', // Empty - user will set this
             player1Name: '', // Empty - user will set this
             player2Name: '', // Empty - user will set this
           ),

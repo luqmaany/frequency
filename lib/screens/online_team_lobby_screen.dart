@@ -11,13 +11,11 @@ import '../widgets/parallel_pulse_waves_background.dart';
 // Prevents color changes from unready-ing other teams and enforces unique colors
 class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
   final String sessionId;
-  final String teamName;
   final String player1Name;
   final String player2Name;
   const OnlineTeamLobbyScreen(
       {Key? key,
       required this.sessionId,
-      required this.teamName,
       required this.player1Name,
       required this.player2Name})
       : super(key: key);
@@ -29,43 +27,24 @@ class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
 
 class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     with TickerProviderStateMixin {
-  late TextEditingController _teamNameController;
   late TextEditingController _player1Controller;
   late TextEditingController _player2Controller;
+  late TextEditingController _myPlayerNameController; // For split mode
   int? _selectedColorIndex;
   bool _ready = false;
   final bool _updating = false;
   late Future<String> _deviceIdFuture;
   late AnimationController _animationController;
+
+  // Team mode state
+  String _teamMode = 'couch'; // 'couch' or 'remote'
   @override
   void initState() {
     super.initState();
 
     // Generate random names for testing if the provided names are empty
-    String teamName = widget.teamName;
     String player1Name = widget.player1Name;
     String player2Name = widget.player2Name;
-
-    if (teamName.isEmpty) {
-      final randomNames = [
-        'Thunder',
-        'Lightning',
-        'Storm',
-        'Blaze',
-        'Phoenix',
-        'Dragon',
-        'Eagle',
-        'Lion',
-        'Tiger',
-        'Wolf',
-        'Shark',
-        'Bear',
-        'Fox',
-        'Hawk',
-        'Falcon'
-      ];
-      teamName = randomNames[DateTime.now().millisecond % randomNames.length];
-    }
 
     if (player1Name.isEmpty) {
       final randomNames = [
@@ -111,9 +90,10 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
           randomNames[(DateTime.now().millisecond + 1) % randomNames.length];
     }
 
-    _teamNameController = TextEditingController(text: teamName);
     _player1Controller = TextEditingController(text: player1Name);
     _player2Controller = TextEditingController(text: player2Name);
+    _myPlayerNameController = TextEditingController(
+        text: player1Name); // Default to first player name for split mode
     _selectedColorIndex = null;
     _deviceIdFuture = StorageService.getDeviceId();
 
@@ -130,9 +110,9 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
   @override
   void dispose() {
-    _teamNameController.dispose();
     _player1Controller.dispose();
     _player2Controller.dispose();
+    _myPlayerNameController.dispose();
     _animationController.dispose();
     super.dispose();
   }
@@ -164,10 +144,15 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     }
   }
 
-  bool get _canPickColor =>
-      _teamNameController.text.trim().isNotEmpty &&
-      _player1Controller.text.trim().isNotEmpty &&
-      _player2Controller.text.trim().isNotEmpty;
+  bool get _canPickColor {
+    if (_teamMode == 'couch') {
+      return _player1Controller.text.trim().isNotEmpty &&
+          _player2Controller.text.trim().isNotEmpty;
+    } else {
+      // Remote mode: only need own player name
+      return _myPlayerNameController.text.trim().isNotEmpty;
+    }
+  }
 
   // Helper to get the current team's color index from Firestore
   Future<int?> _getMyTeamColorIndex(List teams) async {
@@ -184,16 +169,34 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
   // Helper to build team data with device ID
   Future<Map<String, dynamic>> _getMyTeamDataWithDeviceId() async {
     final deviceId = await _deviceIdFuture;
-    return {
-      'teamName': _teamNameController.text.trim(),
-      'colorIndex': _selectedColorIndex,
-      'ready': true,
-      'deviceId': deviceId, // Add device ID to team data
-      'players': [
-        _player1Controller.text.trim(),
-        _player2Controller.text.trim(),
-      ],
-    };
+    final teamName = _selectedColorIndex != null
+        ? teamColors[_selectedColorIndex!].name
+        : 'Team';
+
+    if (_teamMode == 'couch') {
+      // Couch mode: existing logic
+      return {
+        'teamName': teamName,
+        'colorIndex': _selectedColorIndex,
+        'ready': true,
+        'teamMode': 'couch',
+        'deviceId': deviceId,
+        'players': [
+          _player1Controller.text.trim(),
+          _player2Controller.text.trim(),
+        ],
+      };
+    } else {
+      // Remote mode: single player per device
+      return {
+        'teamName': teamName,
+        'colorIndex': _selectedColorIndex,
+        'ready': true,
+        'teamMode': 'remote',
+        'deviceId': deviceId,
+        'playerName': _myPlayerNameController.text.trim(),
+      };
+    }
   }
 
   // Add or update team in Firestore
@@ -376,87 +379,204 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                   ),
                                   // Team Setup Section
                                   const SizedBox(height: 10),
-                                  const SizedBox(height: 16),
-                                  SizedBox(
-                                    height: 45,
-                                    child: TextField(
-                                      controller: _teamNameController,
-                                      textAlign: TextAlign.center,
-                                      decoration: InputDecoration(
-                                        labelText: 'Team Name',
-                                        border: const OutlineInputBorder(),
-                                        filled: true,
-                                        fillColor: Theme.of(context)
-                                            .scaffoldBackgroundColor,
-                                        floatingLabelAlignment:
-                                            FloatingLabelAlignment.center,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 12, vertical: 8),
+
+                                  // Team Mode Selector
+                                  Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surface
+                                          .withOpacity(0.8),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outline
+                                            .withOpacity(0.3),
                                       ),
-                                      onChanged: (value) {
-                                        _onNameChanged();
-                                      },
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          'Team Mode',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        SegmentedButton<String>(
+                                          segments: const [
+                                            ButtonSegment(
+                                              value: 'couch',
+                                              label: Text('Couch Team'),
+                                              icon: Icon(Icons.devices),
+                                            ),
+                                            ButtonSegment(
+                                              value: 'remote',
+                                              label: Text('Remote Team'),
+                                              icon: Icon(Icons.group_outlined),
+                                            ),
+                                          ],
+                                          selected: {_teamMode},
+                                          onSelectionChanged:
+                                              (Set<String> selection) {
+                                            setState(() {
+                                              _teamMode = selection.first;
+                                              // Reset ready state when changing modes
+                                              if (_ready) {
+                                                _removeTeamFromFirestore();
+                                                _ready = false;
+                                              }
+                                            });
+                                          },
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          _teamMode == 'couch'
+                                              ? '2 players on this device'
+                                              : '1 player per device (2 devices total)',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.7),
+                                              ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: SizedBox(
-                                          height: 45,
-                                          child: TextField(
-                                            controller: _player1Controller,
-                                            textAlign: TextAlign.center,
-                                            decoration: InputDecoration(
-                                              labelText: 'Player 1',
-                                              border:
-                                                  const OutlineInputBorder(),
-                                              filled: true,
-                                              fillColor: Theme.of(context)
-                                                  .scaffoldBackgroundColor,
-                                              floatingLabelAlignment:
-                                                  FloatingLabelAlignment.center,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 8),
+                                  const SizedBox(height: 16),
+                                  // Player input fields - different layout based on mode
+                                  if (_teamMode == 'couch') ...[
+                                    // Couch mode: two player fields side by side
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 45,
+                                            child: TextField(
+                                              controller: _player1Controller,
+                                              textAlign: TextAlign.center,
+                                              decoration: InputDecoration(
+                                                labelText: 'Player 1',
+                                                border:
+                                                    const OutlineInputBorder(),
+                                                filled: true,
+                                                fillColor: Theme.of(context)
+                                                    .scaffoldBackgroundColor,
+                                                floatingLabelAlignment:
+                                                    FloatingLabelAlignment
+                                                        .center,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 8),
+                                              ),
+                                              onChanged: (value) {
+                                                _onNameChanged();
+                                              },
                                             ),
-                                            onChanged: (value) {
-                                              _onNameChanged();
-                                            },
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: SizedBox(
-                                          height: 45,
-                                          child: TextField(
-                                            controller: _player2Controller,
-                                            textAlign: TextAlign.center,
-                                            decoration: InputDecoration(
-                                              labelText: 'Player 2',
-                                              border:
-                                                  const OutlineInputBorder(),
-                                              filled: true,
-                                              fillColor: Theme.of(context)
-                                                  .scaffoldBackgroundColor,
-                                              floatingLabelAlignment:
-                                                  FloatingLabelAlignment.center,
-                                              contentPadding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal: 12,
-                                                      vertical: 8),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 45,
+                                            child: TextField(
+                                              controller: _player2Controller,
+                                              textAlign: TextAlign.center,
+                                              decoration: InputDecoration(
+                                                labelText: 'Player 2',
+                                                border:
+                                                    const OutlineInputBorder(),
+                                                filled: true,
+                                                fillColor: Theme.of(context)
+                                                    .scaffoldBackgroundColor,
+                                                floatingLabelAlignment:
+                                                    FloatingLabelAlignment
+                                                        .center,
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 12,
+                                                        vertical: 8),
+                                              ),
+                                              onChanged: (value) {
+                                                _onNameChanged();
+                                              },
                                             ),
-                                            onChanged: (value) {
-                                              _onNameChanged();
-                                            },
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                  ] else ...[
+                                    // Remote mode: single player field
+                                    SizedBox(
+                                      height: 45,
+                                      child: TextField(
+                                        controller: _myPlayerNameController,
+                                        textAlign: TextAlign.center,
+                                        decoration: InputDecoration(
+                                          labelText: 'Your Name',
+                                          border: const OutlineInputBorder(),
+                                          filled: true,
+                                          fillColor: Theme.of(context)
+                                              .scaffoldBackgroundColor,
+                                          floatingLabelAlignment:
+                                              FloatingLabelAlignment.center,
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 12, vertical: 8),
+                                        ),
+                                        onChanged: (value) {
+                                          _onNameChanged();
+                                        },
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceVariant
+                                            .withOpacity(0.5),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.info_outline,
+                                            size: 16,
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              'A teammate will join this team from another device',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .bodySmall
+                                                  ?.copyWith(
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                   ListView.builder(
                                     shrinkWrap: true,
                                     physics:
@@ -473,27 +593,74 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                         orElse: () => null,
                                       );
                                       final colorTaken = teamForColor != null;
-                                      final takenByOther = colorTaken &&
-                                          (teamForColor['deviceId'] !=
-                                              deviceId);
+                                      bool takenByOther = false;
+                                      bool canJoinSplitTeam = false;
+
+                                      if (colorTaken) {
+                                        if (teamForColor['teamMode'] ==
+                                            'remote') {
+                                          final devices =
+                                              (teamForColor['devices']
+                                                      as List?) ??
+                                                  [];
+                                          final deviceInTeam = devices.any(
+                                              (d) => d['deviceId'] == deviceId);
+                                          takenByOther = !deviceInTeam &&
+                                              devices.length >= 2;
+                                          canJoinSplitTeam = !deviceInTeam &&
+                                              devices.length == 1 &&
+                                              _teamMode == 'remote';
+                                        } else {
+                                          // Couch team
+                                          takenByOther =
+                                              teamForColor['deviceId'] !=
+                                                  deviceId;
+                                        }
+                                      }
+
                                       final teamIsReady = colorTaken &&
                                           (teamForColor['ready'] == true);
                                       String infoText = '';
+                                      String statusText = '';
+
                                       if (colorTaken) {
                                         final tName = (teamForColor['teamName']
                                                     as String?)
                                                 ?.trim() ??
                                             '';
-                                        final players =
-                                            (teamForColor['players'] as List?)
-                                                    ?.whereType<String>()
-                                                    .toList() ??
-                                                [];
-                                        infoText = tName.isNotEmpty
-                                            ? tName
-                                            : (players.length == 2
-                                                ? '${players[0]} & ${players[1]}'
-                                                : players.join(' & '));
+
+                                        if (teamForColor['teamMode'] ==
+                                            'remote') {
+                                          final devices =
+                                              (teamForColor['devices']
+                                                      as List?) ??
+                                                  [];
+                                          if (devices.length == 1) {
+                                            final firstPlayer = devices[0]
+                                                ['playerName'] as String;
+                                            infoText =
+                                                firstPlayer; // Will be handled by RichText
+                                            statusText = '';
+                                          } else if (devices.length == 2) {
+                                            final players = devices
+                                                .map((d) => d['playerName'])
+                                                .toList();
+                                            infoText =
+                                                '${players[0]} & ${players[1]}';
+                                            statusText = '';
+                                          }
+                                        } else {
+                                          // Couch team
+                                          final players =
+                                              (teamForColor['players'] as List?)
+                                                      ?.whereType<String>()
+                                                      .toList() ??
+                                                  [];
+                                          infoText = players.length == 2
+                                              ? '${players[0]} & ${players[1]}'
+                                              : players.join(' & ');
+                                          statusText = '';
+                                        }
                                       }
                                       return Padding(
                                         padding: const EdgeInsets.symmetric(
@@ -503,7 +670,9 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                               BorderRadius.circular(12),
                                           splashColor: Colors.transparent,
                                           highlightColor: Colors.transparent,
-                                          onTap: (takenByOther || _updating)
+                                          onTap: ((takenByOther &&
+                                                      !canJoinSplitTeam) ||
+                                                  _updating)
                                               ? null
                                               : () async {
                                                   // Unfocus any active text field
@@ -611,6 +780,15 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                                               color:
                                                                   Colors.green,
                                                               size: 22),
+                                                        ] else if (canJoinSplitTeam) ...[
+                                                          const SizedBox(
+                                                              width: 8),
+                                                          Icon(
+                                                            Icons.person_add,
+                                                            color:
+                                                                Colors.orange,
+                                                            size: 22,
+                                                          ),
                                                         ],
                                                       ],
                                                     ),
@@ -618,20 +796,90 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                                         infoText
                                                             .isNotEmpty) ...[
                                                       const SizedBox(height: 4),
-                                                      Text(
-                                                        infoText,
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        style: TextStyle(
-                                                          fontSize: 15,
-                                                          color: Colors.white,
-                                                          fontWeight:
-                                                              FontWeight.w500,
+                                                      // Handle remote team single player with mixed formatting
+                                                      if (teamForColor[
+                                                                  'teamMode'] ==
+                                                              'remote' &&
+                                                          (teamForColor['devices']
+                                                                      as List?)
+                                                                  ?.length ==
+                                                              1)
+                                                        RichText(
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          maxLines: 1,
+                                                          text: TextSpan(
+                                                            children: [
+                                                              TextSpan(
+                                                                text: (teamForColor[
+                                                                            'devices']
+                                                                        as List)[0]
+                                                                    [
+                                                                    'playerName'] as String,
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 15,
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                ),
+                                                              ),
+                                                              TextSpan(
+                                                                text:
+                                                                    ' - waiting for teammate',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontSize: 15,
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .w400,
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        )
+                                                      else
+                                                        Text(
+                                                          infoText,
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: TextStyle(
+                                                            fontSize: 15,
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          maxLines: 1,
                                                         ),
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                        maxLines: 2,
-                                                      ),
+                                                      if (statusText
+                                                          .isNotEmpty) ...[
+                                                        const SizedBox(
+                                                            height: 2),
+                                                        Text(
+                                                          statusText,
+                                                          textAlign:
+                                                              TextAlign.center,
+                                                          style: TextStyle(
+                                                            fontSize: 13,
+                                                            color: Colors.white
+                                                                .withOpacity(
+                                                                    0.8),
+                                                            fontWeight:
+                                                                FontWeight.w400,
+                                                          ),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          maxLines: 1,
+                                                        ),
+                                                      ],
                                                     ],
                                                   ],
                                                 ),
@@ -687,9 +935,6 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                       onPressed: (!_ready &&
                                               _canPickColor &&
                                               _selectedColorIndex != null &&
-                                              _teamNameController.text
-                                                  .trim()
-                                                  .isNotEmpty &&
                                               !_updating)
                                           ? _onReadyPressed
                                           : null,
