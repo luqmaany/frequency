@@ -1,4 +1,4 @@
-# List of your phone IPs
+s # List of your phone IPs
 $deviceIps = @(
     "192.168.0.84",   # Phone 1
     "192.168.0.213",  # Phone 2

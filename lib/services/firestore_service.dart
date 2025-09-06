@@ -672,6 +672,8 @@ class FirestoreService {
     int? desiredColor,
     String deviceId,
   ) async {
+    print(
+        '🔍 _handleRemoteTeamUpsert: desiredColor=$desiredColor, deviceId=$deviceId');
     if (desiredColor == null) {
       throw Exception('colorIndex is required for remote teams');
     }
@@ -682,7 +684,10 @@ class FirestoreService {
       orElse: () => <String, dynamic>{},
     );
 
+    print(
+        '🔍 existingTeam search result: ${existingTeam.isNotEmpty ? "found existing team" : "no existing team"}');
     if (existingTeam.isNotEmpty) {
+      print('🔍 joining existing remote team');
       // Joining an existing remote team
       final devices =
           List<Map<String, dynamic>>.from(existingTeam['devices'] ?? []);
@@ -720,10 +725,13 @@ class FirestoreService {
       teams[teamIndex]['ready'] =
           devices.every((d) => d['isReady'] == true) && devices.length == 2;
     } else {
+      print('🔍 creating new remote team');
       // Creating a new remote team
-      // First check if any other team (couch or remote) already uses this color
-      final colorConflict = teams.any((t) => t['colorIndex'] == desiredColor);
-      if (colorConflict) {
+      // Check if any couch team already uses this color
+      final couchTeamConflict = teams.any(
+          (t) => t['colorIndex'] == desiredColor && t['teamMode'] != 'remote');
+      print('🔍 couchTeamConflict check: $couchTeamConflict');
+      if (couchTeamConflict) {
         throw Exception('Color already taken');
       }
 
