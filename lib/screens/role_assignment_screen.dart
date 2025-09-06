@@ -134,19 +134,32 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     });
   }
 
-  // Check if current device is the active team
+  // Check if current device is part of the active team (supports both couch and remote modes)
   bool get _isCurrentTeamActive {
     // For local games (no sessionId), always allow interaction
     if (widget.sessionId == null) {
       return true;
     }
-    // For online games, check if current device matches the active team
-    // If no deviceId is stored for the current team, allow all teams to interact (fallback)
-    if (widget.currentTeamDeviceId == null) {
-      return true;
+
+    // For online games, check team mode
+    if (widget.onlineTeam == null || _currentDeviceId == null) {
+      return false;
     }
-    return _currentDeviceId != null &&
-        _currentDeviceId == widget.currentTeamDeviceId;
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: check if current device matches the team's device
+      return _currentDeviceId == widget.currentTeamDeviceId;
+    } else if (teamMode == 'remote') {
+      // Remote mode: check if current device is in the team's devices array
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        return devices.any((device) => device['deviceId'] == _currentDeviceId);
+      }
+    }
+
+    return false;
   }
 
   @override

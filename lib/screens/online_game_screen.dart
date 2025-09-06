@@ -117,8 +117,135 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
     final deviceId = await StorageService.getDeviceId();
     setState(() {
       _currentDeviceId = deviceId;
-      _isCurrentTeamActive = _currentDeviceId == widget.currentTeamDeviceId;
+      _isCurrentTeamActive = _isPartOfCurrentTeam();
     });
+  }
+
+  // Check if current device is part of the current team (supports both couch and remote modes)
+  bool _isPartOfCurrentTeam() {
+    if (_currentDeviceId == null || widget.onlineTeam == null) {
+      return false;
+    }
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: check if current device matches the team's device
+      return _currentDeviceId == widget.currentTeamDeviceId;
+    } else if (teamMode == 'remote') {
+      // Remote mode: check if current device is in the team's devices array
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        return devices.any((device) => device['deviceId'] == _currentDeviceId);
+      }
+    }
+
+    return false;
+  }
+
+  // Check if current device can interact with cards (only conveyor in remote mode)
+  bool get _canInteractWithCards {
+    if (!_isCurrentTeamActive) return false;
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: device can always interact when it's their turn
+      return true;
+    } else if (teamMode == 'remote') {
+      // Remote mode: only the conveyor device can interact
+      final conveyorName =
+          widget.sessionData?['gameState']?['currentConveyor'] as String?;
+      if (conveyorName == null) return false;
+
+      // Find which device belongs to the conveyor
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        for (final device in devices) {
+          if (device['deviceId'] == _currentDeviceId &&
+              device['playerName'] == conveyorName) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Get current player's name from device (for remote teams)
+  String? _getMyPlayerName() {
+    if (_currentDeviceId == null || widget.onlineTeam == null) return null;
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+    if (teamMode != 'remote') return null;
+
+    final devices = widget.onlineTeam!['devices'] as List?;
+    if (devices != null) {
+      for (final device in devices) {
+        if (device['deviceId'] == _currentDeviceId) {
+          return device['playerName'] as String?;
+        }
+      }
+    }
+    return null;
+  }
+
+  // Build role indicator for remote teams
+  Widget _buildRoleIndicator() {
+    final myPlayerName = _getMyPlayerName();
+    final conveyorName =
+        widget.sessionData?['gameState']?['currentConveyor'] as String?;
+    final guesserName =
+        widget.sessionData?['gameState']?['currentGuesser'] as String?;
+
+    if (myPlayerName == null || conveyorName == null || guesserName == null) {
+      return const SizedBox.shrink();
+    }
+
+    final isConveyor = myPlayerName == conveyorName;
+    final roleText =
+        isConveyor ? 'You are the CONVEYOR' : 'You are the GUESSER';
+    final roleSubtext = isConveyor ? 'Swipe the cards' : 'Watch and guess';
+    final roleColor = isConveyor ? Colors.green : Colors.blue;
+    final roleIcon = isConveyor ? Icons.swipe : Icons.visibility;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: roleColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: roleColor, width: 2),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(roleIcon, color: roleColor, size: 20),
+          const SizedBox(width: 8),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                roleText,
+                style: TextStyle(
+                  color: roleColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              Text(
+                roleSubtext,
+                style: TextStyle(
+                  color: roleColor.withOpacity(0.8),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   // Get game configuration for both local and online games
@@ -270,6 +397,10 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                     isTiebreaker: _isTiebreakerActive,
                   ),
 
+                  // Role indicator for remote teams
+                  if (widget.onlineTeam!['teamMode'] == 'remote')
+                    _buildRoleIndicator(),
+
                   // Word cards with swiping mechanics
                   Expanded(
                     child: GameCards(
@@ -278,17 +409,17 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                       skipsLeft: skipsLeft,
                       showBlankCards: _isCountdownActive,
                       onWordGuessed: (word) {
-                        if (!_isCountdownActive) {
+                        if (!_isCountdownActive && _canInteractWithCards) {
                           handleWordGuessed(word);
                         }
                       },
                       onWordSkipped: (word) {
-                        if (!_isCountdownActive) {
+                        if (!_isCountdownActive && _canInteractWithCards) {
                           handleWordSkipped(word);
                         }
                       },
                       onLoadNewWord: (index) {
-                        if (!_isCountdownActive) {
+                        if (!_isCountdownActive && _canInteractWithCards) {
                           // Load new word for the specific card that was swiped
                           loadNewWord(index);
                         }
