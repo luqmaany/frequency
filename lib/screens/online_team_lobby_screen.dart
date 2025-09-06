@@ -1045,17 +1045,12 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                               ),
                               // Pinned bottom section with ready button
                               Container(
-                                padding: const EdgeInsets.all(24.0),
+                                padding: const EdgeInsets.only(
+                                    left: 24.0, right: 24.0, bottom: 24.0),
                                 decoration: BoxDecoration(
-                                  color:
-                                      Theme.of(context).scaffoldBackgroundColor,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.1),
-                                      blurRadius: 4,
-                                      offset: const Offset(0, -2),
-                                    ),
-                                  ],
+                                  color: Theme.of(context)
+                                      .scaffoldBackgroundColor
+                                      .withOpacity(0),
                                 ),
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
