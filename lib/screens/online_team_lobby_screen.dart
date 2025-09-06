@@ -376,7 +376,7 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                     const SizedBox(width: 16),
                     Expanded(
                       child: TeamColorButton(
-                        text: 'Unready & Switch',
+                        text: 'Switch',
                         icon: Icons.swap_horiz,
                         color: TeamColor('Orange', const Color(0xFFFFE0B2),
                             const Color(0xFFFF9800), Colors.white),
@@ -404,6 +404,97 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     );
   }
 
+  void _showUnreadyModeDialog(String newMode) {
+    // Warning styling similar to QuitDialog
+    const Color warningFill = Color(0xFF2B1A0C);
+    const Color warningBorder = Color(0xFFFF9800);
+    const Color warningText = Color(0xFFFFE0B2);
+
+    final String modeLabel = newMode == 'remote' ? 'Remote Team' : 'Couch Team';
+    final String currentModeLabel =
+        _teamMode == 'remote' ? 'Remote Team' : 'Couch Team';
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 560),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: warningFill,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: warningBorder, width: 2),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.warning_amber_rounded,
+                    color: warningBorder, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Change Team Mode?',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: warningText,
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'You are currently ready as $currentModeLabel. To switch to $modeLabel, you need to unready first.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyLarge
+                      ?.copyWith(color: warningText.withOpacity(0.9)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    Expanded(
+                      child: TeamColorButton(
+                        text: 'Cancel',
+                        icon: Icons.close,
+                        color: TeamColor(
+                            'Orange', warningText, warningBorder, Colors.white),
+                        variant: TeamButtonVariant.outline,
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: TeamColorButton(
+                        text: 'Switch',
+                        icon: Icons.swap_horiz,
+                        color: TeamColor(
+                            'Orange', warningText, warningBorder, Colors.white),
+                        variant: TeamButtonVariant.filled,
+                        onPressed: () async {
+                          Navigator.of(context).pop();
+                          // Unready and change team mode
+                          await _removeTeamFromFirestore();
+                          setState(() {
+                            _ready = false;
+                            _teamMode = newMode;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildTeamModeButton(
       String value, String label, IconData icon, Color color) {
     final isSelected = _teamMode == value;
@@ -414,6 +505,12 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
 
     return GestureDetector(
       onTap: () {
+        // If already ready and trying to change team mode, show unready dialog
+        if (_ready && _teamMode != value) {
+          _showUnreadyModeDialog(value);
+          return;
+        }
+
         setState(() {
           _teamMode = value;
           // Reset ready state when changing modes
@@ -537,508 +634,539 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                           return Column(
                             children: [
                               Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: SingleChildScrollView(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
-                                      children: [
-                                        Center(
-                                          child: Column(
-                                            children: [
-                                              const Text('Session Code',
-                                                  style: TextStyle(
-                                                      fontSize: 16,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    // Unfocus any active text field when tapping outside
+                                    FocusScope.of(context).unfocus();
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(24.0),
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          Center(
+                                            child: Column(
+                                              children: [
+                                                const Text('Session Code',
+                                                    style: TextStyle(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500)),
+                                                SelectableText(
+                                                  widget.sessionId,
+                                                  style: const TextStyle(
+                                                      fontSize: 28,
                                                       fontWeight:
-                                                          FontWeight.w500)),
-                                              SelectableText(
-                                                widget.sessionId,
-                                                style: const TextStyle(
-                                                    fontSize: 28,
-                                                    fontWeight: FontWeight.bold,
-                                                    letterSpacing: 2),
-                                              ),
-                                            ],
+                                                          FontWeight.bold,
+                                                      letterSpacing: 2),
+                                                ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        // Team Setup Section
-                                        const SizedBox(height: 10),
+                                          // Team Setup Section
+                                          const SizedBox(height: 10),
 
-                                        // Team Mode Selector
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: _buildTeamModeButton(
-                                                'remote',
-                                                'Remote Team',
-                                                Icons.group_outlined,
-                                                Colors.blue,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: _buildTeamModeButton(
-                                                'couch',
-                                                'Couch Team',
-                                                Icons.devices,
-                                                Colors.green,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 16),
-                                        // Player input fields - different layout based on mode
-                                        if (_teamMode == 'couch') ...[
-                                          // Couch mode: two player fields side by side
+                                          // Team Mode Selector
                                           Row(
                                             children: [
                                               Expanded(
-                                                child: SizedBox(
-                                                  height: 45,
-                                                  child: TextField(
-                                                    controller:
-                                                        _player1Controller,
-                                                    textAlign: TextAlign.center,
-                                                    decoration: InputDecoration(
-                                                      labelText: 'Player 1',
-                                                      border:
-                                                          const OutlineInputBorder(),
-                                                      filled: true,
-                                                      fillColor: Theme.of(
-                                                              context)
-                                                          .scaffoldBackgroundColor,
-                                                      floatingLabelAlignment:
-                                                          FloatingLabelAlignment
-                                                              .center,
-                                                      contentPadding:
-                                                          const EdgeInsets
-                                                              .symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 8),
-                                                    ),
-                                                    onChanged: (value) {
-                                                      _onNameChanged();
-                                                    },
-                                                  ),
+                                                child: _buildTeamModeButton(
+                                                  'remote',
+                                                  'Remote Team',
+                                                  Icons.group_outlined,
+                                                  Colors.blue,
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
                                               Expanded(
-                                                child: SizedBox(
-                                                  height: 45,
-                                                  child: TextField(
-                                                    controller:
-                                                        _player2Controller,
-                                                    textAlign: TextAlign.center,
-                                                    decoration: InputDecoration(
-                                                      labelText: 'Player 2',
-                                                      border:
-                                                          const OutlineInputBorder(),
-                                                      filled: true,
-                                                      fillColor: Theme.of(
-                                                              context)
-                                                          .scaffoldBackgroundColor,
-                                                      floatingLabelAlignment:
-                                                          FloatingLabelAlignment
-                                                              .center,
-                                                      contentPadding:
-                                                          const EdgeInsets
-                                                              .symmetric(
-                                                              horizontal: 12,
-                                                              vertical: 8),
-                                                    ),
-                                                    onChanged: (value) {
-                                                      _onNameChanged();
-                                                    },
-                                                  ),
+                                                child: _buildTeamModeButton(
+                                                  'couch',
+                                                  'Couch Team',
+                                                  Icons.devices,
+                                                  Colors.green,
                                                 ),
                                               ),
                                             ],
                                           ),
-                                        ] else ...[
-                                          // Remote mode: single player field
-                                          SizedBox(
-                                            height: 45,
-                                            child: TextField(
-                                              controller:
-                                                  _myPlayerNameController,
-                                              textAlign: TextAlign.center,
-                                              decoration: InputDecoration(
-                                                labelText: 'Your Name',
-                                                border:
-                                                    const OutlineInputBorder(),
-                                                filled: true,
-                                                fillColor: Theme.of(context)
-                                                    .scaffoldBackgroundColor,
-                                                floatingLabelAlignment:
-                                                    FloatingLabelAlignment
-                                                        .center,
-                                                contentPadding:
-                                                    const EdgeInsets.symmetric(
-                                                        horizontal: 12,
-                                                        vertical: 8),
-                                              ),
-                                              onChanged: (value) {
-                                                _onNameChanged();
-                                              },
-                                            ),
-                                          ),
                                           const SizedBox(height: 16),
-                                        ],
-                                        ListView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          clipBehavior: Clip.none,
-                                          itemCount: teamColors.length,
-                                          itemBuilder: (context, i) {
-                                            final isSelected =
-                                                _selectedColorIndex == i;
-                                            final teamColor = teamColors[i];
-                                            // Find the team (if any) that owns this color
-                                            final teamForColor = teams
-                                                .cast<Map<String, dynamic>>()
-                                                .firstWhere(
-                                                  (team) =>
-                                                      team['colorIndex'] == i,
-                                                  orElse: () =>
-                                                      <String, dynamic>{},
-                                                );
-                                            final colorTaken =
-                                                teamForColor.isNotEmpty;
-                                            bool takenByOther = false;
-                                            bool canJoinSplitTeam = false;
+                                          // Player input fields - different layout based on mode
+                                          if (_teamMode == 'couch') ...[
+                                            // Couch mode: two player fields side by side
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: SizedBox(
+                                                    height: 45,
+                                                    child: TextField(
+                                                      controller:
+                                                          _player1Controller,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      decoration:
+                                                          InputDecoration(
+                                                        labelText: 'Player 1',
+                                                        border:
+                                                            const OutlineInputBorder(),
+                                                        filled: true,
+                                                        fillColor: Theme.of(
+                                                                context)
+                                                            .scaffoldBackgroundColor,
+                                                        floatingLabelAlignment:
+                                                            FloatingLabelAlignment
+                                                                .center,
+                                                        contentPadding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 12,
+                                                                vertical: 8),
+                                                      ),
+                                                      onChanged: (value) {
+                                                        _onNameChanged();
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: SizedBox(
+                                                    height: 45,
+                                                    child: TextField(
+                                                      controller:
+                                                          _player2Controller,
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      decoration:
+                                                          InputDecoration(
+                                                        labelText: 'Player 2',
+                                                        border:
+                                                            const OutlineInputBorder(),
+                                                        filled: true,
+                                                        fillColor: Theme.of(
+                                                                context)
+                                                            .scaffoldBackgroundColor,
+                                                        floatingLabelAlignment:
+                                                            FloatingLabelAlignment
+                                                                .center,
+                                                        contentPadding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 12,
+                                                                vertical: 8),
+                                                      ),
+                                                      onChanged: (value) {
+                                                        _onNameChanged();
+                                                      },
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 16),
+                                          ] else ...[
+                                            // Remote mode: single player field
+                                            SizedBox(
+                                              height: 45,
+                                              child: TextField(
+                                                controller:
+                                                    _myPlayerNameController,
+                                                textAlign: TextAlign.center,
+                                                decoration: InputDecoration(
+                                                  labelText: 'Your Name',
+                                                  border:
+                                                      const OutlineInputBorder(),
+                                                  filled: true,
+                                                  fillColor: Theme.of(context)
+                                                      .scaffoldBackgroundColor,
+                                                  floatingLabelAlignment:
+                                                      FloatingLabelAlignment
+                                                          .center,
+                                                  contentPadding:
+                                                      const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 12,
+                                                          vertical: 8),
+                                                ),
+                                                onChanged: (value) {
+                                                  _onNameChanged();
+                                                },
+                                              ),
+                                            ),
+                                            const SizedBox(height: 16),
+                                          ],
+                                          ListView.builder(
+                                            shrinkWrap: true,
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            clipBehavior: Clip.none,
+                                            itemCount: teamColors.length,
+                                            itemBuilder: (context, i) {
+                                              final isSelected =
+                                                  _selectedColorIndex == i;
+                                              final teamColor = teamColors[i];
+                                              // Find the team (if any) that owns this color
+                                              final teamForColor = teams
+                                                  .cast<Map<String, dynamic>>()
+                                                  .firstWhere(
+                                                    (team) =>
+                                                        team['colorIndex'] == i,
+                                                    orElse: () =>
+                                                        <String, dynamic>{},
+                                                  );
+                                              final colorTaken =
+                                                  teamForColor.isNotEmpty;
+                                              bool takenByOther = false;
+                                              bool canJoinSplitTeam = false;
 
-                                            if (colorTaken) {
-                                              if (teamForColor['teamMode'] ==
-                                                  'remote') {
-                                                final devices =
-                                                    (teamForColor['devices']
-                                                            as List?) ??
-                                                        [];
-                                                final deviceInTeam =
-                                                    devices.any((d) =>
-                                                        d['deviceId'] ==
-                                                        deviceId);
-                                                takenByOther = !deviceInTeam &&
-                                                    devices.length >= 2;
-                                                canJoinSplitTeam =
-                                                    !deviceInTeam &&
-                                                        devices.length == 1 &&
-                                                        _teamMode == 'remote';
-                                              } else {
-                                                // Couch team
-                                                takenByOther =
-                                                    teamForColor['deviceId'] !=
-                                                        deviceId;
+                                              if (colorTaken) {
+                                                if (teamForColor['teamMode'] ==
+                                                    'remote') {
+                                                  final devices =
+                                                      (teamForColor['devices']
+                                                              as List?) ??
+                                                          [];
+                                                  final deviceInTeam =
+                                                      devices.any((d) =>
+                                                          d['deviceId'] ==
+                                                          deviceId);
+                                                  takenByOther =
+                                                      !deviceInTeam &&
+                                                          devices.length >= 2;
+                                                  canJoinSplitTeam =
+                                                      !deviceInTeam &&
+                                                          devices.length == 1 &&
+                                                          _teamMode == 'remote';
+                                                } else {
+                                                  // Couch team
+                                                  takenByOther = teamForColor[
+                                                          'deviceId'] !=
+                                                      deviceId;
+                                                }
                                               }
-                                            }
 
-                                            final teamIsReady = colorTaken &&
-                                                (teamForColor['ready'] == true);
-                                            String infoText = '';
-                                            String statusText = '';
+                                              final teamIsReady = colorTaken &&
+                                                  (teamForColor['ready'] ==
+                                                      true);
+                                              String infoText = '';
+                                              String statusText = '';
 
-                                            if (colorTaken) {
-                                              if (teamForColor['teamMode'] ==
-                                                  'remote') {
-                                                final devices =
-                                                    (teamForColor['devices']
-                                                            as List?) ??
-                                                        [];
-                                                if (devices.length == 1) {
-                                                  final firstPlayer = devices[0]
-                                                      ['playerName'] as String;
-                                                  infoText =
-                                                      firstPlayer; // Will be handled by RichText
-                                                  statusText = '';
-                                                } else if (devices.length ==
-                                                    2) {
-                                                  final players = devices
-                                                      .map((d) =>
-                                                          d['playerName'])
-                                                      .toList();
-                                                  infoText =
-                                                      '${players[0]} & ${players[1]}';
+                                              if (colorTaken) {
+                                                if (teamForColor['teamMode'] ==
+                                                    'remote') {
+                                                  final devices =
+                                                      (teamForColor['devices']
+                                                              as List?) ??
+                                                          [];
+                                                  if (devices.length == 1) {
+                                                    final firstPlayer =
+                                                        devices[0]['playerName']
+                                                            as String;
+                                                    infoText =
+                                                        firstPlayer; // Will be handled by RichText
+                                                    statusText = '';
+                                                  } else if (devices.length ==
+                                                      2) {
+                                                    final players = devices
+                                                        .map((d) =>
+                                                            d['playerName'])
+                                                        .toList();
+                                                    infoText =
+                                                        '${players[0]} & ${players[1]}';
+                                                    statusText = '';
+                                                  }
+                                                } else {
+                                                  // Couch team
+                                                  final players = (teamForColor[
+                                                                  'players']
+                                                              as List?)
+                                                          ?.whereType<String>()
+                                                          .toList() ??
+                                                      [];
+                                                  infoText = players.length == 2
+                                                      ? '${players[0]} & ${players[1]}'
+                                                      : players.join(' & ');
                                                   statusText = '';
                                                 }
-                                              } else {
-                                                // Couch team
-                                                final players = (teamForColor[
-                                                            'players'] as List?)
-                                                        ?.whereType<String>()
-                                                        .toList() ??
-                                                    [];
-                                                infoText = players.length == 2
-                                                    ? '${players[0]} & ${players[1]}'
-                                                    : players.join(' & ');
-                                                statusText = '';
                                               }
-                                            }
-                                            return Padding(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                      vertical: 4),
-                                              child: InkWell(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                splashColor: Colors.transparent,
-                                                highlightColor:
-                                                    Colors.transparent,
-                                                onTap: ((takenByOther &&
-                                                            !canJoinSplitTeam) ||
-                                                        _updating)
-                                                    ? null
-                                                    : () async {
-                                                        // Unfocus any active text field
-                                                        FocusScope.of(context)
-                                                            .unfocus();
+                                              return Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 4),
+                                                child: InkWell(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  splashColor:
+                                                      Colors.transparent,
+                                                  highlightColor:
+                                                      Colors.transparent,
+                                                  onTap: ((takenByOther &&
+                                                              !canJoinSplitTeam) ||
+                                                          _updating)
+                                                      ? null
+                                                      : () async {
+                                                          // Unfocus any active text field
+                                                          FocusScope.of(context)
+                                                              .unfocus();
 
-                                                        // If already ready and trying to change color, show unready dialog
-                                                        if (_ready &&
-                                                            _selectedColorIndex !=
-                                                                i) {
-                                                          _showUnreadyDialog(i);
-                                                          return;
-                                                        }
+                                                          // If already ready and trying to change color, show unready dialog
+                                                          if (_ready &&
+                                                              _selectedColorIndex !=
+                                                                  i) {
+                                                            _showUnreadyDialog(
+                                                                i);
+                                                            return;
+                                                          }
 
-                                                        setState(() {
-                                                          _selectedColorIndex =
-                                                              i;
-                                                        });
-                                                        _animationController
-                                                            .forward(from: 0);
-                                                        if (_ready) {
-                                                          await _syncTeamToFirestore();
-                                                        } else {
-                                                          _onColorChanged();
-                                                        }
-                                                      },
-                                                child: AnimatedScale(
-                                                    scale:
-                                                        isSelected ? 1 : 0.98,
-                                                    duration: const Duration(
-                                                        milliseconds: 120),
-                                                    curve: Curves.easeOut,
-                                                    child: Container(
-                                                      clipBehavior: Clip.none,
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          vertical: 8,
-                                                          horizontal: 10),
-                                                      decoration: BoxDecoration(
-                                                        // Dark opaque background matching setup screen boxes
-                                                        color: Color.alphaBlend(
-                                                          teamColor.border
-                                                              .withOpacity(
-                                                                  isSelected
-                                                                      ? 0.85
-                                                                      : 0.6),
-                                                          Theme.of(context)
-                                                              .colorScheme
-                                                              .background,
+                                                          setState(() {
+                                                            _selectedColorIndex =
+                                                                i;
+                                                          });
+                                                          _animationController
+                                                              .forward(from: 0);
+                                                          if (_ready) {
+                                                            await _syncTeamToFirestore();
+                                                          } else {
+                                                            _onColorChanged();
+                                                          }
+                                                        },
+                                                  child: AnimatedScale(
+                                                      scale:
+                                                          isSelected ? 1 : 0.98,
+                                                      duration: const Duration(
+                                                          milliseconds: 120),
+                                                      curve: Curves.easeOut,
+                                                      child: Container(
+                                                        clipBehavior: Clip.none,
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                vertical: 8,
+                                                                horizontal: 10),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          // Dark opaque background matching setup screen boxes
+                                                          color:
+                                                              Color.alphaBlend(
+                                                            teamColor.border
+                                                                .withOpacity(
+                                                                    isSelected
+                                                                        ? 0.85
+                                                                        : 0.6),
+                                                            Theme.of(context)
+                                                                .colorScheme
+                                                                .background,
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                          border: Border.all(
+                                                            color: isSelected
+                                                                ? teamColor
+                                                                    .border
+                                                                : teamColor
+                                                                    .border
+                                                                    .withOpacity(
+                                                                        0.5),
+                                                            width: isSelected
+                                                                ? 3.0
+                                                                : 2.0,
+                                                          ),
+                                                          boxShadow: isSelected
+                                                              ? [
+                                                                  BoxShadow(
+                                                                    color: teamColor
+                                                                        .border
+                                                                        .withOpacity(
+                                                                            0.18),
+                                                                    blurRadius:
+                                                                        8,
+                                                                    offset:
+                                                                        const Offset(
+                                                                            0,
+                                                                            2),
+                                                                  ),
+                                                                ]
+                                                              : [],
                                                         ),
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(12),
-                                                        border: Border.all(
-                                                          color: isSelected
-                                                              ? teamColor.border
-                                                              : teamColor.border
-                                                                  .withOpacity(
-                                                                      0.5),
-                                                          width: isSelected
-                                                              ? 3.0
-                                                              : 2.0,
-                                                        ),
-                                                        boxShadow: isSelected
-                                                            ? [
-                                                                BoxShadow(
-                                                                  color: teamColor
-                                                                      .border
-                                                                      .withOpacity(
-                                                                          0.18),
-                                                                  blurRadius: 8,
-                                                                  offset:
-                                                                      const Offset(
-                                                                          0, 2),
+                                                        child: Column(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .center,
+                                                          crossAxisAlignment:
+                                                              CrossAxisAlignment
+                                                                  .center,
+                                                          children: [
+                                                            Row(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              crossAxisAlignment:
+                                                                  CrossAxisAlignment
+                                                                      .center, // ensure vertical centering
+                                                              children: [
+                                                                Icon(
+                                                                    Icons
+                                                                        .circle,
+                                                                    color: teamColor
+                                                                        .border,
+                                                                    size: 22),
+                                                                const SizedBox(
+                                                                    width: 8),
+                                                                Expanded(
+                                                                  child: Text(
+                                                                    teamColor
+                                                                        .name,
+                                                                    textAlign:
+                                                                        TextAlign
+                                                                            .center,
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w700,
+                                                                      fontSize:
+                                                                          18,
+                                                                      color: Colors
+                                                                          .white,
+                                                                    ),
+                                                                  ),
                                                                 ),
-                                                              ]
-                                                            : [],
-                                                      ),
-                                                      child: Column(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .center,
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .center,
-                                                        children: [
-                                                          Row(
-                                                            mainAxisAlignment:
-                                                                MainAxisAlignment
-                                                                    .center,
-                                                            crossAxisAlignment:
-                                                                CrossAxisAlignment
-                                                                    .center, // ensure vertical centering
-                                                            children: [
-                                                              Icon(Icons.circle,
-                                                                  color: teamColor
-                                                                      .border,
-                                                                  size: 22),
+                                                                if (teamIsReady) ...[
+                                                                  const SizedBox(
+                                                                      width: 8),
+                                                                  const Icon(
+                                                                      Icons
+                                                                          .check_circle,
+                                                                      color: Colors
+                                                                          .green,
+                                                                      size: 22),
+                                                                ] else if (canJoinSplitTeam) ...[
+                                                                  const SizedBox(
+                                                                      width: 8),
+                                                                  Icon(
+                                                                    Icons
+                                                                        .person_add,
+                                                                    color: Colors
+                                                                        .orange,
+                                                                    size: 22,
+                                                                  ),
+                                                                ],
+                                                              ],
+                                                            ),
+                                                            if (colorTaken &&
+                                                                infoText
+                                                                    .isNotEmpty) ...[
                                                               const SizedBox(
-                                                                  width: 8),
-                                                              Expanded(
-                                                                child: Text(
-                                                                  teamColor
-                                                                      .name,
+                                                                  height: 4),
+                                                              // Handle remote team single player with mixed formatting
+                                                              if (teamForColor[
+                                                                          'teamMode'] ==
+                                                                      'remote' &&
+                                                                  (teamForColor['devices']
+                                                                              as List?)
+                                                                          ?.length ==
+                                                                      1)
+                                                                RichText(
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .center,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                  maxLines: 1,
+                                                                  text:
+                                                                      TextSpan(
+                                                                    children: [
+                                                                      TextSpan(
+                                                                        text: (teamForColor['devices']
+                                                                                as List)[0]['playerName']
+                                                                            as String,
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              15,
+                                                                          color:
+                                                                              Colors.white,
+                                                                          fontWeight:
+                                                                              FontWeight.bold,
+                                                                        ),
+                                                                      ),
+                                                                      TextSpan(
+                                                                        text:
+                                                                            ' - waiting for teammate',
+                                                                        style:
+                                                                            TextStyle(
+                                                                          fontSize:
+                                                                              15,
+                                                                          color:
+                                                                              Colors.white,
+                                                                          fontWeight:
+                                                                              FontWeight.w400,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                )
+                                                              else
+                                                                Text(
+                                                                  infoText,
                                                                   textAlign:
                                                                       TextAlign
                                                                           .center,
                                                                   style:
                                                                       TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .w700,
                                                                     fontSize:
-                                                                        18,
+                                                                        15,
                                                                     color: Colors
                                                                         .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w600,
                                                                   ),
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                  maxLines: 1,
                                                                 ),
-                                                              ),
-                                                              if (teamIsReady) ...[
+                                                              if (statusText
+                                                                  .isNotEmpty) ...[
                                                                 const SizedBox(
-                                                                    width: 8),
-                                                                const Icon(
-                                                                    Icons
-                                                                        .check_circle,
+                                                                    height: 2),
+                                                                Text(
+                                                                  statusText,
+                                                                  textAlign:
+                                                                      TextAlign
+                                                                          .center,
+                                                                  style:
+                                                                      TextStyle(
+                                                                    fontSize:
+                                                                        13,
                                                                     color: Colors
-                                                                        .green,
-                                                                    size: 22),
-                                                              ] else if (canJoinSplitTeam) ...[
-                                                                const SizedBox(
-                                                                    width: 8),
-                                                                Icon(
-                                                                  Icons
-                                                                      .person_add,
-                                                                  color: Colors
-                                                                      .orange,
-                                                                  size: 22,
+                                                                        .white
+                                                                        .withOpacity(
+                                                                            0.8),
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w400,
+                                                                  ),
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .ellipsis,
+                                                                  maxLines: 1,
                                                                 ),
                                                               ],
                                                             ],
-                                                          ),
-                                                          if (colorTaken &&
-                                                              infoText
-                                                                  .isNotEmpty) ...[
-                                                            const SizedBox(
-                                                                height: 4),
-                                                            // Handle remote team single player with mixed formatting
-                                                            if (teamForColor[
-                                                                        'teamMode'] ==
-                                                                    'remote' &&
-                                                                (teamForColor['devices']
-                                                                            as List?)
-                                                                        ?.length ==
-                                                                    1)
-                                                              RichText(
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                                maxLines: 1,
-                                                                text: TextSpan(
-                                                                  children: [
-                                                                    TextSpan(
-                                                                      text: (teamForColor['devices']
-                                                                              as List)[0]['playerName']
-                                                                          as String,
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontSize:
-                                                                            15,
-                                                                        color: Colors
-                                                                            .white,
-                                                                        fontWeight:
-                                                                            FontWeight.bold,
-                                                                      ),
-                                                                    ),
-                                                                    TextSpan(
-                                                                      text:
-                                                                          ' - waiting for teammate',
-                                                                      style:
-                                                                          TextStyle(
-                                                                        fontSize:
-                                                                            15,
-                                                                        color: Colors
-                                                                            .white,
-                                                                        fontWeight:
-                                                                            FontWeight.w400,
-                                                                      ),
-                                                                    ),
-                                                                  ],
-                                                                ),
-                                                              )
-                                                            else
-                                                              Text(
-                                                                infoText,
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize: 15,
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w600,
-                                                                ),
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                                maxLines: 1,
-                                                              ),
-                                                            if (statusText
-                                                                .isNotEmpty) ...[
-                                                              const SizedBox(
-                                                                  height: 2),
-                                                              Text(
-                                                                statusText,
-                                                                textAlign:
-                                                                    TextAlign
-                                                                        .center,
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize: 13,
-                                                                  color: Colors
-                                                                      .white
-                                                                      .withOpacity(
-                                                                          0.8),
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w400,
-                                                                ),
-                                                                overflow:
-                                                                    TextOverflow
-                                                                        .ellipsis,
-                                                                maxLines: 1,
-                                                              ),
-                                                            ],
                                                           ],
-                                                        ],
-                                                      ),
-                                                    )),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                        const SizedBox(height: 24),
-                                      ],
+                                                        ),
+                                                      )),
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          const SizedBox(height: 24),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
