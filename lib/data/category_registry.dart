@@ -159,14 +159,22 @@ class CategoryRegistry {
   // Load dynamic categories from Firestore with local fallback cache
   static Future<void> loadDynamicCategories() async {
     try {
+      print('🔄 Loading categories from Firebase...');
       final remote = await CategoryService.fetchAllOnce();
+      print('✅ Successfully loaded ${remote.length} categories from Firebase');
+      for (final category in remote) {
+        print(
+            '  - ${category.id}: ${category.displayName} (${category.words.length} words)');
+      }
       _merge(remote);
       await StorageService.saveObject(_cacheKey, {
         'items': remote.map((c) => c.toMap()).toList(),
       });
     } catch (e) {
+      print('❌ Error loading categories from Firebase: $e');
       final cached = await StorageService.loadObject(_cacheKey);
       final items = (cached?['items'] as List?) ?? const [];
+      print('📱 Loading ${items.length} categories from cache...');
       final fromCache = items
           .map((m) => CategoryMap.fromMap(Map<String, dynamic>.from(m)))
           .toList();
