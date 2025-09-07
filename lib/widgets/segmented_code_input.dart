@@ -89,11 +89,12 @@ class _SegmentedCodeInputState extends State<SegmentedCodeInput> {
     final RegExp allowed = RegExp(widget.allowedPattern);
     if (filtered.isEmpty) {
       _controllers[index].text = '';
-      // Backspace on empty -> move to previous
+      // Backspace on empty -> move to previous and clear it
       if (index > 0) {
+        _controllers[index - 1].text = '';
         _focusNodes[index - 1].requestFocus();
         _controllers[index - 1].selection = TextSelection.fromPosition(
-          TextPosition(offset: _controllers[index - 1].text.length),
+          TextPosition(offset: 0),
         );
       }
       _notify();
@@ -174,26 +175,43 @@ class _SegmentedCodeInputState extends State<SegmentedCodeInput> {
                 border: Border.all(color: border, width: 1.5),
               ),
               alignment: Alignment.center,
-              child: TextField(
-                controller: _controllers[i],
-                focusNode: _focusNodes[i],
-                textAlign: TextAlign.center,
-                maxLength: 1,
-                style: style,
-                decoration: const InputDecoration(
-                  counterText: '',
-                  border: InputBorder.none,
-                  isCollapsed: true,
+              child: KeyboardListener(
+                focusNode: FocusNode(),
+                onKeyEvent: (event) {
+                  if (event is KeyDownEvent &&
+                      event.logicalKey == LogicalKeyboardKey.backspace &&
+                      _controllers[i].text.isEmpty &&
+                      i > 0) {
+                    // Backspace on empty field - move to previous and clear it
+                    _controllers[i - 1].text = '';
+                    _focusNodes[i - 1].requestFocus();
+                    _controllers[i - 1].selection = TextSelection.fromPosition(
+                      TextPosition(offset: 0),
+                    );
+                    _notify();
+                  }
+                },
+                child: TextField(
+                  controller: _controllers[i],
+                  focusNode: _focusNodes[i],
+                  textAlign: TextAlign.center,
+                  maxLength: 1,
+                  style: style,
+                  decoration: const InputDecoration(
+                    counterText: '',
+                    border: InputBorder.none,
+                    isCollapsed: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                        RegExp(widget.allowedPattern)),
+                    UpperCaseTextFormatter(),
+                  ],
+                  textInputAction: i == widget.length - 1
+                      ? TextInputAction.done
+                      : TextInputAction.next,
+                  onChanged: (v) => _handleInput(i, v),
                 ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(
-                      RegExp(widget.allowedPattern)),
-                  UpperCaseTextFormatter(),
-                ],
-                textInputAction: i == widget.length - 1
-                    ? TextInputAction.done
-                    : TextInputAction.next,
-                onChanged: (v) => _handleInput(i, v),
               ),
             );
           }),

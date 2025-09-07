@@ -420,7 +420,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                         const SizedBox(height: 24),
                         // Role-specific title
                         Text(
-                          isGuesser ? 'You are the GUESSER' : 'Spectator Mode',
+                          isGuesser ? 'You are the RECEIVER' : 'Spectator Mode',
                           style: Theme.of(context)
                               .textTheme
                               .headlineLarge

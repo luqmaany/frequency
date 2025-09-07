@@ -745,48 +745,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                                   ),
                                                 ),
                                               )
-                                            : (!_isCurrentTeamActive)
-                                                ? Container(
-                                                    width: double.infinity,
-                                                    height: 120,
-                                                    margin: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 16,
-                                                        vertical: 0),
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 24,
-                                                        vertical: 20),
-                                                    decoration: BoxDecoration(
-                                                      color: cardBackground,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              16),
-                                                      border: Border.all(
-                                                        color: cardBorder,
-                                                        width: 2,
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        _isCurrentTeamActive &&
-                                                                !_shouldShowSwipeTutorial
-                                                            ? 'Waiting for $_selectedConveyor to complete the tutorial...'
-                                                            : 'Waiting for the active team to continue...',
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        style: TextStyle(
-                                                          color: teamColor.text,
-                                                          fontSize: 18,
-                                                          height: 1.2,
-                                                        ),
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  )
-                                                : const SizedBox.shrink(),
+                                            : const SizedBox.shrink(),
                                       ),
                                     ),
                                   ],
@@ -847,8 +806,12 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         child: SizedBox(
                           width: double.infinity,
                           child: TeamColorButton(
-                            text: 'Start',
-                            icon: Icons.play_arrow,
+                            text: _shouldShowSwipeTutorial
+                                ? 'Start'
+                                : 'Waiting...',
+                            icon: _shouldShowSwipeTutorial
+                                ? Icons.play_arrow
+                                : Icons.hourglass_empty,
                             color: uiColors[1],
                             padding: const EdgeInsets.symmetric(
                                 vertical: 18, horizontal: 12),

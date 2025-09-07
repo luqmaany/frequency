@@ -7,6 +7,7 @@ import '../providers/session_providers.dart';
 import '../services/online_game_navigation_service.dart';
 import '../widgets/parallel_pulse_waves_background.dart';
 
+// TODO: Modularize this screen into widgets
 // Note: Color change logic updated to not interfere with ready/start game
 // Prevents color changes from unready-ing other teams and enforces unique colors
 class OnlineTeamLobbyScreen extends ConsumerStatefulWidget {
@@ -305,6 +306,28 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
     setState(() {
       _ready = true;
     });
+  }
+
+  // Check if all teams are complete (remote teams have 2 players, couch teams have 2 players)
+  bool _allTeamsAreComplete(List teams) {
+    for (final team in teams.cast<Map<String, dynamic>>()) {
+      final teamMode = team['teamMode'] as String? ?? 'couch';
+
+      if (teamMode == 'couch') {
+        // Couch teams should have 2 players
+        final players = team['players'] as List?;
+        if (players == null || players.length < 2) {
+          return false;
+        }
+      } else if (teamMode == 'remote') {
+        // Remote teams should have 2 devices
+        final devices = team['devices'] as List?;
+        if (devices == null || devices.length < 2) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   // Ensure all teams have deviceIds before starting the game
@@ -1188,7 +1211,8 @@ class _OnlineTeamLobbyScreenState extends ConsumerState<OnlineTeamLobbyScreen>
                                           child: CircularProgressIndicator())
                                     else if (_ready &&
                                         isHost &&
-                                        teams.length >= 2)
+                                        teams.length >= 2 &&
+                                        _allTeamsAreComplete(teams))
                                       TeamColorButton(
                                         text: 'Start Game',
                                         icon: Icons.play_arrow_rounded,
