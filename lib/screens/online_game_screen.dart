@@ -191,63 +191,6 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
     return null;
   }
 
-  // Build role indicator for remote teams
-  Widget _buildRoleIndicator() {
-    final myPlayerName = _getMyPlayerName();
-    final conveyorName =
-        widget.sessionData?['gameState']?['currentConveyor'] as String?;
-    final guesserName =
-        widget.sessionData?['gameState']?['currentGuesser'] as String?;
-
-    if (myPlayerName == null || conveyorName == null || guesserName == null) {
-      return const SizedBox.shrink();
-    }
-
-    final isConveyor = myPlayerName == conveyorName;
-    final roleText =
-        isConveyor ? 'You are the CONVEYOR' : 'You are the GUESSER';
-    final roleSubtext = isConveyor ? 'Swipe the cards' : 'Watch and guess';
-    final roleColor = isConveyor ? Colors.green : Colors.blue;
-    final roleIcon = isConveyor ? Icons.swipe : Icons.visibility;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: roleColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: roleColor, width: 2),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(roleIcon, color: roleColor, size: 20),
-          const SizedBox(width: 8),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                roleText,
-                style: TextStyle(
-                  color: roleColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-              Text(
-                roleSubtext,
-                style: TextStyle(
-                  color: roleColor.withOpacity(0.8),
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   // Get game configuration for both local and online games
   Map<String, dynamic> _getGameConfig() {
     // Online game: get configuration from session data
@@ -315,8 +258,8 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
       }
     });
 
-    // Show spectator screen for non-active teams in online games
-    if (!_isCurrentTeamActive) {
+    // Show spectator screen for non-active teams or guessers in remote mode
+    if (!_isCurrentTeamActive || !_canInteractWithCards) {
       return _buildSpectatorScreen();
     }
 
@@ -397,10 +340,6 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                     isTiebreaker: _isTiebreakerActive,
                   ),
 
-                  // Role indicator for remote teams
-                  if (widget.onlineTeam!['teamMode'] == 'remote')
-                    _buildRoleIndicator(),
-
                   // Word cards with swiping mechanics
                   Expanded(
                     child: GameCards(
@@ -445,6 +384,14 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   }
 
   Widget _buildSpectatorScreen() {
+    // Determine if this is a guesser or non-active team spectator
+    final isGuesser = _isCurrentTeamActive && !_canInteractWithCards;
+    final myPlayerName = _getMyPlayerName();
+    final conveyorName =
+        widget.sessionData?['gameState']?['currentConveyor'] as String?;
+    final guesserName =
+        widget.sessionData?['gameState']?['currentGuesser'] as String?;
+
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -462,21 +409,24 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Spacer(),
-                        // Spectator icon
+                        // Role-specific icon
                         Icon(
-                          Icons.visibility,
+                          isGuesser ? Icons.psychology : Icons.visibility,
                           size: constraints.maxWidth * 0.2, // Responsive size
-                          color: Theme.of(context).colorScheme.secondary,
+                          color: isGuesser
+                              ? Colors.blue
+                              : Theme.of(context).colorScheme.secondary,
                         ),
                         const SizedBox(height: 24),
-                        // Spectator mode title
+                        // Role-specific title
                         Text(
-                          'Spectator Mode',
+                          isGuesser ? 'You are the GUESSER' : 'Spectator Mode',
                           style: Theme.of(context)
                               .textTheme
                               .headlineLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: isGuesser ? Colors.blue : null,
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -513,14 +463,21 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Team info
-                        Text(
-                          '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                          textAlign: TextAlign.center,
-                        ),
+                        // Team and role info
+                        if (isGuesser) ...[
+                          Text(
+                            'Your teammate $conveyorName is conveying the words',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ] else ...[
+                          Text(
+                            '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                         const SizedBox(height: 8),
-                        // Removed round/turn display and info message for spectator mode
                         const Spacer(),
                       ],
                     ),

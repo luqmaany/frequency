@@ -181,6 +181,12 @@ class OnlineGameNavigationService {
     final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
     final teams = sessionData['teams'] as List? ?? [];
 
+    // Get current team data
+    Map<String, dynamic>? currentTeam;
+    if (teams.isNotEmpty && currentTeamIndex < teams.length) {
+      currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
+    }
+
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (context) => CategorySelectionScreen(
@@ -192,6 +198,7 @@ class OnlineGameNavigationService {
               : '',
           currentTeamDeviceId: currentTeamDeviceId,
           sessionId: sessionId,
+          onlineTeam: currentTeam,
         ),
       ),
     );

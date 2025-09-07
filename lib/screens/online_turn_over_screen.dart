@@ -77,6 +77,18 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
     });
   }
 
+  // Check if current device is the host
+  bool get _isHost {
+    if (_currentDeviceId == null || widget.sessionData == null) return false;
+    final hostId = widget.sessionData!['hostId'] as String?;
+    return _currentDeviceId == hostId;
+  }
+
+  // Check if current device can proceed (either active team or host)
+  bool get _canProceed {
+    return _isCurrentTeamActive || _isHost;
+  }
+
   TeamColor _getCurrentTeamColor() {
     if (widget.sessionData == null) return uiColors[0];
     final teams = widget.sessionData!['teams'] as List? ?? [];
@@ -119,8 +131,8 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   }
 
   void _confirmScore() {
-    if (_allTeamsConfirmed && _isCurrentTeamActive) {
-      // All teams confirmed and current team is active - advance to next turn
+    if (_allTeamsConfirmed && _canProceed) {
+      // All teams confirmed and current device can proceed (active team or host) - advance to next turn
       FirestoreService.fromTurnOver(
         widget.sessionId!,
         widget.teamIndex,
@@ -711,28 +723,28 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                       ],
                       TeamColorButton(
                         text: _allTeamsConfirmed
-                            ? (_isCurrentTeamActive ? 'Continue' : 'Waiting...')
+                            ? (_canProceed ? 'Continue' : 'Waiting...')
                             : _confirmedTeams.contains(widget.teamIndex)
                                 ? 'Confirmed ✓'
                                 : 'Confirm Score',
                         icon: _allTeamsConfirmed
-                            ? (_isCurrentTeamActive
+                            ? (_canProceed
                                 ? Icons.arrow_forward
                                 : Icons.hourglass_empty)
                             : _confirmedTeams.contains(widget.teamIndex)
                                 ? Icons.check_circle
                                 : Icons.check,
                         color: _allTeamsConfirmed
-                            ? (_isCurrentTeamActive
+                            ? (_canProceed
                                 ? uiColors[1]
                                 : _getCurrentTeamColor()) // Use team's own color when waiting
                             : _confirmedTeams.contains(widget.teamIndex)
                                 ? uiColors[1] // Green when confirmed
                                 : uiColors[0], // Blue when not confirmed
                         onPressed: _allTeamsConfirmed
-                            ? (_isCurrentTeamActive
+                            ? (_canProceed
                                 ? _confirmScore
-                                : null) // Only current team can continue
+                                : null) // Host or current team can continue
                             : _confirmedTeams.contains(widget.teamIndex)
                                 ? null // Disable only for this team when confirmed
                                 : _confirmScore,

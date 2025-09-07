@@ -134,6 +134,74 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     });
   }
 
+  // Check if current device should show the swipe tutorial (only conveyor)
+  bool get _shouldShowSwipeTutorial {
+    // For local games, always show if it's the active team
+    if (widget.sessionId == null) {
+      return _isCurrentTeamActive;
+    }
+
+    // For online games, only show to the conveyor's device
+    if (!_isCurrentTeamActive || _selectedConveyor == null) {
+      return false;
+    }
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: show tutorial (both players on same device)
+      return true;
+    } else if (teamMode == 'remote') {
+      // Remote mode: only show to the conveyor's device
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null && _currentDeviceId != null) {
+        for (final device in devices) {
+          if (device['deviceId'] == _currentDeviceId &&
+              device['playerName'] == _selectedConveyor) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Check if current user is the guesser (for navigation routing)
+  bool get _isCurrentUserGuesser {
+    // For local games, this doesn't apply (both players see game screen)
+    if (widget.sessionId == null) {
+      return false;
+    }
+
+    // For online games, check if current user is the guesser
+    if (!_isCurrentTeamActive ||
+        _selectedGuesser == null ||
+        _currentDeviceId == null) {
+      return false;
+    }
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: both players see game screen, so no guesser routing needed
+      return false;
+    } else if (teamMode == 'remote') {
+      // Remote mode: check if current device belongs to the guesser
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        for (final device in devices) {
+          if (device['deviceId'] == _currentDeviceId &&
+              device['playerName'] == _selectedGuesser) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
   // Check if current device is part of the active team (supports both couch and remote modes)
   bool get _isCurrentTeamActive {
     // For local games (no sessionId), always allow interaction
@@ -427,37 +495,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         ),
                       ),
                     ),
-                    // Show current team info for online games
-                    if (widget.sessionId != null &&
-                        widget.onlineTeam != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? teamColor.border.withOpacity(0.2)
-                              : teamColor.background.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: teamColor.border.withOpacity(0.5),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          _isCurrentTeamActive
-                              ? 'Your turn to assign roles'
-                              : '${widget.onlineTeam!['teamName'] ?? 'Team'}\'s turn',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                color: teamColor.text,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
                     // Fixed positioning content area to prevent transmitter movement
                     Expanded(
                       child: Padding(
@@ -618,7 +655,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                           const Duration(milliseconds: 250),
                                       opacity: _postOpacity,
                                       child: Center(
-                                        child: (_isCurrentTeamActive &&
+                                        child: (_shouldShowSwipeTutorial &&
                                                 !(_swipeRightDone &&
                                                     _swipeLeftDone))
                                             ? Dismissible(
@@ -732,7 +769,10 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                                     ),
                                                     child: Center(
                                                       child: Text(
-                                                        'Waiting for the active team to continue...',
+                                                        _isCurrentTeamActive &&
+                                                                !_shouldShowSwipeTutorial
+                                                            ? 'Waiting for $_selectedConveyor to complete the tutorial...'
+                                                            : 'Waiting for the active team to continue...',
                                                         textAlign:
                                                             TextAlign.center,
                                                         style: TextStyle(
@@ -777,16 +817,20 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                             ],
                             Expanded(
                               child: TeamColorButton(
-                                text: _isCurrentTeamActive
+                                text: _isCurrentTeamActive &&
+                                        _shouldShowSwipeTutorial
                                     ? 'Next'
-                                    : 'Waiting...',
+                                    : _isCurrentTeamActive
+                                        ? 'Waiting for conveyor...'
+                                        : 'Waiting...',
                                 icon: _isCurrentTeamActive
                                     ? Icons.arrow_forward
                                     : Icons.hourglass_empty,
                                 color: uiColors[1],
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 16, horizontal: 8),
-                                onPressed: _isCurrentTeamActive
+                                onPressed: _isCurrentTeamActive &&
+                                        _shouldShowSwipeTutorial
                                     ? () {
                                         _showTransitionScreen();
                                       }
@@ -808,8 +852,8 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                             color: uiColors[1],
                             padding: const EdgeInsets.symmetric(
                                 vertical: 18, horizontal: 12),
-                            onPressed: (_swipeRightDone && _swipeLeftDone) &&
-                                    _isCurrentTeamActive
+                            onPressed: _shouldShowSwipeTutorial &&
+                                    (_swipeRightDone && _swipeLeftDone)
                                 ? () async {
                                     if (widget.sessionId != null) {
                                       await FirestoreService.fromRoleAssignment(
