@@ -351,10 +351,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           letterSpacing: 2,
                           color: Colors.white,
                         );
-                        return Text(
-                          'FREQUENCY',
-                          textAlign: TextAlign.center,
-                          style: textStyle,
+                        return FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            'FREQUENCY',
+                            textAlign: TextAlign.center,
+                            style: textStyle,
+                            maxLines: 1,
+                            softWrap: false,
+                          ),
                         );
                       },
                     ),
