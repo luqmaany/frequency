@@ -343,7 +343,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final double width = constraints.maxWidth;
-                        final double computed = width * 0.16; // 16% of width
+                        final double computed = width * 0.15; // 16% of width
                         final double fontSize = computed.clamp(44.0, 96.0);
                         final textStyle = GoogleFonts.kanit(
                           fontSize: fontSize,
