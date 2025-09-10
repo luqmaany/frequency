@@ -522,38 +522,47 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                               child: AnimatedBuilder(
                                 animation: _animation,
                                 builder: (context, child) {
-                                  return Transform.scale(
-                                    scale: 1 + (_animation.value * 0.03),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: _isTransitioning
-                                            ? Colors.transparent
-                                            : Color.alphaBlend(
-                                                teamColor.border
-                                                    .withOpacity(0.3),
-                                                Theme.of(context)
-                                                    .scaffoldBackgroundColor,
-                                              ),
-                                        borderRadius: BorderRadius.circular(
-                                            _isTransitioning ? 10 : 12),
-                                        border: Border.all(
-                                          color: _isTransitioning
-                                              ? Colors.transparent
-                                              : Color.alphaBlend(
-                                                  teamColor.border
-                                                      .withOpacity(1),
-                                                  Theme.of(context)
-                                                      .scaffoldBackgroundColor,
-                                                ),
-                                          width: 2,
-                                        ),
+                                  return Align(
+                                    alignment: Alignment.center,
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 420,
+                                        minWidth: 260,
                                       ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        _selectedConveyor!,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .displayLarge,
+                                      child: Transform.scale(
+                                        scale: 1 + (_animation.value * 0.03),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: _isTransitioning
+                                                ? Colors.transparent
+                                                : Color.alphaBlend(
+                                                    teamColor.border
+                                                        .withOpacity(0.3),
+                                                    Theme.of(context)
+                                                        .scaffoldBackgroundColor,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                                _isTransitioning ? 10 : 12),
+                                            border: Border.all(
+                                              color: _isTransitioning
+                                                  ? Colors.transparent
+                                                  : Color.alphaBlend(
+                                                      teamColor.border
+                                                          .withOpacity(1),
+                                                      Theme.of(context)
+                                                          .scaffoldBackgroundColor,
+                                                    ),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            _selectedConveyor!,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .displayLarge,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   );
@@ -597,36 +606,54 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                             child: AnimatedBuilder(
                                               animation: _animation,
                                               builder: (context, child) {
-                                                return Transform.scale(
-                                                  scale: 1.0 +
-                                                      (_animation.value * 0.03),
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: Color.alphaBlend(
-                                                        teamColor.border
-                                                            .withOpacity(0.3),
-                                                        Theme.of(context)
-                                                            .scaffoldBackgroundColor,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                      border: Border.all(
-                                                        color: Color.alphaBlend(
-                                                          teamColor.border
-                                                              .withOpacity(1),
-                                                          Theme.of(context)
-                                                              .scaffoldBackgroundColor,
-                                                        ),
-                                                        width: 2,
-                                                      ),
+                                                return Align(
+                                                  alignment: Alignment.center,
+                                                  child: ConstrainedBox(
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                      maxWidth: 420,
+                                                      minWidth: 260,
                                                     ),
-                                                    alignment: Alignment.center,
-                                                    child: Text(
-                                                      _selectedGuesser!,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .displayLarge,
+                                                    child: Transform.scale(
+                                                      scale: 1.0 +
+                                                          (_animation.value *
+                                                              0.03),
+                                                      child: Container(
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color:
+                                                              Color.alphaBlend(
+                                                            teamColor.border
+                                                                .withOpacity(
+                                                                    0.3),
+                                                            Theme.of(context)
+                                                                .scaffoldBackgroundColor,
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                          border: Border.all(
+                                                            color: Color
+                                                                .alphaBlend(
+                                                              teamColor.border
+                                                                  .withOpacity(
+                                                                      1),
+                                                              Theme.of(context)
+                                                                  .scaffoldBackgroundColor,
+                                                            ),
+                                                            width: 2,
+                                                          ),
+                                                        ),
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: Text(
+                                                          _selectedGuesser!,
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .displayLarge,
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 );
