@@ -612,6 +612,7 @@ class FirestoreService {
   }
 
   /// Upsert a team by deviceId atomically to avoid clobbering other teams
+  /// Supports both 'couch' mode (single device, 2 players) and 'remote' mode (2 devices, 1 player each)
   static Future<void> upsertTeamByDeviceId(
       String sessionId, Map<String, dynamic> teamData) async {
     if (!_canWrite(sessionId)) {
@@ -623,8 +624,11 @@ class FirestoreService {
       throw Exception('teamData.deviceId is required');
     }
 
+    final teamMode = teamData['teamMode'] as String? ??
+        'couch'; // Default to couch mode for backward compatibility
+
     print(
-        '🔥 FIRESTORE TX: upsertTeamByDeviceId($sessionId) - deviceId: $deviceId');
+        '🔥 FIRESTORE TX: upsertTeamByDeviceId($sessionId) - deviceId: $deviceId, mode: $teamMode');
     await sessions.firestore.runTransaction((txn) async {
       final docRef = sessions.doc(sessionId);
       final snapshot = await txn.get(docRef);
@@ -637,25 +641,126 @@ class FirestoreService {
               .toList() ??
           [];
 
-      // Enforce unique color: if another device already has this color, abort
       final int? desiredColor = teamData['colorIndex'] as int?;
-      if (desiredColor != null) {
-        final conflict = teams.any((t) =>
-            t['colorIndex'] == desiredColor && t['deviceId'] != deviceId);
-        if (conflict) {
-          throw Exception('Color already taken');
-        }
-      }
 
-      // Remove previous entry for this device and add the new one
-      teams.removeWhere((t) => t['deviceId'] == deviceId);
-      teams.add(teamData);
+      if (teamMode == 'couch') {
+        // Couch mode: enforce unique color per device (existing logic)
+        if (desiredColor != null) {
+          final conflict = teams.any((t) =>
+              t['colorIndex'] == desiredColor && t['deviceId'] != deviceId);
+          if (conflict) {
+            throw Exception('Color already taken');
+          }
+        }
+
+        // Remove previous entry for this device and add the new one
+        teams.removeWhere((t) => t['deviceId'] == deviceId);
+        teams.add(teamData);
+      } else if (teamMode == 'remote') {
+        // Remote mode: handle joining an existing team or creating a new remote team
+        await _handleRemoteTeamUpsert(teams, teamData, desiredColor, deviceId);
+      }
 
       txn.update(docRef, {'teams': teams});
     });
   }
 
+  /// Helper method to handle remote team upsert logic
+  static Future<void> _handleRemoteTeamUpsert(
+    List<Map<String, dynamic>> teams,
+    Map<String, dynamic> teamData,
+    int? desiredColor,
+    String deviceId,
+  ) async {
+    print(
+        '🔍 _handleRemoteTeamUpsert: desiredColor=$desiredColor, deviceId=$deviceId');
+    if (desiredColor == null) {
+      throw Exception('colorIndex is required for remote teams');
+    }
+
+    // Check if there's already a remote team with this color
+    final existingTeam = teams.firstWhere(
+      (t) => t['colorIndex'] == desiredColor && t['teamMode'] == 'remote',
+      orElse: () => <String, dynamic>{},
+    );
+
+    print(
+        '🔍 existingTeam search result: ${existingTeam.isNotEmpty ? "found existing team" : "no existing team"}');
+    if (existingTeam.isNotEmpty) {
+      print('🔍 joining existing remote team');
+      // Joining an existing remote team
+      final devices =
+          List<Map<String, dynamic>>.from(existingTeam['devices'] ?? []);
+
+      // Check if this device is already in the team
+      final existingDeviceIndex =
+          devices.indexWhere((d) => d['deviceId'] == deviceId);
+
+      if (existingDeviceIndex != -1) {
+        // Update existing device data
+        devices[existingDeviceIndex] = {
+          'deviceId': deviceId,
+          'playerName': teamData['playerName'],
+          'isReady': teamData['ready'] ?? false,
+        };
+      } else {
+        // Add new device to the team
+        if (devices.length >= 2) {
+          throw Exception('Remote team already has 2 players');
+        }
+
+        devices.add({
+          'deviceId': deviceId,
+          'playerName': teamData['playerName'],
+          'isReady': teamData['ready'] ?? false,
+        });
+      }
+
+      // Update the existing team
+      final teamIndex = teams.indexWhere(
+          (t) => t['colorIndex'] == desiredColor && t['teamMode'] == 'remote');
+      teams[teamIndex]['devices'] = devices;
+      teams[teamIndex]['players'] =
+          devices.map((d) => d['playerName']).toList();
+      teams[teamIndex]['ready'] =
+          devices.every((d) => d['isReady'] == true) && devices.length == 2;
+    } else {
+      print('🔍 creating new remote team');
+      // Creating a new remote team
+      // Check if any couch team already uses this color
+      final couchTeamConflict = teams.any(
+          (t) => t['colorIndex'] == desiredColor && t['teamMode'] != 'remote');
+      print('🔍 couchTeamConflict check: $couchTeamConflict');
+      if (couchTeamConflict) {
+        throw Exception('Color already taken');
+      }
+
+      // Remove any previous team entries for this device
+      teams.removeWhere((t) =>
+          (t['deviceId'] == deviceId) ||
+          (t['devices'] != null &&
+              (t['devices'] as List).any((d) => d['deviceId'] == deviceId)));
+
+      // Create new remote team
+      teams.add({
+        'teamName': teamData['teamName'],
+        'colorIndex': desiredColor,
+        'teamMode': 'remote',
+        'devices': [
+          {
+            'deviceId': deviceId,
+            'playerName': teamData['playerName'],
+            'isReady': teamData['ready'] ?? false,
+          }
+        ],
+        'players': [teamData['playerName']],
+        'ready': false, // Not ready until both players join
+      });
+    }
+  }
+
   /// Remove a team by deviceId atomically
+  /// Handles both 'couch' mode (removes entire team) and 'remote' mode (removes device from team or entire team if last device)
   static Future<void> removeTeamByDeviceId(
       String sessionId, String deviceId) async {
     if (!_canWrite(sessionId)) {
@@ -676,9 +781,101 @@ class FirestoreService {
               .toList() ??
           [];
 
+      // Handle couch mode teams (existing logic)
       teams.removeWhere((t) => t['deviceId'] == deviceId);
+
+      // Handle remote mode teams
+      for (int i = teams.length - 1; i >= 0; i--) {
+        final team = teams[i];
+        if (team['teamMode'] == 'remote' && team['devices'] != null) {
+          final devices = List<Map<String, dynamic>>.from(team['devices']);
+          final deviceIndex =
+              devices.indexWhere((d) => d['deviceId'] == deviceId);
+
+          if (deviceIndex != -1) {
+            devices.removeAt(deviceIndex);
+
+            if (devices.isEmpty) {
+              // Remove entire team if no devices left
+              teams.removeAt(i);
+            } else {
+              // Update team with remaining devices
+              teams[i]['devices'] = devices;
+              teams[i]['players'] =
+                  devices.map((d) => d['playerName']).toList();
+              teams[i]['ready'] =
+                  false; // Team is no longer ready when a player leaves
+            }
+            break; // Device found and handled, no need to check other teams
+          }
+        }
+      }
       txn.update(docRef, {'teams': teams});
     });
+  }
+
+  /// Get available remote team slots (colors that have remote teams with only 1 player)
+  static Future<List<Map<String, dynamic>>> getAvailableRemoteTeamSlots(
+      String sessionId) async {
+    if (!_canRead(sessionId)) {
+      throw Exception('Rate limit exceeded for reads');
+    }
+
+    print('🔥 FIRESTORE READ: getAvailableRemoteTeamSlots($sessionId)');
+    final doc = await sessions.doc(sessionId).get();
+    if (!doc.exists) return [];
+
+    final data = doc.data() as Map<String, dynamic>;
+    final teams = (data['teams'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e))
+            .toList() ??
+        [];
+
+    // Find remote teams that have only 1 player
+    return teams.where((team) {
+      return team['teamMode'] == 'remote' &&
+          team['devices'] != null &&
+          (team['devices'] as List).length == 1;
+    }).toList();
+  }
+
+  /// Check if a device can join a specific remote team color
+  static Future<bool> canJoinRemoteTeam(
+      String sessionId, int colorIndex, String deviceId) async {
+    if (!_canRead(sessionId)) {
+      throw Exception('Rate limit exceeded for reads');
+    }
+
+    print(
+        '🔥 FIRESTORE READ: canJoinRemoteTeam($sessionId) - color: $colorIndex, device: $deviceId');
+    final doc = await sessions.doc(sessionId).get();
+    if (!doc.exists) return false;
+
+    final data = doc.data() as Map<String, dynamic>;
+    final teams = (data['teams'] as List?)
+            ?.map((e) => Map<String, dynamic>.from(e))
+            .toList() ??
+        [];
+
+    final targetTeam = teams.firstWhere(
+      (t) => t['colorIndex'] == colorIndex,
+      orElse: () => <String, dynamic>{},
+    );
+
+    if (targetTeam.isEmpty) {
+      // No team with this color exists, can create new team
+      return true;
+    }
+
+    if (targetTeam['teamMode'] == 'remote') {
+      final devices = targetTeam['devices'] as List? ?? [];
+      // Can join if team has less than 2 players and device isn't already in team
+      return devices.length < 2 &&
+          !devices.any((d) => d['deviceId'] == deviceId);
+    }
+
+    // Can't join couch mode teams or full remote teams
+    return false;
   }
 
   // ============================================================================

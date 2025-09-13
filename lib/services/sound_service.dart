@@ -25,6 +25,11 @@ class SoundService {
     if (!_enabled) {
       // Ensure any ongoing music is stopped when sounds are disabled
       stopMenuMusic();
+    } else {
+      // When re-enabled, resume menu music if not already playing
+      // fire-and-forget; safe if not on home screen
+      // ignore: discarded_futures
+      playMenuMusic();
     }
   }
 

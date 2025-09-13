@@ -7,12 +7,29 @@ class CategoryService {
 
   static Future<List<Category>> fetchAllOnce() async {
     final snapshot = await _collection.get();
-    return snapshot.docs
-        .map((doc) => CategoryMap.fromMap({
-              'id': doc.id,
-              ...doc.data(),
-            }))
-        .toList();
+    print(
+        '📄 Found ${snapshot.docs.length} documents in Firestore categories collection');
+
+    final List<Category> categories = [];
+    for (final doc in snapshot.docs) {
+      try {
+        final data = {
+          'id': doc.id,
+          ...doc.data(),
+        };
+        print('🔍 Processing document: ${doc.id}');
+        print('   Data: $data');
+
+        final category = CategoryMap.fromMap(data);
+        categories.add(category);
+        print('   ✅ Successfully parsed category: ${category.displayName}');
+      } catch (e) {
+        print('   ❌ Error parsing document ${doc.id}: $e');
+        print('   Raw data: ${doc.data()}');
+      }
+    }
+
+    return categories;
   }
 
   static Stream<List<Category>> streamAll() {

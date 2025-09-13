@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../models/category.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class DeckCard extends StatefulWidget {
   final Category category;
@@ -22,6 +23,44 @@ class DeckCard extends StatefulWidget {
 
 class _DeckCardState extends State<DeckCard> {
   bool _isFlipped = false;
+
+  // Helper method to build image widget (supports both assets and network URLs)
+  Widget _buildImage(String imagePath, {required Alignment alignment}) {
+    // Check if it's a network URL
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return CachedNetworkImage(
+        imageUrl: imagePath,
+        alignment: alignment,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          color: Colors.grey[300],
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          color: Colors.grey[300],
+          child: Icon(
+            widget.category.icon,
+            color: Colors.grey[600],
+            size: 24,
+          ),
+        ),
+      );
+    } else {
+      // Local asset
+      return Image.asset(
+        imagePath,
+        alignment: alignment,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => Icon(
+          widget.category.icon,
+          color: Colors.grey[600],
+          size: 24,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +89,7 @@ class _DeckCardState extends State<DeckCard> {
                     child: FittedBox(
                       fit: BoxFit.fitHeight,
                       alignment: Alignment.centerLeft,
-                      child: Image.asset(
+                      child: _buildImage(
                         widget.category.imageAsset!,
                         alignment: Alignment.centerLeft,
                       ),
@@ -95,7 +134,7 @@ class _DeckCardState extends State<DeckCard> {
                 child: FittedBox(
                   fit: BoxFit.cover,
                   alignment: Alignment.center,
-                  child: Image.asset(
+                  child: _buildImage(
                     widget.category.imageAsset!,
                     alignment: Alignment.center,
                   ),

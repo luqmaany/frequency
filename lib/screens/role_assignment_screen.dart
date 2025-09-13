@@ -134,19 +134,100 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     });
   }
 
-  // Check if current device is the active team
+  // Check if current device should show the swipe tutorial (only conveyor)
+  bool get _shouldShowSwipeTutorial {
+    // For local games, always show if it's the active team
+    if (widget.sessionId == null) {
+      return _isCurrentTeamActive;
+    }
+
+    // For online games, only show to the conveyor's device
+    if (!_isCurrentTeamActive || _selectedConveyor == null) {
+      return false;
+    }
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: show tutorial (both players on same device)
+      return true;
+    } else if (teamMode == 'remote') {
+      // Remote mode: only show to the conveyor's device
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null && _currentDeviceId != null) {
+        for (final device in devices) {
+          if (device['deviceId'] == _currentDeviceId &&
+              device['playerName'] == _selectedConveyor) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Check if current user is the guesser (for navigation routing)
+  bool get _isCurrentUserGuesser {
+    // For local games, this doesn't apply (both players see game screen)
+    if (widget.sessionId == null) {
+      return false;
+    }
+
+    // For online games, check if current user is the guesser
+    if (!_isCurrentTeamActive ||
+        _selectedGuesser == null ||
+        _currentDeviceId == null) {
+      return false;
+    }
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: both players see game screen, so no guesser routing needed
+      return false;
+    } else if (teamMode == 'remote') {
+      // Remote mode: check if current device belongs to the guesser
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        for (final device in devices) {
+          if (device['deviceId'] == _currentDeviceId &&
+              device['playerName'] == _selectedGuesser) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Check if current device is part of the active team (supports both couch and remote modes)
   bool get _isCurrentTeamActive {
     // For local games (no sessionId), always allow interaction
     if (widget.sessionId == null) {
       return true;
     }
-    // For online games, check if current device matches the active team
-    // If no deviceId is stored for the current team, allow all teams to interact (fallback)
-    if (widget.currentTeamDeviceId == null) {
-      return true;
+
+    // For online games, check team mode
+    if (widget.onlineTeam == null || _currentDeviceId == null) {
+      return false;
     }
-    return _currentDeviceId != null &&
-        _currentDeviceId == widget.currentTeamDeviceId;
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: check if current device matches the team's device
+      return _currentDeviceId == widget.currentTeamDeviceId;
+    } else if (teamMode == 'remote') {
+      // Remote mode: check if current device is in the team's devices array
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        return devices.any((device) => device['deviceId'] == _currentDeviceId);
+      }
+    }
+
+    return false;
   }
 
   @override
@@ -414,37 +495,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         ),
                       ),
                     ),
-                    // Show current team info for online games
-                    if (widget.sessionId != null &&
-                        widget.onlineTeam != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? teamColor.border.withOpacity(0.2)
-                              : teamColor.background.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: teamColor.border.withOpacity(0.5),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          _isCurrentTeamActive
-                              ? 'Your turn to assign roles'
-                              : '${widget.onlineTeam!['teamName'] ?? 'Team'}\'s turn',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                color: teamColor.text,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
                     // Fixed positioning content area to prevent transmitter movement
                     Expanded(
                       child: Padding(
@@ -472,38 +522,47 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                               child: AnimatedBuilder(
                                 animation: _animation,
                                 builder: (context, child) {
-                                  return Transform.scale(
-                                    scale: 1 + (_animation.value * 0.03),
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        color: _isTransitioning
-                                            ? Colors.transparent
-                                            : Color.alphaBlend(
-                                                teamColor.border
-                                                    .withOpacity(0.3),
-                                                Theme.of(context)
-                                                    .scaffoldBackgroundColor,
-                                              ),
-                                        borderRadius: BorderRadius.circular(
-                                            _isTransitioning ? 10 : 12),
-                                        border: Border.all(
-                                          color: _isTransitioning
-                                              ? Colors.transparent
-                                              : Color.alphaBlend(
-                                                  teamColor.border
-                                                      .withOpacity(1),
-                                                  Theme.of(context)
-                                                      .scaffoldBackgroundColor,
-                                                ),
-                                          width: 2,
-                                        ),
+                                  return Align(
+                                    alignment: Alignment.center,
+                                    child: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 420,
+                                        minWidth: 260,
                                       ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        _selectedConveyor!,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .displayLarge,
+                                      child: Transform.scale(
+                                        scale: 1 + (_animation.value * 0.03),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: _isTransitioning
+                                                ? Colors.transparent
+                                                : Color.alphaBlend(
+                                                    teamColor.border
+                                                        .withOpacity(0.3),
+                                                    Theme.of(context)
+                                                        .scaffoldBackgroundColor,
+                                                  ),
+                                            borderRadius: BorderRadius.circular(
+                                                _isTransitioning ? 10 : 12),
+                                            border: Border.all(
+                                              color: _isTransitioning
+                                                  ? Colors.transparent
+                                                  : Color.alphaBlend(
+                                                      teamColor.border
+                                                          .withOpacity(1),
+                                                      Theme.of(context)
+                                                          .scaffoldBackgroundColor,
+                                                    ),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Text(
+                                            _selectedConveyor!,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .displayLarge,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   );
@@ -547,36 +606,54 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                             child: AnimatedBuilder(
                                               animation: _animation,
                                               builder: (context, child) {
-                                                return Transform.scale(
-                                                  scale: 1.0 +
-                                                      (_animation.value * 0.03),
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      color: Color.alphaBlend(
-                                                        teamColor.border
-                                                            .withOpacity(0.3),
-                                                        Theme.of(context)
-                                                            .scaffoldBackgroundColor,
-                                                      ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              12),
-                                                      border: Border.all(
-                                                        color: Color.alphaBlend(
-                                                          teamColor.border
-                                                              .withOpacity(1),
-                                                          Theme.of(context)
-                                                              .scaffoldBackgroundColor,
-                                                        ),
-                                                        width: 2,
-                                                      ),
+                                                return Align(
+                                                  alignment: Alignment.center,
+                                                  child: ConstrainedBox(
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                      maxWidth: 420,
+                                                      minWidth: 260,
                                                     ),
-                                                    alignment: Alignment.center,
-                                                    child: Text(
-                                                      _selectedGuesser!,
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .displayLarge,
+                                                    child: Transform.scale(
+                                                      scale: 1.0 +
+                                                          (_animation.value *
+                                                              0.03),
+                                                      child: Container(
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color:
+                                                              Color.alphaBlend(
+                                                            teamColor.border
+                                                                .withOpacity(
+                                                                    0.3),
+                                                            Theme.of(context)
+                                                                .scaffoldBackgroundColor,
+                                                          ),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(12),
+                                                          border: Border.all(
+                                                            color: Color
+                                                                .alphaBlend(
+                                                              teamColor.border
+                                                                  .withOpacity(
+                                                                      1),
+                                                              Theme.of(context)
+                                                                  .scaffoldBackgroundColor,
+                                                            ),
+                                                            width: 2,
+                                                          ),
+                                                        ),
+                                                        alignment:
+                                                            Alignment.center,
+                                                        child: Text(
+                                                          _selectedGuesser!,
+                                                          style:
+                                                              Theme.of(context)
+                                                                  .textTheme
+                                                                  .displayLarge,
+                                                        ),
+                                                      ),
                                                     ),
                                                   ),
                                                 );
@@ -605,7 +682,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                           const Duration(milliseconds: 250),
                                       opacity: _postOpacity,
                                       child: Center(
-                                        child: (_isCurrentTeamActive &&
+                                        child: (_shouldShowSwipeTutorial &&
                                                 !(_swipeRightDone &&
                                                     _swipeLeftDone))
                                             ? Dismissible(
@@ -695,45 +772,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                                   ),
                                                 ),
                                               )
-                                            : (!_isCurrentTeamActive)
-                                                ? Container(
-                                                    width: double.infinity,
-                                                    height: 120,
-                                                    margin: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 16,
-                                                        vertical: 0),
-                                                    padding: const EdgeInsets
-                                                        .symmetric(
-                                                        horizontal: 24,
-                                                        vertical: 20),
-                                                    decoration: BoxDecoration(
-                                                      color: cardBackground,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                              16),
-                                                      border: Border.all(
-                                                        color: cardBorder,
-                                                        width: 2,
-                                                      ),
-                                                    ),
-                                                    child: Center(
-                                                      child: Text(
-                                                        'Waiting for the active team to continue...',
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        style: TextStyle(
-                                                          color: teamColor.text,
-                                                          fontSize: 18,
-                                                          height: 1.2,
-                                                        ),
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis,
-                                                      ),
-                                                    ),
-                                                  )
-                                                : const SizedBox.shrink(),
+                                            : const SizedBox.shrink(),
                                       ),
                                     ),
                                   ],
@@ -764,16 +803,20 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                             ],
                             Expanded(
                               child: TeamColorButton(
-                                text: _isCurrentTeamActive
+                                text: _isCurrentTeamActive &&
+                                        _shouldShowSwipeTutorial
                                     ? 'Next'
-                                    : 'Waiting...',
+                                    : _isCurrentTeamActive
+                                        ? 'Waiting for conveyor...'
+                                        : 'Waiting...',
                                 icon: _isCurrentTeamActive
                                     ? Icons.arrow_forward
                                     : Icons.hourglass_empty,
                                 color: uiColors[1],
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 16, horizontal: 8),
-                                onPressed: _isCurrentTeamActive
+                                onPressed: _isCurrentTeamActive &&
+                                        _shouldShowSwipeTutorial
                                     ? () {
                                         _showTransitionScreen();
                                       }
@@ -790,13 +833,17 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                         child: SizedBox(
                           width: double.infinity,
                           child: TeamColorButton(
-                            text: 'Start',
-                            icon: Icons.play_arrow,
+                            text: _shouldShowSwipeTutorial
+                                ? 'Start'
+                                : 'Waiting...',
+                            icon: _shouldShowSwipeTutorial
+                                ? Icons.play_arrow
+                                : Icons.hourglass_empty,
                             color: uiColors[1],
                             padding: const EdgeInsets.symmetric(
                                 vertical: 18, horizontal: 12),
-                            onPressed: (_swipeRightDone && _swipeLeftDone) &&
-                                    _isCurrentTeamActive
+                            onPressed: _shouldShowSwipeTutorial &&
+                                    (_swipeRightDone && _swipeLeftDone)
                                 ? () async {
                                     if (widget.sessionId != null) {
                                       await FirestoreService.fromRoleAssignment(

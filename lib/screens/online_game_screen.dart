@@ -117,8 +117,78 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
     final deviceId = await StorageService.getDeviceId();
     setState(() {
       _currentDeviceId = deviceId;
-      _isCurrentTeamActive = _currentDeviceId == widget.currentTeamDeviceId;
+      _isCurrentTeamActive = _isPartOfCurrentTeam();
     });
+  }
+
+  // Check if current device is part of the current team (supports both couch and remote modes)
+  bool _isPartOfCurrentTeam() {
+    if (_currentDeviceId == null || widget.onlineTeam == null) {
+      return false;
+    }
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: check if current device matches the team's device
+      return _currentDeviceId == widget.currentTeamDeviceId;
+    } else if (teamMode == 'remote') {
+      // Remote mode: check if current device is in the team's devices array
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        return devices.any((device) => device['deviceId'] == _currentDeviceId);
+      }
+    }
+
+    return false;
+  }
+
+  // Check if current device can interact with cards (only conveyor in remote mode)
+  bool get _canInteractWithCards {
+    if (!_isCurrentTeamActive) return false;
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+
+    if (teamMode == 'couch') {
+      // Couch mode: device can always interact when it's their turn
+      return true;
+    } else if (teamMode == 'remote') {
+      // Remote mode: only the conveyor device can interact
+      final conveyorName =
+          widget.sessionData?['gameState']?['currentConveyor'] as String?;
+      if (conveyorName == null) return false;
+
+      // Find which device belongs to the conveyor
+      final devices = widget.onlineTeam!['devices'] as List?;
+      if (devices != null) {
+        for (final device in devices) {
+          if (device['deviceId'] == _currentDeviceId &&
+              device['playerName'] == conveyorName) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // Get current player's name from device (for remote teams)
+  String? _getMyPlayerName() {
+    if (_currentDeviceId == null || widget.onlineTeam == null) return null;
+
+    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
+    if (teamMode != 'remote') return null;
+
+    final devices = widget.onlineTeam!['devices'] as List?;
+    if (devices != null) {
+      for (final device in devices) {
+        if (device['deviceId'] == _currentDeviceId) {
+          return device['playerName'] as String?;
+        }
+      }
+    }
+    return null;
   }
 
   // Get game configuration for both local and online games
@@ -188,8 +258,8 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
       }
     });
 
-    // Show spectator screen for non-active teams in online games
-    if (!_isCurrentTeamActive) {
+    // Show spectator screen for non-active teams or guessers in remote mode
+    if (!_isCurrentTeamActive || !_canInteractWithCards) {
       return _buildSpectatorScreen();
     }
 
@@ -278,17 +348,17 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                       skipsLeft: skipsLeft,
                       showBlankCards: _isCountdownActive,
                       onWordGuessed: (word) {
-                        if (!_isCountdownActive) {
+                        if (!_isCountdownActive && _canInteractWithCards) {
                           handleWordGuessed(word);
                         }
                       },
                       onWordSkipped: (word) {
-                        if (!_isCountdownActive) {
+                        if (!_isCountdownActive && _canInteractWithCards) {
                           handleWordSkipped(word);
                         }
                       },
                       onLoadNewWord: (index) {
-                        if (!_isCountdownActive) {
+                        if (!_isCountdownActive && _canInteractWithCards) {
                           // Load new word for the specific card that was swiped
                           loadNewWord(index);
                         }
@@ -314,6 +384,14 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   }
 
   Widget _buildSpectatorScreen() {
+    // Determine if this is a guesser or non-active team spectator
+    final isGuesser = _isCurrentTeamActive && !_canInteractWithCards;
+    final myPlayerName = _getMyPlayerName();
+    final conveyorName =
+        widget.sessionData?['gameState']?['currentConveyor'] as String?;
+    final guesserName =
+        widget.sessionData?['gameState']?['currentGuesser'] as String?;
+
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
@@ -331,21 +409,24 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const Spacer(),
-                        // Spectator icon
+                        // Role-specific icon
                         Icon(
-                          Icons.visibility,
+                          isGuesser ? Icons.psychology : Icons.visibility,
                           size: constraints.maxWidth * 0.2, // Responsive size
-                          color: Theme.of(context).colorScheme.secondary,
+                          color: isGuesser
+                              ? Colors.blue
+                              : Theme.of(context).colorScheme.secondary,
                         ),
                         const SizedBox(height: 24),
-                        // Spectator mode title
+                        // Role-specific title
                         Text(
-                          'Spectator Mode',
+                          isGuesser ? 'You are the RECEIVER' : 'Spectator Mode',
                           style: Theme.of(context)
                               .textTheme
                               .headlineLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: isGuesser ? Colors.blue : null,
                               ),
                           textAlign: TextAlign.center,
                         ),
@@ -382,14 +463,21 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                           ),
                         ),
                         const SizedBox(height: 24),
-                        // Team info
-                        Text(
-                          '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                          textAlign: TextAlign.center,
-                        ),
+                        // Team and role info
+                        if (isGuesser) ...[
+                          Text(
+                            'Your teammate $conveyorName is conveying the words',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ] else ...[
+                          Text(
+                            '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                         const SizedBox(height: 8),
-                        // Removed round/turn display and info message for spectator mode
                         const Spacer(),
                       ],
                     ),
