@@ -1,6 +1,6 @@
-# Convey
+# Frequency
 
-**Convey** is a modern, cross-platform word and party game built with Flutter. Designed for fun, flexibility, and social play, Convey brings friends and families together for fast-paced guessing, creativity, and laughter.
+**Frequency** is a modern, cross-platform word and party game built with Flutter. Designed for fun, flexibility, and social play, Frequency brings friends and families together for fast-paced guessing, creativity, and laughter.
 
 > 🚧 **This project is in active development!**  
 > Features are being added, the UI is evolving, and your feedback or contributions are welcome as the game comes together.
@@ -31,8 +31,8 @@
 
 1. **Clone the repository:**
    ```sh
-   git clone https://github.com/yourusername/convey.git
-   cd convey
+   git clone https://github.com/yourusername/frequency.git
+   cd frequency
    ```
 2. **Install dependencies:**
    ```sh
@@ -42,7 +42,7 @@
    ```sh
    flutter run
    ```
-   > You can run Convey on mobile, web, or desktop. See [Flutter's docs](https://docs.flutter.dev/get-started/install) for platform-specific setup.
+   > You can run Frequency on mobile, web, or desktop. See [Flutter's docs](https://docs.flutter.dev/get-started/install) for platform-specific setup.
 
 ---
 
@@ -52,7 +52,7 @@ Contributions, bug reports, and feature suggestions are welcome!
 If you'd like to help, please open an issue or submit a pull request.
 
 - See [good_prompts.md](good_prompts.md) for ideas and inspiration.
-- Check [TODO.txt](TODO.txt) and [convey_game_plan.md](convey_game_plan.md) for the current roadmap and tasks.
+- Check [TODO.txt](TODO.txt) and [frequency_game_plan.md](frequency_game_plan.md) for the current roadmap and tasks.
 
 ---
 
@@ -76,7 +76,7 @@ If you'd like to help, please open an issue or submit a pull request.
 ## Contact
 
 Questions, ideas, or want to collaborate?  
-Reach out via [GitHub Issues](https://github.com/yourusername/convey/issues) or email: luqmaankataaliy@gmail.com
+Reach out via [GitHub Issues](https://github.com/yourusername/frequency/issues) or email: luqmaankataaliy@gmail.com
 
 ---
 
