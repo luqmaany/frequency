@@ -64,8 +64,6 @@ class _AnimatedGradientTextState extends State<AnimatedGradientText>
                     Color(0xFF7A5CFF), // purple
                     Color(0xFFFF6680), // pink/red
                     Color(0xFFFFA14A), // orange
-                    Color(0xFFFFD166), // yellow
-                    Color(0xFF4CD295), // green
                     Color(0xFF5EB1FF), // loop
                   ],
                   begin: Alignment.centerLeft,
@@ -137,6 +135,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Dialog title
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Text(
+                      'Game Mode',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                   _buildDialogOption(
                     context,
                     'Local',
@@ -318,7 +329,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       Color(0xFF7A5CFF), // purple
       Color(0xFFFF6680), // pink/red
       Color(0xFFFFA14A), // orange
-      Color(0xFF4CD295), // green
     ];
 
     return Scaffold(

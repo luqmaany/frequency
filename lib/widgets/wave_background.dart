@@ -94,14 +94,19 @@ class _WavesPainter extends CustomPainter {
       }
 
       // Subtle hue shift across lines, with glow-like opacity
-      final double hue = (210 + row * 7) % 360.0; // blues → purples → reds
-      final Color color = HSLColor.fromAHSL(0.18, hue, 0.65, 0.55).toColor();
+      // Smooth cycle: blues → purples → reds → oranges → back to blues
+      final double cycle =
+          (row * 7) % 720.0 / 720.0; // 0.0 to 1.0 over longer period
+      final double hue = cycle < 0.5
+          ? 210 + (cycle * 2 * 150) // 210° to 360° (first half)
+          : 360 - ((cycle - 0.5) * 2 * 150); // 360° back to 210° (second half)
+      final Color color = HSLColor.fromAHSL(0.08, hue, 0.65, 0.55).toColor();
       final Paint paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth * scale
         ..strokeCap = StrokeCap.round
         ..isAntiAlias = true
-        ..color = color.withOpacity(0.9);
+        ..color = color.withOpacity(0.6);
       canvas.drawPath(path, paint);
     }
 

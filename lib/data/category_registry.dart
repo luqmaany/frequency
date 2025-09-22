@@ -83,7 +83,6 @@ class CategoryRegistry {
           .toList(),
       type: CategoryType.free,
       isUnlocked: true,
-      imageAsset: 'assets/images/categories/lion.png',
     ),
     'anime': Category(
       id: 'anime',
@@ -130,7 +129,6 @@ class CategoryRegistry {
           .toList(),
       type: CategoryType.free,
       isUnlocked: true,
-      imageAsset: 'assets/images/categories/narutofreq2.JPG',
     ),
     'tv': Category(
       id: 'tv',
@@ -146,7 +144,6 @@ class CategoryRegistry {
           .toList(),
       type: CategoryType.free,
       isUnlocked: true,
-      imageAsset: 'assets/images/categories/narutofreq2.JPG',
     ),
   };
 
