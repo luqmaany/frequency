@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'services/theme_provider.dart';
 import 'services/storage_service.dart';
@@ -14,9 +13,8 @@ void main() async {
 
   // Prevent duplicate Firebase app initialization
   if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    // On iOS/macOS this uses GoogleService-Info.plist bundled in the app
+    await Firebase.initializeApp();
   }
   await CategoryRegistry.loadDynamicCategories();
   await PurchaseService.init();
