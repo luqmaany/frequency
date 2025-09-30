@@ -127,10 +127,11 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       return;
     }
 
-    // Get two random words from the category that haven't been used in this game
-    final gameUsedWords = ref.read(gameStateProvider.notifier).gameUsedWords;
+    // Get two random words from the category that haven't been used in this category
+    final categoryUsedWords =
+        ref.read(gameStateProvider.notifier).getCategoryUsedWords(categoryId);
     final unusedCategoryWords = categoryWords
-        .where((word) => !gameUsedWords.contains(word.text))
+        .where((word) => !categoryUsedWords.contains(word.text))
         .toList();
 
     if (unusedCategoryWords.isEmpty) {
@@ -164,10 +165,10 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _currentWords = selectedWords;
     _usedWords.addAll(_currentWords.map((w) => w.text));
 
-    // Add to global game used words
+    // Add to category-specific used words
     ref
         .read(gameStateProvider.notifier)
-        .addUsedWords(_currentWords.map((w) => w.text).toList());
+        .addUsedWords(categoryId, _currentWords.map((w) => w.text).toList());
 
     // Defer appearance count updates until after build
     Future.microtask(() {
@@ -183,11 +184,12 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     final category = categories[categoryId];
     if (category == null) return null;
 
-    final gameUsedWords = ref.read(gameStateProvider.notifier).gameUsedWords;
+    final categoryUsedWords =
+        ref.read(gameStateProvider.notifier).getCategoryUsedWords(categoryId);
 
-    // Get words that haven't been used in this game yet
+    // Get words that haven't been used in this category yet
     final categoryWords = category.words
-        .where((word) => !gameUsedWords.contains(word.text))
+        .where((word) => !categoryUsedWords.contains(word.text))
         .toList();
 
     if (categoryWords.isEmpty) {
@@ -216,8 +218,10 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         _usedWords.add(newWord.text);
       });
 
-      // Add to global game used words
-      ref.read(gameStateProvider.notifier).addUsedWords([newWord.text]);
+      // Add to category-specific used words
+      ref
+          .read(gameStateProvider.notifier)
+          .addUsedWords(categoryId, [newWord.text]);
 
       // Defer appearance count update until after build
       Future.microtask(() {

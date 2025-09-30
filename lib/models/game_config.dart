@@ -6,6 +6,7 @@ class GameConfig {
   final int targetScore;
   final int allowedSkips;
   final bool useWeightedWordSelection;
+  final List<String> selectedDeckIds;
 
   GameConfig({
     required this.playerNames,
@@ -16,7 +17,9 @@ class GameConfig {
     required this.allowedSkips,
     this.useWeightedWordSelection =
         true, // Default to true for better experience
-  }) : teamColorIndices = teamColorIndices ?? [];
+    List<String>? selectedDeckIds,
+  })  : teamColorIndices = teamColorIndices ?? [],
+        selectedDeckIds = selectedDeckIds ?? [];
 
   GameConfig copyWith({
     List<String>? playerNames,
@@ -26,6 +29,7 @@ class GameConfig {
     int? targetScore,
     int? allowedSkips,
     bool? useWeightedWordSelection,
+    List<String>? selectedDeckIds,
   }) {
     return GameConfig(
       playerNames: playerNames ?? this.playerNames,
@@ -36,6 +40,7 @@ class GameConfig {
       allowedSkips: allowedSkips ?? this.allowedSkips,
       useWeightedWordSelection:
           useWeightedWordSelection ?? this.useWeightedWordSelection,
+      selectedDeckIds: selectedDeckIds ?? this.selectedDeckIds,
     );
   }
 
@@ -48,4 +53,12 @@ class GameConfig {
     }
     return false;
   }
+
+  // Check if deck selection is valid (minimum 4 decks required)
+  bool hasValidDeckSelection() {
+    return selectedDeckIds.length >= 4;
+  }
+
+  // Get the number of selected decks
+  int get selectedDeckCount => selectedDeckIds.length;
 }

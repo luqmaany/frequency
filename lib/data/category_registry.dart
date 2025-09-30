@@ -242,4 +242,26 @@ class CategoryRegistry {
     return _categories.values
         .firstWhere((category) => category.displayName == displayName);
   }
+
+  // Get categories by their IDs
+  static List<Category> getCategoriesByIds(List<String> categoryIds) {
+    return categoryIds
+        .map((id) => _categories[id])
+        .where((category) => category != null)
+        .cast<Category>()
+        .toList();
+  }
+
+  // Get only unlocked categories by their IDs (useful for deck selection)
+  static List<Category> getUnlockedCategoriesByIds(List<String> categoryIds,
+      [List<String>? purchasedCategoryIds]) {
+    final unlockedIds = purchasedCategoryIds ?? [];
+    return categoryIds
+        .map((id) => _categories[id])
+        .where((category) =>
+            category != null &&
+            (category.isUnlocked || unlockedIds.contains(category.id)))
+        .cast<Category>()
+        .toList();
+  }
 }

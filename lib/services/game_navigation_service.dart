@@ -14,6 +14,8 @@ import '../screens/settings_screen.dart';
 import '../services/game_state_provider.dart';
 import '../screens/home_screen.dart';
 import '../screens/decks_store_screen.dart';
+import '../screens/deck_selection_screen.dart';
+import '../models/game_config.dart';
 
 class GameNavigationService {
   // ============================================================================
@@ -88,6 +90,36 @@ class GameNavigationService {
         builder: (context) => const GameSettingsScreen(),
       ),
     );
+  }
+
+  /// Navigate from game settings to deck selection
+  static void navigateToDeckSelection(
+      BuildContext context, GameConfig gameConfig, WidgetRef ref) {
+    Navigator.of(context)
+        .push(
+      MaterialPageRoute(
+        builder: (context) => DeckSelectionScreen(
+          initialSelectedDecks: gameConfig.selectedDeckIds,
+        ),
+      ),
+    )
+        .then((selectedDecks) {
+      // Update the game config with the selected decks
+      if (selectedDecks != null && selectedDecks is List<String>) {
+        final updatedConfig =
+            gameConfig.copyWith(selectedDeckIds: selectedDecks);
+        _startGameWithConfig(context, updatedConfig, ref);
+      }
+    });
+  }
+
+  /// Start the game with the provided config
+  static void _startGameWithConfig(
+      BuildContext context, GameConfig gameConfig, WidgetRef ref) {
+    // Initialize game state with the updated config (including selected decks)
+    ref.read(gameStateProvider.notifier).initializeGame(gameConfig);
+    // Navigate to the first screen of the game
+    navigateToNextScreen(context, ref);
   }
 
   /// Navigate from category selection to role assignment
@@ -177,6 +209,7 @@ class GameNavigationService {
             roundNumber: gameState.tiebreakerRound,
             turnNumber: 1,
             displayString: 'Tiebreaker Round',
+            gameConfig: gameState.config,
           ),
         ),
       );
@@ -193,6 +226,7 @@ class GameNavigationService {
                   gameState.config.teams[0].length >= 2
               ? "${gameState.config.teams[0][0]} & ${gameState.config.teams[0][1]}'s Turn"
               : '',
+          gameConfig: gameState?.config,
         ),
       ),
     );
@@ -326,6 +360,7 @@ class GameNavigationService {
                   2
               ? "${gameState.config.teams[gameState.currentTeamIndex][0]} & ${gameState.config.teams[gameState.currentTeamIndex][1]}'s Turn"
               : '',
+          gameConfig: gameState.config,
         ),
       ),
     );

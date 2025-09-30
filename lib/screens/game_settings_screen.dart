@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/game_setup_provider.dart';
-import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
 import '../services/online_game_navigation_service.dart';
 import '../services/firestore_service.dart';
@@ -161,12 +160,11 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
                                         widget.sessionId!);
                                     // Do not navigate directly; let the navigation service handle it
                                   } else {
-                                    // Local mode: Initialize game state with current config
-                                    ref
-                                        .read(gameStateProvider.notifier)
-                                        .initializeGame(gameConfig);
-                                    GameNavigationService.navigateToNextScreen(
+                                    // Local mode: Navigate to deck selection first
+                                    GameNavigationService
+                                        .navigateToDeckSelection(
                                       context,
+                                      gameConfig,
                                       ref,
                                     );
                                   }

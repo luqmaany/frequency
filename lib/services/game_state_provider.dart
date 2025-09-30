@@ -3,22 +3,29 @@ import '../models/game_state.dart';
 import '../models/game_config.dart';
 
 class GameStateNotifier extends StateNotifier<GameState?> {
-  // Track used words across the entire game
-  final Set<String> _gameUsedWords = {};
+  // Track used words per category across the entire game
+  final Map<String, Set<String>> _categoryUsedWords = {};
 
   GameStateNotifier() : super(null);
 
   void initializeGame(GameConfig config) {
-    _gameUsedWords.clear(); // Clear used words for new game
+    _categoryUsedWords.clear(); // Clear used words for new game
     state = GameState.initial(config);
   }
 
-  // Get used words for the current game
-  Set<String> get gameUsedWords => Set.from(_gameUsedWords);
+  // Get used words for a specific category
+  Set<String> getCategoryUsedWords(String categoryId) {
+    return Set.from(_categoryUsedWords[categoryId] ?? {});
+  }
 
-  // Add words to the used words set
-  void addUsedWords(List<String> words) {
-    _gameUsedWords.addAll(words);
+  // Get used words for the current game (legacy method for backward compatibility)
+  Set<String> get gameUsedWords =>
+      Set.from(_categoryUsedWords.values.expand((set) => set));
+
+  // Add words to the used words set for a specific category
+  void addUsedWords(String categoryId, List<String> words) {
+    _categoryUsedWords.putIfAbsent(categoryId, () => <String>{});
+    _categoryUsedWords[categoryId]!.addAll(words);
   }
 
   void recordTurn(TurnRecord turnRecord) {

@@ -14,6 +14,8 @@ import '../providers/session_providers.dart';
 import '../widgets/radial_ripple_background.dart';
 import '../widgets/confirm_on_back.dart';
 import '../widgets/quit_dialog.dart';
+import '../models/game_config.dart';
+import '../models/category.dart';
 
 class CategorySelectionScreen extends ConsumerStatefulWidget {
   final int teamIndex;
@@ -24,6 +26,7 @@ class CategorySelectionScreen extends ConsumerStatefulWidget {
   final String? sessionId; // Add sessionId for online games
   final Map<String, dynamic>?
       onlineTeam; // Add online team data for remote team checking
+  final GameConfig? gameConfig; // Add game config for deck selection
 
   const CategorySelectionScreen({
     super.key,
@@ -34,6 +37,7 @@ class CategorySelectionScreen extends ConsumerStatefulWidget {
     this.currentTeamDeviceId,
     this.sessionId, // Add sessionId for online games
     this.onlineTeam, // Add online team data for remote team checking
+    this.gameConfig, // Add game config for deck selection
   });
 
   @override
@@ -136,6 +140,21 @@ class _CategorySelectionScreenState
     });
   }
 
+  // Get available categories based on game config and unlocked status
+  List<Category> _getAvailableCategories() {
+    // If game config is provided, use selected decks
+    if (widget.gameConfig != null &&
+        widget.gameConfig!.selectedDeckIds.isNotEmpty) {
+      return CategoryRegistry.getUnlockedCategoriesByIds(
+        widget.gameConfig!.selectedDeckIds,
+        _unlockedCategoryIds,
+      );
+    }
+
+    // Fallback to all unlocked categories (legacy behavior)
+    return CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
+  }
+
   // Check if current device is part of the active team (supports both couch and remote modes)
   bool get _isCurrentTeamActive {
     // For local games (no sessionId), always allow interaction
@@ -197,10 +216,9 @@ class _CategorySelectionScreenState
         _categoryTimer?.cancel();
 
         // Final selection with smooth transition
-        final unlockedCategories =
-            CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
-        final finalCategory = unlockedCategories[
-            math.Random().nextInt(unlockedCategories.length)];
+        final availableCategories = _getAvailableCategories();
+        final finalCategory = availableCategories[
+            math.Random().nextInt(availableCategories.length)];
         final finalCategoryName = finalCategory.displayName;
 
         // Always update local state so the active team sees Next immediately
@@ -224,10 +242,9 @@ class _CategorySelectionScreenState
       }
 
       // Update the current category display for both local and online games
-      final unlockedCategories =
-          CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
-      final newCategory =
-          unlockedCategories[math.Random().nextInt(unlockedCategories.length)];
+      final availableCategories = _getAvailableCategories();
+      final newCategory = availableCategories[
+          math.Random().nextInt(availableCategories.length)];
       setState(() {
         _currentCategory = newCategory.displayName;
       });

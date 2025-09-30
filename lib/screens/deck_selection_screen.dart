@@ -9,12 +9,10 @@ import '../services/storage_service.dart';
 
 class DeckSelectionScreen extends ConsumerStatefulWidget {
   final List<String>? initialSelectedDecks;
-  final VoidCallback? onSelectionComplete;
 
   const DeckSelectionScreen({
     super.key,
     this.initialSelectedDecks,
-    this.onSelectionComplete,
   });
 
   @override
@@ -467,7 +465,6 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                           : uiColors[0],
                       onPressed: _selectedDecks.length >= 4
                           ? () {
-                              widget.onSelectionComplete?.call();
                               Navigator.of(context)
                                   .pop(_selectedDecks.toList());
                             }
