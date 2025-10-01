@@ -139,6 +139,18 @@ final updateSettingsProvider =
       .update({'settings.$key': value});
 });
 
+/// Provider for updating selected deck IDs in session settings
+final updateSelectedDecksProvider =
+    FutureProvider.family<void, Map<String, dynamic>>((ref, params) async {
+  final sessionId = params['sessionId'] as String;
+  final selectedDeckIds = params['selectedDeckIds'] as List<String>;
+  print(
+      '🔥 FIRESTORE WRITE: updateSelectedDecksProvider($sessionId) - selectedDeckIds: $selectedDeckIds');
+  await FirestoreService.sessions
+      .doc(sessionId)
+      .update({'settings.selectedDeckIds': selectedDeckIds});
+});
+
 /// Provider for updating game state status
 final updateGameStateStatusProvider =
     FutureProvider.family<void, Map<String, dynamic>>((ref, params) async {

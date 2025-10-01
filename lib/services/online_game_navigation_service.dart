@@ -11,6 +11,7 @@ import '../screens/home_screen.dart';
 import '../data/category_registry.dart';
 import '../screens/online_scoreboard_screen.dart';
 import '../screens/online_game_over_screen.dart';
+import '../models/game_config.dart';
 
 /// Service for handling navigation in online multiplayer games
 /// Provides navigation logic that can be called from ref.listen callbacks in screens
@@ -180,12 +181,29 @@ class OnlineGameNavigationService {
     final gameState = sessionData['gameState'] as Map<String, dynamic>?;
     final currentTeamIndex = gameState?['currentTeamIndex'] as int? ?? 0;
     final teams = sessionData['teams'] as List? ?? [];
+    final settings = sessionData['settings'] as Map<String, dynamic>?;
+    final selectedDeckIds = (settings?['selectedDeckIds'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
 
     // Get current team data
     Map<String, dynamic>? currentTeam;
     if (teams.isNotEmpty && currentTeamIndex < teams.length) {
       currentTeam = Map<String, dynamic>.from(teams[currentTeamIndex]);
     }
+
+    // Create a temporary game config for online games with selected decks
+    final onlineGameConfig = selectedDeckIds.isNotEmpty
+        ? GameConfig(
+            playerNames: [],
+            teams: [],
+            roundTimeSeconds: settings?['roundTimeSeconds'] as int? ?? 60,
+            targetScore: settings?['targetScore'] as int? ?? 20,
+            allowedSkips: settings?['allowedSkips'] as int? ?? 3,
+            selectedDeckIds: selectedDeckIds,
+          )
+        : null;
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -199,6 +217,7 @@ class OnlineGameNavigationService {
           currentTeamDeviceId: currentTeamDeviceId,
           sessionId: sessionId,
           onlineTeam: currentTeam,
+          gameConfig: onlineGameConfig,
         ),
       ),
     );

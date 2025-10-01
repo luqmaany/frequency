@@ -10,7 +10,6 @@ import '../widgets/menu_button.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import 'zen_setup_screen.dart';
-import 'deck_selection_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
 class AnimatedGradientText extends StatefulWidget {
@@ -395,30 +394,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               GameNavigationService.navigateToDecksStore(
                                   context),
                           color: buttonColors[3],
-                        ),
-                        const SizedBox(height: 16),
-                        MenuButton(
-                          text: 'Select Decks',
-                          onPressed: () async {
-                            final selectedDecks =
-                                await Navigator.push<List<String>>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const DeckSelectionScreen(),
-                              ),
-                            );
-                            if (selectedDecks != null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                      'Selected ${selectedDecks.length} decks: ${selectedDecks.join(', ')}'),
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            }
-                          },
-                          color: buttonColors[4 % buttonColors.length],
                         ),
                         const SizedBox(height: 16),
                         MenuButton(

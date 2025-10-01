@@ -8,6 +8,7 @@ import '../widgets/game_settings.dart';
 import '../widgets/parallel_pulse_waves_background.dart';
 import 'package:convey/widgets/team_color_button.dart';
 import '../providers/session_providers.dart';
+import 'deck_selection_screen.dart';
 
 class GameSettingsScreen extends ConsumerStatefulWidget {
   final bool isHost;
@@ -19,6 +20,52 @@ class GameSettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
+  Future<void> _navigateToOnlineDeckSelection() async {
+    final sessionId = widget.sessionId;
+    if (sessionId == null) return;
+
+    // Get current settings to get existing selected decks (if any)
+    final sessionAsync = ref.read(sessionStreamProvider(sessionId));
+    final sessionSnap = sessionAsync.value;
+    final sessionData = sessionSnap?.data();
+    final settings = sessionData?['settings'] as Map<String, dynamic>?;
+    final currentSelectedDecks = (settings?['selectedDeckIds'] as List?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        [];
+
+    // Navigate to deck selection screen
+    final selectedDecks = await Navigator.of(context).push<List<String>>(
+      MaterialPageRoute(
+        builder: (context) => DeckSelectionScreen(
+          initialSelectedDecks: currentSelectedDecks,
+        ),
+      ),
+    );
+
+    // If decks were selected, update Firestore and start the game
+    if (selectedDecks != null && selectedDecks.isNotEmpty && mounted) {
+      try {
+        // Update selected decks in Firestore settings
+        await ref.read(updateSelectedDecksProvider({
+          'sessionId': sessionId,
+          'selectedDeckIds': selectedDecks,
+        }).future);
+
+        // Start the game
+        await FirestoreService.startGame(sessionId);
+      } catch (e) {
+        print('Error starting online game with decks: $e');
+        // Handle error - maybe show a snackbar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error starting game: ${e.toString()}')),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final gameConfig = ref.watch(gameSetupProvider);
@@ -155,10 +202,8 @@ class _GameSettingsScreenState extends ConsumerState<GameSettingsScreen> {
                                       const Duration(milliseconds: 150));
 
                                   if (widget.sessionId != null) {
-                                    // Online mode: Use Firestore settings
-                                    await FirestoreService.startGame(
-                                        widget.sessionId!);
-                                    // Do not navigate directly; let the navigation service handle it
+                                    // Online mode: Navigate to deck selection first
+                                    _navigateToOnlineDeckSelection();
                                   } else {
                                     // Local mode: Navigate to deck selection first
                                     GameNavigationService
