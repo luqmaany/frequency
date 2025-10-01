@@ -7,10 +7,12 @@ import '../services/game_navigation_service.dart';
 import 'online_lobby_screen.dart';
 import '../widgets/wave_background.dart';
 import '../widgets/menu_button.dart';
+import '../widgets/team_color_button.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../services/developer_service.dart';
 import 'zen_setup_screen.dart';
+import 'background_lab_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
 class AnimatedGradientText extends StatefulWidget {
@@ -673,26 +675,38 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        MenuButton(
+                        TeamColorButton(
                           text: 'Play',
+                          color: uiColors[0], // Blue
                           onPressed: () => _showPlayDialog(context),
-                          color: buttonColors[0],
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 20),
+                          opacity: 0.3,
+                          borderWidth: 2.0,
                         ),
                         const SizedBox(height: 16),
                         // Removed 'Stats & History' button
-                        MenuButton(
+                        TeamColorButton(
                           text: 'Decks',
+                          color: teamColors[4], // Coral
                           onPressed: () =>
                               GameNavigationService.navigateToDecksStore(
                                   context),
-                          color: buttonColors[3],
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 20),
+                          opacity: 0.3,
+                          borderWidth: 2.0,
                         ),
                         const SizedBox(height: 16),
-                        MenuButton(
+                        TeamColorButton(
                           text: 'Settings',
+                          color: uiColors[2], // Red
                           onPressed: () =>
                               GameNavigationService.navigateToSettings(context),
-                          color: buttonColors[2],
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 20, horizontal: 20),
+                          opacity: 0.3,
+                          borderWidth: 2.0,
                         ),
                         // Developer mode buttons (hidden unless activated)
                         if (_isDeveloperModeEnabled) ...[
@@ -735,6 +749,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             text: 'Test Purchase',
                             onPressed: () => _showTestPurchaseDialog(context),
                             color: Colors.green,
+                          ),
+                          const SizedBox(height: 8),
+                          MenuButton(
+                            text: 'Background Lab',
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const BackgroundLabScreen(),
+                              ),
+                            ),
+                            color: Colors.purple,
                           ),
                           const SizedBox(height: 8),
                           MenuButton(

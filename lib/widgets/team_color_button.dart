@@ -41,24 +41,28 @@ final List<TeamColor> teamColors = [
 
 class TeamColorButton extends ConsumerStatefulWidget {
   final String text;
-  final IconData icon;
+  final IconData? icon;
   final TeamColor color;
   final VoidCallback? onPressed;
   final EdgeInsetsGeometry padding;
   final double iconSize;
   final TeamButtonVariant variant;
   final bool isLoading;
+  final double opacity;
+  final double borderWidth;
 
   const TeamColorButton({
     super.key,
     required this.text,
-    required this.icon,
+    this.icon,
     required this.color,
     required this.onPressed,
     this.padding = const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
     this.iconSize = 24,
     this.variant = TeamButtonVariant.filled,
     this.isLoading = false,
+    this.opacity = 0.6,
+    this.borderWidth = 1.5,
   });
 
   @override
@@ -108,8 +112,9 @@ class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
     // tint over the app background, matching the look of other dark buttons.
     final Color baseBg = Theme.of(context).colorScheme.background;
     final bool isOutline = widget.variant == TeamButtonVariant.outline;
-    final double enabledOverlayOpacity = isOutline ? 0.08 : 0.6;
-    final double disabledOverlayOpacity = isOutline ? 0.04 : 0.2;
+    final double enabledOverlayOpacity = isOutline ? 0.08 : widget.opacity;
+    final double disabledOverlayOpacity =
+        isOutline ? 0.04 : widget.opacity * 0.5;
     final Color overlayEnabled =
         widget.color.border.withOpacity(enabledOverlayOpacity);
     final Color overlayDisabled =
@@ -136,8 +141,7 @@ class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
         child: Material(
           color: enabled ? backgroundEnabled : backgroundDisabled,
           borderRadius: BorderRadius.circular(12),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+          child: GestureDetector(
             onTap: enabled ? _handleTap : null,
             onTapDown: enabled ? _onTapDown : null,
             onTapUp: enabled ? _onTapUp : null,
@@ -148,7 +152,7 @@ class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: enabled ? border : border.withOpacity(0.2),
-                  width: 1.5, // match other buttons' stroke width
+                  width: widget.borderWidth,
                 ),
               ),
               child: Row(
@@ -163,9 +167,10 @@ class _TeamColorButtonState extends ConsumerState<TeamColorButton> {
                         valueColor: AlwaysStoppedAnimation<Color>(iconColor),
                       ),
                     )
-                  else
+                  else if (widget.icon != null) ...[
                     Icon(widget.icon, size: widget.iconSize, color: iconColor),
-                  const SizedBox(width: 12),
+                    const SizedBox(width: 12),
+                  ],
                   Text(
                     widget.text,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
