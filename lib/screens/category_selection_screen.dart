@@ -399,9 +399,9 @@ class _CategorySelectionScreenState
                                           _currentCategory.isEmpty
                                               ? (_isCurrentTeamActive
                                                   ? (_hasSpun
-                                                      ? 'SPINNING...'
-                                                      : 'TAP TO SPIN\nFOR CATEGORY!')
-                                                  : 'WAITING...')
+                                                      ? 'Spinning...'
+                                                      : 'Tap To Spin\nFor Category!')
+                                                  : 'Waiting...')
                                               : _currentCategory,
                                           key: ValueKey<String>(
                                               _currentCategory),

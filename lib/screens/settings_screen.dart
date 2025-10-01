@@ -95,7 +95,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     children: [
                       Expanded(
                         child: ListView(
-                          padding: const EdgeInsets.all(24.0),
+                          padding: const EdgeInsets.only(
+                              left: 24, right: 24, top: 24, bottom: 100),
                           children: [
                             Center(
                               child: Text(
