@@ -1,1 +1,54 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"convey-7","appId":"1:178068463522:android:75fc4cf58db839c5185cfb","fileOutput":"android/app/google-services.json","packageName":"com.convey.game"}},"dart":{"lib/firebase_options.dart":{"projectId":"convey-7","configurations":{"android":"1:178068463522:android:75fc4cf58db839c5185cfb","ios":"1:178068463522:ios:d0cabc70146ca9a1185cfb","macos":"1:178068463522:ios:d0cabc70146ca9a1185cfb","web":"1:178068463522:web:605ec72cdcb14b49185cfb","windows":"1:178068463522:web:342a43b16ef098de185cfb"}}}}},"firestore":{"rules":"firestore.rules"},"functions":[{"source":"functions","codebase":"default","ignore":["node_modules",".git","firebase-debug.log","firebase-debug.*.log","*.local"],"predeploy":["npm --prefix \"$RESOURCE_DIR\" run build"]}]}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "convey-7",
+          "appId": "1:178068463522:android:75fc4cf58db839c5185cfb",
+          "fileOutput": "android/app/google-services.json",
+          "packageName": "com.convey.game"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "convey-7",
+          "configurations": {
+            "android": "1:178068463522:android:75fc4cf58db839c5185cfb",
+            "ios": "1:178068463522:ios:d0cabc70146ca9a1185cfb",
+            "macos": "1:178068463522:ios:d0cabc70146ca9a1185cfb",
+            "web": "1:178068463522:web:605ec72cdcb14b49185cfb",
+            "windows": "1:178068463522:web:342a43b16ef098de185cfb"
+          }
+        }
+      }
+    }
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ],
+  "emulators": {
+    "firestore": {
+      "port": 8080
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    }
+  }
+}

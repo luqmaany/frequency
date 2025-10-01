@@ -2,11 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'screens/home_screen.dart';
 import 'services/theme_provider.dart';
 import 'services/storage_service.dart';
 import 'data/category_registry.dart';
 import 'services/purchase_service.dart';
+
+// Set to true to use Firebase Emulators for local development
+// This gives you unlimited free reads/writes!
+const bool USE_EMULATOR = false;
+
+// IMPORTANT: For multiple devices, set your computer's local IP here
+// Find it by running: ipconfig (Windows) or ifconfig (Mac/Linux)
+// Example: '192.168.1.100'
+//
+// Special cases:
+// - 'localhost' = Only works for apps running on the same computer as emulator
+// - '10.0.2.2' = Auto-used for Android emulators (points to host machine)
+// - Your local IP = Use for physical devices on same WiFi network
+const String EMULATOR_HOST = 'localhost'; // Change this for physical devices!
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +31,29 @@ void main() async {
   if (Firebase.apps.isEmpty) {
     // On iOS/macOS this uses GoogleService-Info.plist bundled in the app
     await Firebase.initializeApp();
+  }
+
+  // Connect to Firebase Emulator in debug mode
+  if (USE_EMULATOR && kDebugMode) {
+    try {
+      // Determine the correct host based on platform
+      String host = EMULATOR_HOST;
+
+      // Android emulators need special IP to reach host machine
+      if (defaultTargetPlatform == TargetPlatform.android &&
+          EMULATOR_HOST == 'localhost') {
+        host = '10.0.2.2';
+        debugPrint('📱 Detected Android - using 10.0.2.2 for emulator access');
+      }
+
+      FirebaseFirestore.instance.useFirestoreEmulator(host, 8080);
+      debugPrint('🔥 Connected to Firestore Emulator on $host:8080');
+      debugPrint('💰 All reads/writes are FREE in emulator mode!');
+    } catch (e) {
+      debugPrint('⚠️ Failed to connect to emulator: $e');
+      debugPrint('   Make sure emulator is running: firebase emulators:start');
+      debugPrint('   For physical devices, set EMULATOR_HOST to your PC\'s IP');
+    }
   }
   await CategoryRegistry.loadDynamicCategories();
   await PurchaseService.init();
