@@ -9,6 +9,7 @@ import '../widgets/wave_background.dart';
 import '../widgets/menu_button.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
+import '../services/developer_service.dart';
 import 'zen_setup_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
@@ -101,6 +102,282 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with WidgetsBindingObserver {
+  int _titleTapCount = 0;
+  bool _isDeveloperModeEnabled = false;
+  Timer? _tapResetTimer;
+  void _handleTitleTap() async {
+    _titleTapCount++;
+
+    // Reset tap count after 3 seconds of inactivity
+    _tapResetTimer?.cancel();
+    _tapResetTimer = Timer(const Duration(seconds: 3), () {
+      _titleTapCount = 0;
+    });
+
+    // Check if we've reached 7 taps
+    if (_titleTapCount >= 7) {
+      _titleTapCount = 0;
+      _tapResetTimer?.cancel();
+      _showDeveloperPasswordDialog(context);
+    }
+  }
+
+  void _showDeveloperPasswordDialog(BuildContext context) {
+    final TextEditingController passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          insetPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 560),
+            padding: const EdgeInsets.all(2), // Border width
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFF5EB1FF), // Blue
+                  Color(0xFF7A5CFF), // Purple
+                  Color(0xFF4CD295), // Green
+                ],
+              ),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(22), // 24 - 2 for border
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900,
+                borderRadius: BorderRadius.circular(18), // 20 - 2 for border
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Dialog title
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Text(
+                      'Developer Mode',
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  // Password input
+                  Text(
+                    'Enter developer password:',
+                    style: TextStyle(
+                      color: Colors.grey.shade300,
+                      fontSize: 16,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                    textAlign: TextAlign.center,
+                    decoration: InputDecoration(
+                      hintText: 'Password',
+                      hintStyle: TextStyle(color: Colors.grey.shade500),
+                      filled: true,
+                      fillColor: Colors.grey.shade800,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade600),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.grey.shade600),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                            color: const Color(0xFF5EB1FF), width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    onSubmitted: (value) =>
+                        _verifyDeveloperPassword(context, value),
+                  ),
+                  const SizedBox(height: 24),
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTapDown: (_) async {
+                            // Check vibration setting and provide haptic feedback
+                            final prefs =
+                                await StorageService.loadAppPreferences();
+                            if (prefs['vibrationEnabled'] == true) {
+                              HapticFeedback.lightImpact();
+                            }
+                            unawaited(ref
+                                .read(soundServiceProvider)
+                                .playButtonPress());
+                          },
+                          onTap: () => Navigator.of(context).pop(),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade700.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: Colors.grey.shade600, width: 2),
+                            ),
+                            child: Text(
+                              'Cancel',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: Colors.grey.shade300,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: InkWell(
+                          onTapDown: (_) async {
+                            // Check vibration setting and provide haptic feedback
+                            final prefs =
+                                await StorageService.loadAppPreferences();
+                            if (prefs['vibrationEnabled'] == true) {
+                              HapticFeedback.lightImpact();
+                            }
+                            unawaited(ref
+                                .read(soundServiceProvider)
+                                .playButtonPress());
+                          },
+                          onTap: () => _verifyDeveloperPassword(
+                              context, passwordController.text),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 16, horizontal: 20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF5EB1FF).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                  color: const Color(0xFF5EB1FF), width: 2),
+                            ),
+                            child: Text(
+                              'Enter',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    color: const Color(0xFF5EB1FF),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _verifyDeveloperPassword(BuildContext context, String password) async {
+    final isValid = await DeveloperService.verifyPassword(password);
+
+    Navigator.of(context).pop();
+
+    if (isValid) {
+      await DeveloperService.enableDeveloperMode();
+      setState(() {
+        _isDeveloperModeEnabled = true;
+      });
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Developer mode activated!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Invalid password'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _showTestPurchaseDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey.shade900,
+          title: Text(
+            'Test Purchase',
+            style: TextStyle(color: Colors.green),
+          ),
+          content: Text(
+            'This is a developer-only feature to test purchase flows.',
+            style: TextStyle(color: Colors.grey.shade300),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Close',
+                style: TextStyle(color: Colors.grey.shade400),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _disableDeveloperMode(BuildContext context) async {
+    await DeveloperService.disableDeveloperMode();
+    setState(() {
+      _isDeveloperModeEnabled = false;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Developer mode disabled'),
+        backgroundColor: Colors.orange,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
   void _showPlayDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -263,6 +540,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Check developer mode status
+    _checkDeveloperModeStatus();
     // Start menu music after sound service is fully initialized
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final soundService = ref.read(soundServiceProvider);
@@ -275,8 +554,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
+  void _checkDeveloperModeStatus() async {
+    final isEnabled = await DeveloperService.isDeveloperModeEnabled();
+    if (mounted) {
+      setState(() {
+        _isDeveloperModeEnabled = isEnabled;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    _tapResetTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     // Stop menu music when leaving home (safety; also stopped when gameplay starts)
     // Get the sound service reference before calling super.dispose()
@@ -363,12 +652,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         );
                         return FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: Text(
-                            'FREQUENCY',
-                            textAlign: TextAlign.center,
-                            style: textStyle,
-                            maxLines: 1,
-                            softWrap: false,
+                          child: GestureDetector(
+                            onTap: _handleTitleTap,
+                            child: Text(
+                              'FREQUENCY',
+                              textAlign: TextAlign.center,
+                              style: textStyle,
+                              maxLines: 1,
+                              softWrap: false,
+                            ),
                           ),
                         );
                       },
@@ -397,19 +689,60 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         ),
                         const SizedBox(height: 16),
                         MenuButton(
-                          text: 'Categories',
-                          onPressed: () =>
-                              GameNavigationService.navigateToWordListsManager(
-                                  context),
-                          color: buttonColors[5 % buttonColors.length],
-                        ),
-                        const SizedBox(height: 16),
-                        MenuButton(
                           text: 'Settings',
                           onPressed: () =>
                               GameNavigationService.navigateToSettings(context),
                           color: buttonColors[2],
                         ),
+                        // Developer mode buttons (hidden unless activated)
+                        if (_isDeveloperModeEnabled) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            width: double.infinity,
+                            height: 2,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.grey.shade600,
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'DEVELOPER MODE',
+                            textAlign: TextAlign.center,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  color: Colors.orange,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                          ),
+                          const SizedBox(height: 12),
+                          MenuButton(
+                            text: 'Categories',
+                            onPressed: () => GameNavigationService
+                                .navigateToWordListsManager(context),
+                            color: buttonColors[5 % buttonColors.length],
+                          ),
+                          const SizedBox(height: 8),
+                          MenuButton(
+                            text: 'Test Purchase',
+                            onPressed: () => _showTestPurchaseDialog(context),
+                            color: Colors.green,
+                          ),
+                          const SizedBox(height: 8),
+                          MenuButton(
+                            text: 'Disable Dev Mode',
+                            onPressed: () => _disableDeveloperMode(context),
+                            color: Colors.orange,
+                          ),
+                        ],
                       ],
                     ),
                   ),
