@@ -426,7 +426,8 @@ class FirestoreService {
       List<String> wordsLeftOnScreen,
       Set<String> disputedWords,
       String conveyor,
-      String guesser) async {
+      String guesser,
+      {Map<String, double>? wordTimings}) async {
     if (!_canWrite(sessionId)) {
       throw Exception('Rate limit exceeded for writes');
     }
@@ -448,6 +449,7 @@ class FirestoreService {
           disputedWords.toList(), // Convert Set to List for Firestore
       'conveyor': conveyor,
       'guesser': guesser,
+      'wordTimings': wordTimings ?? {}, // Store word timings or empty map
     };
 
     await sessions.doc(sessionId).update({
@@ -474,8 +476,9 @@ class FirestoreService {
     List<String> wordsSkipped,
     Set<String> disputedWords,
     String conveyor,
-    String guesser,
-  ) async {
+    String guesser, {
+    Map<String, double>? wordTimings,
+  }) async {
     if (!_canWrite(sessionId)) {
       throw Exception('Rate limit exceeded for writes');
     }
@@ -496,6 +499,7 @@ class FirestoreService {
       'disputedWords': disputedWords.toList(),
       'conveyor': conveyor,
       'guesser': guesser,
+      'wordTimings': wordTimings ?? {}, // Store word timings or empty map
     };
 
     await sessions.doc(sessionId).update({
@@ -522,6 +526,23 @@ class FirestoreService {
     await sessions.doc(sessionId).update({
       'gameState.status': 'category_selection',
     });
+  }
+
+  // ============================================================================
+  // SURVEY DATA
+  // ============================================================================
+
+  /// Write survey data to Firestore
+  static Future<void> writeSurveyData(Map<String, dynamic> surveyData) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('insight_surveys')
+          .add(surveyData);
+      print('✅ Survey data written to Firestore');
+    } catch (e) {
+      print('❌ Failed to write survey data: $e');
+      rethrow;
+    }
   }
 
   // ============================================================================

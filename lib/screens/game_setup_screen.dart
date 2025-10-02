@@ -177,7 +177,7 @@ class _GameSetupScreenState extends ConsumerState<GameSetupScreen>
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: Colors.white,
                       ),
                     ),
                   ),

@@ -13,6 +13,8 @@ class TurnRecord {
   final int skipsUsed;
   final List<String> wordsGuessed;
   final List<String> wordsSkipped;
+  final Map<String, double>?
+      wordTimings; // word -> seconds visible before action
 
   TurnRecord({
     required this.teamIndex,
@@ -25,6 +27,7 @@ class TurnRecord {
     required this.skipsUsed,
     required this.wordsGuessed,
     required this.wordsSkipped,
+    this.wordTimings,
   });
 
   TurnRecord copyWith({
@@ -38,6 +41,7 @@ class TurnRecord {
     int? skipsUsed,
     List<String>? wordsGuessed,
     List<String>? wordsSkipped,
+    Map<String, double>? wordTimings,
   }) {
     return TurnRecord(
       teamIndex: teamIndex ?? this.teamIndex,
@@ -50,6 +54,7 @@ class TurnRecord {
       skipsUsed: skipsUsed ?? this.skipsUsed,
       wordsGuessed: wordsGuessed ?? this.wordsGuessed,
       wordsSkipped: wordsSkipped ?? this.wordsSkipped,
+      wordTimings: wordTimings ?? this.wordTimings,
     );
   }
 }

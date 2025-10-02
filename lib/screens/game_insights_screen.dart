@@ -4,6 +4,7 @@ import 'dart:math';
 import '../services/game_state_provider.dart';
 import '../widgets/team_color_button.dart';
 import '../widgets/celebration_explosions_background.dart';
+import '../services/firestore_service.dart';
 
 class GameInsightsScreen extends ConsumerStatefulWidget {
   const GameInsightsScreen({super.key});
@@ -13,6 +14,12 @@ class GameInsightsScreen extends ConsumerStatefulWidget {
 }
 
 class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
+  // Survey state
+  Set<String> selectedTopInsights = {};
+  String suggestedInsights = '';
+  double overallRating = 0.0;
+  String additionalFeedback = '';
+
   @override
   Widget build(BuildContext context) {
     final gameState = ref.watch(gameStateProvider);
@@ -58,26 +65,26 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
                     ),
                   ),
                 ),
-                // Centered top 3 insight cards
+                // Centered insight cards (up to 7)
                 Expanded(
-                  child: Center(
+                  child: SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
-                          items.length > 3 ? 3 : items.length,
+                          items.length > 7 ? 7 : items.length,
                           (index) {
                             final item = items[index];
                             return Padding(
                               padding: EdgeInsets.only(
-                                top: index == 0 ? 0 : 12,
+                                top: index == 0 ? 20 : 12,
                                 bottom: index ==
-                                        (items.length > 3
-                                            ? 2
+                                        (items.length > 7
+                                            ? 6
                                             : items.length - 1)
-                                    ? 0
+                                    ? 20
                                     : 12,
                               ),
                               child: _buildCarouselCard(
@@ -98,31 +105,50 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
                 Container(
                   padding: const EdgeInsets.all(27.0),
                   decoration: const BoxDecoration(color: Colors.transparent),
-                  child: Row(
+                  child: Column(
                     children: [
-                      Expanded(
+                      // Survey button
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 12),
                         child: TeamColorButton(
-                          text: 'Back',
-                          icon: Icons.arrow_back,
+                          text: 'Quick Feedback',
+                          icon: Icons.feedback,
                           color:
-                              uiColors.length > 1 ? uiColors[1] : uiColors[0],
+                              uiColors.length > 2 ? uiColors[2] : uiColors[0],
                           onPressed: () {
-                            // Go back to the previous screen (Game Over)
-                            Navigator.of(context).pop();
+                            _showSurveyDialog(context, gameState, items);
                           },
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TeamColorButton(
-                          text: 'Home',
-                          icon: Icons.home,
-                          color: uiColors[0],
-                          onPressed: () {
-                            Navigator.of(context)
-                                .popUntil((route) => route.isFirst);
-                          },
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TeamColorButton(
+                              text: 'Back',
+                              icon: Icons.arrow_back,
+                              color: uiColors.length > 1
+                                  ? uiColors[1]
+                                  : uiColors[0],
+                              onPressed: () {
+                                // Go back to the previous screen (Game Over)
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TeamColorButton(
+                              text: 'Home',
+                              icon: Icons.home,
+                              color: uiColors[0],
+                              onPressed: () {
+                                Navigator.of(context)
+                                    .popUntil((route) => route.isFirst);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -133,6 +159,178 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
         ],
       ),
     );
+  }
+
+  void _showSurveyDialog(
+      BuildContext context, gameState, List<Map<String, dynamic>> items) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Quick Feedback'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Question 1: Top 3 insights
+                    Text(
+                      'What are your top 3 favorite insights?',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    ...items.map((item) => CheckboxListTile(
+                          title: Text(item['title'] as String),
+                          value: selectedTopInsights.contains(item['title']),
+                          onChanged: (bool? value) {
+                            setDialogState(() {
+                              if (value == true) {
+                                if (selectedTopInsights.length < 3) {
+                                  selectedTopInsights
+                                      .add(item['title'] as String);
+                                }
+                              } else {
+                                selectedTopInsights
+                                    .remove(item['title'] as String);
+                              }
+                            });
+                          },
+                        )),
+                    const SizedBox(height: 20),
+
+                    // Question 2: Suggested insights
+                    Text(
+                      'What insights would you like to see?',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText:
+                            'e.g., "Best comeback story", "Most creative guesses"',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                      onChanged: (value) => suggestedInsights = value,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Question 3: Overall rating
+                    Text(
+                      'Rate the insights overall:',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          onPressed: () =>
+                              setDialogState(() => overallRating = index + 1.0),
+                          icon: Icon(
+                            index < overallRating
+                                ? Icons.star
+                                : Icons.star_border,
+                            color: Colors.amber,
+                            size: 32,
+                          ),
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Question 4: Additional feedback
+                    Text(
+                      'Any other feedback? (optional)',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      decoration: const InputDecoration(
+                        hintText: 'Share your thoughts...',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                      onChanged: (value) => additionalFeedback = value,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    await _submitSurvey();
+                  },
+                  child: const Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitSurvey() async {
+    final gameState = ref.read(gameStateProvider);
+    if (gameState == null) return;
+
+    try {
+      // Create survey data
+      final surveyData = {
+        'timestamp': DateTime.now().toIso8601String(),
+        'gameId': gameState.config.teams.join('_'), // Simple game identifier
+        'gameContext': {
+          'teamCount': gameState.config.teams.length,
+          'gameLength': gameState.currentRound,
+          'totalTurns': gameState.turnHistory.length,
+          'insightsShown': selectedTopInsights.toList(),
+        },
+        'responses': {
+          'topThreeInsights': selectedTopInsights.toList(),
+          'suggestedInsights': suggestedInsights,
+          'overallRating': overallRating,
+          'additionalFeedback': additionalFeedback,
+        },
+        'deviceInfo': {
+          'platform':
+              'mobile', // Could be enhanced with actual platform detection
+          'appVersion': '1.0.0', // Could be enhanced with actual version
+        }
+      };
+
+      // Write to Firestore
+      await FirestoreService.writeSurveyData(surveyData);
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Thank you for your feedback!'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Survey submitted successfully
+      }
+    } catch (e) {
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit feedback: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildCarouselCard(BuildContext context,
@@ -223,14 +421,19 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
 
     addIfExists('mostDecisive', 'Most Decisive', Icons.flash_on);
     addIfExists('comebackKing', 'Comeback King', Icons.trending_up);
-    addIfExists('dynamicDuo', 'Dynamic Duo', Icons.favorite);
-    addIfExists('lateGameHero', 'Late Game Hero', Icons.sports_esports);
-    addIfExists('efficiencyParadox', 'Efficiency Paradox', Icons.auto_awesome);
     addIfExists('pressurePlayer', 'Pressure Player', Icons.whatshot);
     addIfExists('skipMaster', 'Skip Master', Icons.fast_forward);
     addIfExists('categorySpecialist', 'Category Specialist', Icons.psychology);
     addIfExists('steadyEddie', 'Steady Eddie', Icons.straighten);
     addIfExists('rollercoaster', 'Rollercoaster', Icons.waves);
+
+    // Time-based insights
+    addIfExists('lightningReflexes', 'Lightning Reflexes', Icons.flash_on);
+    addIfExists('clutchPlayer', 'Clutch Player', Icons.whatshot);
+    addIfExists('speedDemon', 'Speed Demon', Icons.speed);
+    addIfExists('analysisParalysis', 'Analysis Paralysis', Icons.psychology);
+    addIfExists('wordWhisperer', 'Word Whisperer', Icons.book);
+    addIfExists('timeMaster', 'Time Master', Icons.schedule);
 
     // Optional global stats
     if (insights['gameStats'] != null) {
@@ -243,13 +446,14 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
       });
     }
 
-    // Prefer three items from different teams when possible
+    // Prefer seven items from different teams when possible
     final selected = <Map<String, dynamic>>[];
     final usedTeamIndexes = <int>{};
     final usedTitles = <String>{};
 
+    // First pass: prioritize items from different teams
     for (final item in order) {
-      if (selected.length >= 3) break;
+      if (selected.length >= 7) break;
       final teamIndex = item['teamIndex'] as int?;
       final title = item['title'] as String;
       if (teamIndex != null && !usedTeamIndexes.contains(teamIndex)) {
@@ -259,10 +463,10 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
       }
     }
 
-    // Fill remaining slots regardless of team
-    if (selected.length < 3) {
+    // Second pass: fill remaining slots regardless of team
+    if (selected.length < 7) {
       for (final item in order) {
-        if (selected.length >= 3) break;
+        if (selected.length >= 7) break;
         final title = item['title'] as String;
         if (!usedTitles.contains(title)) {
           selected.add(item);
@@ -291,9 +495,6 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
     if (momentumAnalysis['comebackKing'] != null) {
       insights['comebackKing'] = momentumAnalysis['comebackKing'];
     }
-    if (momentumAnalysis['earlyBird'] != null) {
-      insights['earlyBird'] = momentumAnalysis['earlyBird'];
-    }
 
     // Category Specialist - Who's unexpectedly good at specific categories?
     final categoryAnalysis = _analyzeCategorySpecialists(gameState);
@@ -304,25 +505,10 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
       insights['categoryStruggler'] = categoryAnalysis['categoryStruggler'];
     }
 
-    // Efficiency Paradox - Who's efficient in unexpected ways?
-    final efficiencyAnalysis = _analyzeEfficiencyParadox(gameState);
-    if (efficiencyAnalysis['efficiencyParadox'] != null) {
-      insights['efficiencyParadox'] = efficiencyAnalysis['efficiencyParadox'];
-    }
-
-    // Round Performance - Who performs better in later rounds?
+    // Round Performance - Who performs better under pressure?
     final roundAnalysis = _analyzeRoundPerformance(gameState);
-    if (roundAnalysis['lateGameHero'] != null) {
-      insights['lateGameHero'] = roundAnalysis['lateGameHero'];
-    }
     if (roundAnalysis['pressurePlayer'] != null) {
       insights['pressurePlayer'] = roundAnalysis['pressurePlayer'];
-    }
-
-    // Team Chemistry - Which partnerships work best?
-    final chemistryAnalysis = _analyzeTeamChemistry(gameState);
-    if (chemistryAnalysis['dynamicDuo'] != null) {
-      insights['dynamicDuo'] = chemistryAnalysis['dynamicDuo'];
     }
 
     // Consistency Analysis - Who's the most reliable?
@@ -332,6 +518,27 @@ class _GameInsightsScreenState extends ConsumerState<GameInsightsScreen> {
     }
     if (consistencyAnalysis['rollercoaster'] != null) {
       insights['rollercoaster'] = consistencyAnalysis['rollercoaster'];
+    }
+
+    // Time-based Analysis - Speed and reaction insights
+    final timeAnalysis = _analyzeTimeBasedInsights(gameState);
+    if (timeAnalysis['lightningReflexes'] != null) {
+      insights['lightningReflexes'] = timeAnalysis['lightningReflexes'];
+    }
+    if (timeAnalysis['clutchPlayer'] != null) {
+      insights['clutchPlayer'] = timeAnalysis['clutchPlayer'];
+    }
+    if (timeAnalysis['speedDemon'] != null) {
+      insights['speedDemon'] = timeAnalysis['speedDemon'];
+    }
+    if (timeAnalysis['analysisParalysis'] != null) {
+      insights['analysisParalysis'] = timeAnalysis['analysisParalysis'];
+    }
+    if (timeAnalysis['wordWhisperer'] != null) {
+      insights['wordWhisperer'] = timeAnalysis['wordWhisperer'];
+    }
+    if (timeAnalysis['timeMaster'] != null) {
+      insights['timeMaster'] = timeAnalysis['timeMaster'];
     }
 
     // Game Statistics (keep this one as it's useful)
@@ -361,18 +568,6 @@ Game Duration: ${gameState.currentRound} rounds''';
       }
     }
     return null;
-  }
-
-  int? _teamIndexForPair(dynamic gameState, String a, String b) {
-    for (int i = 0; i < gameState.config.teams.length; i++) {
-      final team = gameState.config.teams[i];
-      if (team.contains(a) && team.contains(b)) {
-        return i;
-      }
-    }
-    // Fallback to first player's team if both not found together
-    return _teamIndexForPlayer(gameState, a) ??
-        _teamIndexForPlayer(gameState, b);
   }
 
   Map<String, dynamic> _analyzeSkipPatterns(gameState) {
@@ -628,68 +823,6 @@ Game Duration: ${gameState.currentRound} rounds''';
     };
   }
 
-  Map<String, dynamic> _analyzeEfficiencyParadox(gameState) {
-    final teamEfficiency = <int, Map<String, dynamic>>{};
-
-    for (int i = 0; i < gameState.teamScores.length; i++) {
-      final teamTurns =
-          gameState.turnHistory.where((turn) => turn.teamIndex == i).toList();
-      if (teamTurns.isNotEmpty) {
-        final totalScore = gameState.teamScores[i];
-        final totalTurns = teamTurns.length;
-        final totalWords =
-            teamTurns.fold(0, (sum, turn) => sum + turn.wordsGuessed.length);
-        final totalSkips =
-            teamTurns.fold(0, (sum, turn) => sum + turn.skipsUsed);
-
-        // Calculate different efficiency metrics
-        final pointsPerTurn = totalScore / totalTurns;
-        final pointsPerWord = totalWords > 0 ? totalScore / totalWords : 0.0;
-        final wordsPerTurn = totalWords / totalTurns;
-        final skipEfficiency = totalSkips > 0 ? totalScore / totalSkips : 0.0;
-
-        teamEfficiency[i] = {
-          'pointsPerTurn': pointsPerTurn,
-          'pointsPerWord': pointsPerWord,
-          'wordsPerTurn': wordsPerTurn,
-          'skipEfficiency': skipEfficiency,
-          'totalScore': totalScore,
-        };
-      }
-    }
-
-    // Find the efficiency paradox: team with high points per word but low points per turn
-    String? efficiencyParadox;
-    int? efficiencyParadoxTeamIndex;
-    double bestParadox = 0.0;
-
-    for (final entry in teamEfficiency.entries) {
-      final teamIndex = entry.key;
-      final stats = entry.value;
-
-      // Paradox: high efficiency per word but low overall efficiency
-      final paradoxScore = (stats['pointsPerWord'] as double) /
-          (stats['pointsPerTurn'] as double);
-      if (paradoxScore > bestParadox && stats['pointsPerWord'] > 2.0) {
-        bestParadox = paradoxScore;
-        final teamNames = gameState.config.teams[teamIndex].join(' & ');
-        efficiencyParadox = teamNames;
-        efficiencyParadoxTeamIndex = teamIndex;
-      }
-    }
-
-    return {
-      'efficiencyParadox': efficiencyParadox != null
-          ? {
-              'description':
-                  '$efficiencyParadox is efficient per word but takes fewer turns',
-              'subject': efficiencyParadox,
-              'teamIndex': efficiencyParadoxTeamIndex,
-            }
-          : null,
-    };
-  }
-
   Map<String, dynamic> _analyzeRoundPerformance(gameState) {
     final teamRoundStats = <int, Map<int, List<int>>>{};
 
@@ -699,11 +832,8 @@ Game Duration: ${gameState.currentRound} rounds''';
       teamRoundStats[turn.teamIndex]![turn.roundNumber]!.add(turn.score);
     }
 
-    String? lateGameHero;
-    int? lateGameHeroTeamIndex;
     String? pressurePlayer;
     int? pressurePlayerTeamIndex;
-    double bestLateGame = 0.0;
     double bestPressure = 0.0;
 
     for (final entry in teamRoundStats.entries) {
@@ -712,129 +842,29 @@ Game Duration: ${gameState.currentRound} rounds''';
 
       if (rounds.length >= 2) {
         final roundNumbers = rounds.keys.toList()..sort();
-        final earlyRounds =
-            roundNumbers.take((roundNumbers.length / 2).floor());
-        final lateRounds = roundNumbers.skip((roundNumbers.length / 2).floor());
 
-        if (earlyRounds.isNotEmpty && lateRounds.isNotEmpty) {
-          // Calculate averages for early and late rounds
-          double earlyAvg = 0.0;
-          double lateAvg = 0.0;
-          int earlyCount = 0;
-          int lateCount = 0;
-
-          for (final round in earlyRounds) {
-            final scores = rounds[round]!;
-            earlyAvg += scores.reduce((a, b) => a + b);
-            earlyCount += scores.length;
-          }
-          earlyAvg = earlyCount > 0 ? earlyAvg / earlyCount : 0.0;
-
-          for (final round in lateRounds) {
-            final scores = rounds[round]!;
-            lateAvg += scores.reduce((a, b) => a + b);
-            lateCount += scores.length;
-          }
-          lateAvg = lateCount > 0 ? lateAvg / lateCount : 0.0;
-
-          // Late game hero: biggest improvement in later rounds
-          final lateGameImprovement = lateAvg - earlyAvg;
-          if (lateGameImprovement > bestLateGame) {
-            bestLateGame = lateGameImprovement;
+        // Pressure player: performs best in the final round
+        final finalRound = roundNumbers.last;
+        if (rounds[finalRound]!.isNotEmpty) {
+          final finalRoundAvg = rounds[finalRound]!.reduce((a, b) => a + b) /
+              rounds[finalRound]!.length;
+          if (finalRoundAvg > bestPressure) {
+            bestPressure = finalRoundAvg;
             final teamNames = gameState.config.teams[teamIndex].join(' & ');
-            lateGameHero = teamNames;
-            lateGameHeroTeamIndex = teamIndex;
-          }
-
-          // Pressure player: performs best in the final round
-          final finalRound = roundNumbers.last;
-          if (rounds[finalRound]!.isNotEmpty) {
-            final finalRoundAvg = rounds[finalRound]!.reduce((a, b) => a + b) /
-                rounds[finalRound]!.length;
-            if (finalRoundAvg > bestPressure) {
-              bestPressure = finalRoundAvg;
-              final teamNames = gameState.config.teams[teamIndex].join(' & ');
-              pressurePlayer = teamNames;
-              pressurePlayerTeamIndex = teamIndex;
-            }
+            pressurePlayer = teamNames;
+            pressurePlayerTeamIndex = teamIndex;
           }
         }
       }
     }
 
     return {
-      'lateGameHero': lateGameHero != null
-          ? {
-              'description':
-                  '$lateGameHero improves by ${bestLateGame.toStringAsFixed(1)} pts in later rounds',
-              'subject': lateGameHero,
-              'teamIndex': lateGameHeroTeamIndex,
-            }
-          : null,
       'pressurePlayer': pressurePlayer != null
           ? {
               'description':
                   '$pressurePlayer scored ${bestPressure.toStringAsFixed(1)} pts in the final round',
               'subject': pressurePlayer,
               'teamIndex': pressurePlayerTeamIndex,
-            }
-          : null,
-    };
-  }
-
-  Map<String, dynamic> _analyzeTeamChemistry(gameState) {
-    final partnershipStats = <String, Map<String, dynamic>>{};
-
-    for (final turn in gameState.turnHistory) {
-      final partnership = '${turn.conveyor} & ${turn.guesser}';
-      partnershipStats.putIfAbsent(
-          partnership,
-          () => {
-                'scores': <int>[],
-                'totalScore': 0,
-                'turns': 0,
-                'avgScore': 0.0,
-              });
-
-      final stats = partnershipStats[partnership]!;
-      stats['scores'] = (stats['scores'] as List<int>)..add(turn.score);
-      stats['totalScore'] = (stats['totalScore'] ?? 0) + turn.score;
-      stats['turns'] = (stats['turns'] ?? 0) + 1;
-      stats['avgScore'] =
-          (stats['totalScore'] as int) / (stats['turns'] as int);
-    }
-
-    String? dynamicDuo;
-    int? dynamicDuoTeamIndex;
-    double bestPartnership = 0.0;
-
-    for (final entry in partnershipStats.entries) {
-      final partnership = entry.key;
-      final stats = entry.value;
-
-      if ((stats['turns'] as int) >= 2) {
-        final avgScore = stats['avgScore'] as double;
-        if (avgScore > bestPartnership) {
-          bestPartnership = avgScore;
-          dynamicDuo = partnership;
-          final parts = partnership.split(' & ');
-          if (parts.length == 2) {
-            dynamicDuoTeamIndex =
-                _teamIndexForPair(gameState, parts[0].trim(), parts[1].trim());
-          } else {
-            dynamicDuoTeamIndex = null;
-          }
-        }
-      }
-    }
-
-    return {
-      'dynamicDuo': dynamicDuo != null
-          ? {
-              'description':
-                  '$dynamicDuo averages ${bestPartnership.toStringAsFixed(1)} points together',
-              'subject': dynamicDuo,
-              'teamIndex': dynamicDuoTeamIndex,
             }
           : null,
     };
@@ -897,6 +927,248 @@ Game Duration: ${gameState.currentRound} rounds''';
                   '$rollercoaster has the most unpredictable performance',
               'subject': rollercoaster,
               'teamIndex': rollercoasterTeamIndex,
+            }
+          : null,
+    };
+  }
+
+  Map<String, dynamic> _analyzeTimeBasedInsights(gameState) {
+    final allWordTimings = <String, double>{}; // word -> timing
+    final playerTimings = <String, List<double>>{}; // player -> [timings]
+    final playerClutchScores = <String, num>{}; // player -> clutch points
+    final playerTotalScores = <String, num>{}; // player -> total points
+
+    // Collect all timing data from turn history
+    for (final turn in gameState.turnHistory) {
+      if (turn.wordTimings != null && turn.wordTimings!.isNotEmpty) {
+        // Add to global word timings
+        allWordTimings.addAll(turn.wordTimings!);
+
+        // Track player timings (only for guessed words)
+        for (final word in turn.wordsGuessed) {
+          if (turn.wordTimings!.containsKey(word)) {
+            playerTimings.putIfAbsent(turn.conveyor, () => []);
+            playerTimings[turn.conveyor]!.add(turn.wordTimings![word]!);
+          }
+        }
+
+        // Calculate clutch performance (scores in final 10 seconds)
+        // For simplicity, we'll use words guessed in the last portion of the turn
+        // This is a rough approximation since we don't have exact turn timing
+        final totalWords = turn.wordsGuessed.length + turn.wordsSkipped.length;
+        if (totalWords > 0) {
+          final clutchThreshold =
+              (totalWords * 0.7).ceil(); // Last 30% of words
+          final clutchWords = turn.wordsGuessed
+              .skip(turn.wordsGuessed.length > clutchThreshold
+                  ? turn.wordsGuessed.length - clutchThreshold
+                  : 0)
+              .toList();
+
+          final currentClutch = playerClutchScores[turn.conveyor] ?? 0;
+          final currentTotal = playerTotalScores[turn.conveyor] ?? 0;
+          playerClutchScores[turn.conveyor] =
+              currentClutch + clutchWords.length;
+          playerTotalScores[turn.conveyor] =
+              currentTotal + turn.wordsGuessed.length;
+        }
+      }
+    }
+
+    // Find insights
+    String? lightningReflexes;
+    int? lightningReflexesTeamIndex;
+    double fastestTime = double.infinity;
+    String? fastestWord = '';
+
+    String? speedDemon;
+    int? speedDemonTeamIndex;
+    double bestAverageSpeed = double.infinity;
+
+    String? clutchPlayer;
+    int? clutchPlayerTeamIndex;
+    double bestClutchRatio = 0.0;
+
+    String? analysisParalysis;
+    int? analysisParalysisTeamIndex;
+    double longestHesitation = 0.0;
+    String? longestHesitationWord = '';
+
+    String? wordWhisperer;
+    int? wordWhispererTeamIndex;
+    double bestCategorySpeed = double.infinity;
+
+    String? timeMaster;
+    int? timeMasterTeamIndex;
+    double bestTimeConsistency = double.infinity;
+
+    // Lightning Reflexes: Fastest individual word guess
+    for (final entry in allWordTimings.entries) {
+      if (entry.value < fastestTime) {
+        fastestTime = entry.value;
+        fastestWord = entry.key;
+      }
+    }
+
+    // Find which player guessed the fastest word
+    if (fastestWord != null && fastestWord.isNotEmpty) {
+      for (final turn in gameState.turnHistory) {
+        if (turn.wordsGuessed.contains(fastestWord)) {
+          lightningReflexes =
+              '$fastestWord in ${fastestTime.toStringAsFixed(1)}s';
+          lightningReflexesTeamIndex =
+              _teamIndexForPlayer(gameState, turn.conveyor);
+          break;
+        }
+      }
+    }
+
+    // Speed Demon: Player with lowest average reaction time
+    for (final entry in playerTimings.entries) {
+      if (entry.value.length >= 3) {
+        // Need at least 3 guesses
+        final avgTime =
+            entry.value.reduce((a, b) => a + b) / entry.value.length;
+        if (avgTime < bestAverageSpeed) {
+          bestAverageSpeed = avgTime;
+          speedDemon = entry.key;
+          speedDemonTeamIndex = _teamIndexForPlayer(gameState, entry.key);
+        }
+      }
+    }
+
+    // Clutch Player: Best performance in final portion of turns
+    for (final entry in playerClutchScores.entries) {
+      final totalScore = playerTotalScores[entry.key] ?? 0;
+      if (totalScore >= 5) {
+        // Need at least 5 total guesses
+        final clutchRatio = entry.value / totalScore;
+        if (clutchRatio > bestClutchRatio) {
+          bestClutchRatio = clutchRatio;
+          clutchPlayer = entry.key;
+          clutchPlayerTeamIndex = _teamIndexForPlayer(gameState, entry.key);
+        }
+      }
+    }
+
+    // Analysis Paralysis: Longest hesitation before skipping
+    for (final turn in gameState.turnHistory) {
+      if (turn.wordTimings != null) {
+        for (final word in turn.wordsSkipped) {
+          if (turn.wordTimings!.containsKey(word) &&
+              turn.wordTimings![word]! > longestHesitation) {
+            longestHesitation = turn.wordTimings![word]!;
+            longestHesitationWord = word;
+            analysisParalysis = turn.conveyor;
+            analysisParalysisTeamIndex =
+                _teamIndexForPlayer(gameState, turn.conveyor);
+          }
+        }
+      }
+    }
+
+    // Word Whisperer: Fastest at specific categories
+    final playerCategorySpeeds = <String, Map<String, List<double>>>{};
+    for (final turn in gameState.turnHistory) {
+      if (turn.wordTimings != null) {
+        playerCategorySpeeds.putIfAbsent(turn.conveyor, () => {});
+        playerCategorySpeeds[turn.conveyor]!
+            .putIfAbsent(turn.category, () => []);
+
+        for (final word in turn.wordsGuessed) {
+          if (turn.wordTimings!.containsKey(word)) {
+            playerCategorySpeeds[turn.conveyor]![turn.category]!
+                .add(turn.wordTimings![word]!);
+          }
+        }
+      }
+    }
+
+    for (final entry in playerCategorySpeeds.entries) {
+      final player = entry.key;
+      final categories = entry.value;
+
+      for (final categoryEntry in categories.entries) {
+        final speeds = categoryEntry.value;
+        if (speeds.length >= 3) {
+          // Need at least 3 guesses in this category
+          final avgSpeed = speeds.reduce((a, b) => a + b) / speeds.length;
+          if (avgSpeed < bestCategorySpeed) {
+            bestCategorySpeed = avgSpeed;
+            wordWhisperer = '$player in ${categoryEntry.key}';
+            wordWhispererTeamIndex = _teamIndexForPlayer(gameState, player);
+          }
+        }
+      }
+    }
+
+    // Time Master: Most consistent reaction times
+    for (final entry in playerTimings.entries) {
+      if (entry.value.length >= 5) {
+        // Need at least 5 guesses
+        final avg = entry.value.reduce((a, b) => a + b) / entry.value.length;
+        final variance = entry.value
+                .map((time) => (time - avg) * (time - avg))
+                .reduce((a, b) => a + b) /
+            entry.value.length;
+        final standardDeviation = sqrt(variance);
+        final coefficientOfVariation =
+            standardDeviation / avg; // Lower = more consistent
+
+        if (coefficientOfVariation < bestTimeConsistency) {
+          bestTimeConsistency = coefficientOfVariation;
+          timeMaster = entry.key;
+          timeMasterTeamIndex = _teamIndexForPlayer(gameState, entry.key);
+        }
+      }
+    }
+
+    return {
+      'lightningReflexes': lightningReflexes != null
+          ? {
+              'description': 'Guessed $lightningReflexes',
+              'subject': lightningReflexes,
+              'teamIndex': lightningReflexesTeamIndex,
+            }
+          : null,
+      'speedDemon': speedDemon != null
+          ? {
+              'description':
+                  '$speedDemon averages ${bestAverageSpeed.toStringAsFixed(1)}s per guess',
+              'subject': speedDemon,
+              'teamIndex': speedDemonTeamIndex,
+            }
+          : null,
+      'clutchPlayer': clutchPlayer != null
+          ? {
+              'description':
+                  '$clutchPlayer scored ${(bestClutchRatio * 100).toStringAsFixed(0)}% in clutch moments',
+              'subject': clutchPlayer,
+              'teamIndex': clutchPlayerTeamIndex,
+            }
+          : null,
+      'analysisParalysis': analysisParalysis != null
+          ? {
+              'description':
+                  '$analysisParalysis hesitated for ${longestHesitation.toStringAsFixed(1)}s on "$longestHesitationWord"',
+              'subject': analysisParalysis,
+              'teamIndex': analysisParalysisTeamIndex,
+            }
+          : null,
+      'wordWhisperer': wordWhisperer != null
+          ? {
+              'description':
+                  '$wordWhisperer (${bestCategorySpeed.toStringAsFixed(1)}s avg)',
+              'subject': wordWhisperer,
+              'teamIndex': wordWhispererTeamIndex,
+            }
+          : null,
+      'timeMaster': timeMaster != null
+          ? {
+              'description':
+                  '$timeMaster has the most consistent reaction times',
+              'subject': timeMaster,
+              'teamIndex': timeMasterTeamIndex,
             }
           : null,
     };

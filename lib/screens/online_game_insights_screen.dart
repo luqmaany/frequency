@@ -64,26 +64,26 @@ class _OnlineGameInsightsScreenState
                     ),
                   ),
                 ),
-                // Centered top 3 insight cards
+                // Centered insight cards (up to 7)
                 Expanded(
-                  child: Center(
+                  child: SingleChildScrollView(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(
-                          items.length > 3 ? 3 : items.length,
+                          items.length > 7 ? 7 : items.length,
                           (index) {
                             final item = items[index];
                             return Padding(
                               padding: EdgeInsets.only(
-                                top: index == 0 ? 0 : 12,
+                                top: index == 0 ? 20 : 12,
                                 bottom: index ==
-                                        (items.length > 3
-                                            ? 2
+                                        (items.length > 7
+                                            ? 6
                                             : items.length - 1)
-                                    ? 0
+                                    ? 20
                                     : 12,
                               ),
                               child: _buildCarouselCard(
@@ -233,9 +233,6 @@ class _OnlineGameInsightsScreenState
 
     addIfExists('mostDecisive', 'Most Decisive', Icons.flash_on);
     addIfExists('comebackKing', 'Comeback King', Icons.trending_up);
-    addIfExists('dynamicDuo', 'Dynamic Duo', Icons.favorite);
-    addIfExists('lateGameHero', 'Late Game Hero', Icons.sports_esports);
-    addIfExists('efficiencyParadox', 'Efficiency Paradox', Icons.auto_awesome);
     addIfExists('pressurePlayer', 'Pressure Player', Icons.whatshot);
     addIfExists('skipMaster', 'Skip Master', Icons.fast_forward);
     addIfExists('categorySpecialist', 'Category Specialist', Icons.psychology);
@@ -253,13 +250,14 @@ class _OnlineGameInsightsScreenState
       });
     }
 
-    // Prefer three items from different teams when possible
+    // Prefer seven items from different teams when possible
     final selected = <Map<String, dynamic>>[];
     final usedTeamIndexes = <int>{};
     final usedTitles = <String>{};
 
+    // First pass: prioritize items from different teams
     for (final item in order) {
-      if (selected.length >= 3) break;
+      if (selected.length >= 7) break;
       final teamIndex = item['teamIndex'] as int?;
       final title = item['title'] as String;
       if (teamIndex != null && !usedTeamIndexes.contains(teamIndex)) {
@@ -269,10 +267,10 @@ class _OnlineGameInsightsScreenState
       }
     }
 
-    // Fill remaining slots regardless of team
-    if (selected.length < 3) {
+    // Second pass: fill remaining slots regardless of team
+    if (selected.length < 7) {
       for (final item in order) {
-        if (selected.length >= 3) break;
+        if (selected.length >= 7) break;
         final title = item['title'] as String;
         if (!usedTitles.contains(title)) {
           selected.add(item);
@@ -314,12 +312,6 @@ class _OnlineGameInsightsScreenState
       insights['categorySpecialist'] = categoryAnalysis['categorySpecialist'];
     }
 
-    // Team Chemistry Analysis
-    final chemistryAnalysis = _analyzeTeamChemistry(teams);
-    if (chemistryAnalysis['dynamicDuo'] != null) {
-      insights['dynamicDuo'] = chemistryAnalysis['dynamicDuo'];
-    }
-
     // Performance Consistency
     final consistencyAnalysis = _analyzeConsistency(gameState, teams);
     if (consistencyAnalysis['steadyEddie'] != null) {
@@ -329,22 +321,10 @@ class _OnlineGameInsightsScreenState
       insights['rollercoaster'] = consistencyAnalysis['rollercoaster'];
     }
 
-    // Late Game Performance
-    final lateGameAnalysis = _analyzeLateGamePerformance(gameState, teams);
-    if (lateGameAnalysis['lateGameHero'] != null) {
-      insights['lateGameHero'] = lateGameAnalysis['lateGameHero'];
-    }
-
     // Pressure Performance
     final pressureAnalysis = _analyzePressurePerformance(gameState, teams);
     if (pressureAnalysis['pressurePlayer'] != null) {
       insights['pressurePlayer'] = pressureAnalysis['pressurePlayer'];
-    }
-
-    // Efficiency Analysis
-    final efficiencyAnalysis = _analyzeEfficiency(gameState, teams);
-    if (efficiencyAnalysis['efficiencyParadox'] != null) {
-      insights['efficiencyParadox'] = efficiencyAnalysis['efficiencyParadox'];
     }
 
     // Add overall game statistics
@@ -581,50 +561,6 @@ class _OnlineGameInsightsScreenState
     return result;
   }
 
-  Map<String, dynamic> _analyzeTeamChemistry(List teams) {
-    final result = <String, dynamic>{};
-
-    // Analyze team composition and performance
-    for (int i = 0; i < teams.length; i++) {
-      final team = teams[i] as Map<String, dynamic>;
-      final teamMode = team['teamMode'] as String? ?? 'couch';
-
-      if (teamMode == 'remote') {
-        final devices = team['devices'] as List? ?? [];
-        if (devices.length == 2) {
-          final player1 = devices[0]['playerName'] as String? ?? 'Player 1';
-          final player2 = devices[1]['playerName'] as String? ?? 'Player 2';
-          final teamName = team['teamName'] as String? ?? 'Team ${i + 1}';
-
-          result['dynamicDuo'] = {
-            'description':
-                '$player1 & $player2 showed great teamwork as $teamName!',
-            'teamIndex': i,
-            'subject': teamName,
-          };
-          break; // Just pick the first remote team for now
-        }
-      } else {
-        final players = team['players'] as List? ?? [];
-        if (players.length == 2) {
-          final player1 = players[0] as String? ?? 'Player 1';
-          final player2 = players[1] as String? ?? 'Player 2';
-          final teamName = team['teamName'] as String? ?? 'Team ${i + 1}';
-
-          result['dynamicDuo'] = {
-            'description':
-                '$player1 & $player2 were an unstoppable duo as $teamName!',
-            'teamIndex': i,
-            'subject': teamName,
-          };
-          break; // Just pick the first couch team for now
-        }
-      }
-    }
-
-    return result;
-  }
-
   Map<String, dynamic> _analyzeConsistency(
       Map<String, dynamic> gameState, List teams) {
     final result = <String, dynamic>{};
@@ -704,73 +640,6 @@ class _OnlineGameInsightsScreenState
     return result;
   }
 
-  Map<String, dynamic> _analyzeLateGamePerformance(
-      Map<String, dynamic> gameState, List teams) {
-    final result = <String, dynamic>{};
-
-    final rounds = gameState['rounds'] as List? ?? [];
-    if (rounds.length < 2) return result;
-
-    final lateGameScores = <int, int>{};
-    final earlyGameScores = <int, int>{};
-
-    // Split rounds into early and late game
-    final midPoint = rounds.length ~/ 2;
-    final earlyRounds = rounds.take(midPoint);
-    final lateRounds = rounds.skip(midPoint);
-
-    // Calculate early game scores
-    for (final round in earlyRounds) {
-      final roundScores = round['scores'] as Map<String, dynamic>? ?? {};
-      for (final entry in roundScores.entries) {
-        final teamIndex = int.tryParse(entry.key) ?? 0;
-        final score = entry.value as int? ?? 0;
-        earlyGameScores[teamIndex] = (earlyGameScores[teamIndex] ?? 0) + score;
-      }
-    }
-
-    // Calculate late game scores
-    for (final round in lateRounds) {
-      final roundScores = round['scores'] as Map<String, dynamic>? ?? {};
-      for (final entry in roundScores.entries) {
-        final teamIndex = int.tryParse(entry.key) ?? 0;
-        final score = entry.value as int? ?? 0;
-        lateGameScores[teamIndex] = (lateGameScores[teamIndex] ?? 0) + score;
-      }
-    }
-
-    // Find late game hero
-    double bestImprovement = 0.0;
-    int? lateGameHero;
-
-    for (int i = 0; i < teams.length; i++) {
-      final earlyScore = earlyGameScores[i] ?? 0;
-      final lateScore = lateGameScores[i] ?? 0;
-      final improvement = lateScore - earlyScore;
-
-      if (improvement > bestImprovement) {
-        bestImprovement = improvement.toDouble();
-        lateGameHero = i;
-      }
-    }
-
-    if (lateGameHero != null &&
-        teams.length > lateGameHero &&
-        bestImprovement > 0) {
-      final team = teams[lateGameHero] as Map<String, dynamic>;
-      final teamName =
-          team['teamName'] as String? ?? 'Team ${lateGameHero + 1}';
-
-      result['lateGameHero'] = {
-        'description': '$teamName stepped up in the final rounds!',
-        'teamIndex': lateGameHero,
-        'subject': teamName,
-      };
-    }
-
-    return result;
-  }
-
   Map<String, dynamic> _analyzePressurePerformance(
       Map<String, dynamic> gameState, List teams) {
     final result = <String, dynamic>{};
@@ -832,62 +701,6 @@ class _OnlineGameInsightsScreenState
         'teamIndex': pressurePlayer,
         'subject': teamName,
       };
-    }
-
-    return result;
-  }
-
-  Map<String, dynamic> _analyzeEfficiency(
-      Map<String, dynamic> gameState, List teams) {
-    final result = <String, dynamic>{};
-
-    // Analyze efficiency (score per turn/time)
-    final rounds = gameState['rounds'] as List? ?? [];
-    final teamEfficiency = <int, double>{};
-
-    for (int i = 0; i < teams.length; i++) {
-      int totalScore = 0;
-      int totalTurns = 0;
-
-      for (final round in rounds) {
-        final roundScores = round['scores'] as Map<String, dynamic>? ?? {};
-        final score = roundScores[i.toString()] as int? ?? 0;
-        totalScore += score;
-
-        final turns = round['turns'] as List? ?? [];
-        for (final turn in turns) {
-          final teamIndex = turn['teamIndex'] as int? ?? 0;
-          if (teamIndex == i) {
-            totalTurns++;
-          }
-        }
-      }
-
-      if (totalTurns > 0) {
-        teamEfficiency[i] = totalScore / totalTurns;
-      }
-    }
-
-    // Find efficiency paradox (high efficiency but not highest score)
-    final sortedEfficiency = teamEfficiency.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    if (sortedEfficiency.length >= 2) {
-      final mostEfficient = sortedEfficiency[0];
-      final secondMostEfficient = sortedEfficiency[1];
-
-      // Check if there's a significant efficiency difference
-      if (mostEfficient.value > secondMostEfficient.value * 1.2) {
-        final team = teams[mostEfficient.key] as Map<String, dynamic>;
-        final teamName =
-            team['teamName'] as String? ?? 'Team ${mostEfficient.key + 1}';
-
-        result['efficiencyParadox'] = {
-          'description': '$teamName was incredibly efficient with their turns!',
-          'teamIndex': mostEfficient.key,
-          'subject': teamName,
-        };
-      }
     }
 
     return result;

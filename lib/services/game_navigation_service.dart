@@ -177,6 +177,7 @@ class GameNavigationService {
     List<String> wordsSkipped,
     List<String> wordsLeftOnScreen,
     Set<String> disputedWords,
+    Map<String, double> wordTimings,
   ) {
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -191,6 +192,7 @@ class GameNavigationService {
           wordsSkipped: wordsSkipped,
           wordsLeftOnScreen: wordsLeftOnScreen,
           disputedWords: disputedWords,
+          wordTimings: wordTimings,
         ),
       ),
     );

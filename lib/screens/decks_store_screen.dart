@@ -20,24 +20,24 @@ class DecksStoreScreen extends ConsumerWidget {
     // We'll read local storage synchronously via a FutureBuilder
 
     return Scaffold(
-      body: SafeArea(
-        child: FutureBuilder<List<String>>(
-          future: StorageService.getUnlockedCategoryIds(),
-          builder: (context, snapshot) {
-            final purchased = snapshot.data ?? const <String>[];
-            final List<Category> owned = all
-                .where((c) => c.isUnlocked || purchased.contains(c.id))
-                .toList();
-            final List<Category> more = all
-                .where((c) => !(c.isUnlocked || purchased.contains(c.id)))
-                .toList();
+      body: FutureBuilder<List<String>>(
+        future: StorageService.getUnlockedCategoryIds(),
+        builder: (context, snapshot) {
+          final purchased = snapshot.data ?? const <String>[];
+          final List<Category> owned = all
+              .where((c) => c.isUnlocked || purchased.contains(c.id))
+              .toList();
+          final List<Category> more = all
+              .where((c) => !(c.isUnlocked || purchased.contains(c.id)))
+              .toList();
 
-            return Column(
+          return SafeArea(
+            child: Column(
               children: [
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.only(
+                        left: 16, right: 16, top: 12, bottom: 100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -47,7 +47,7 @@ class DecksStoreScreen extends ConsumerWidget {
                             style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: Colors.white,
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -132,16 +132,6 @@ class DecksStoreScreen extends ConsumerWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, -2),
-                      ),
-                    ],
-                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -174,9 +164,9 @@ class DecksStoreScreen extends ConsumerWidget {
                   ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

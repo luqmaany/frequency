@@ -224,11 +224,12 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
               child: Column(
                 children: [
                   Text(
-                    'Choose Your Decks',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
+                    'Choose Decks',
+                    style: TextStyle(
+                      fontSize: 36,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -255,7 +256,7 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                     children: [
                       Expanded(
                         child: TeamColorButton(
-                          text: 'Select All Owned',
+                          text: 'Select All',
                           icon: Icons.check_circle_outline,
                           color: uiColors[1], // Green
                           onPressed: ownedCategories.isNotEmpty
@@ -457,7 +458,7 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                     flex: 2,
                     child: TeamColorButton(
                       text: _selectedDecks.length < 4
-                          ? 'Select At Least 4 Decks'
+                          ? 'Select At Least 4'
                           : 'Start Game (${_selectedDecks.length})',
                       icon: Icons.play_arrow,
                       color: _selectedDecks.length >= 4

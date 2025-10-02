@@ -68,7 +68,7 @@ class _WavesPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, bg);
 
     // Contour lines: mimic parallel pulse background strategy
-    final double spacing = 12.0 * scale;
+    final double spacing = 15.0 * scale;
     final int numRows = math.max(1, (size.height / spacing).ceil() + 3);
 
     for (int row = 0; row < numRows; row++) {
@@ -96,7 +96,7 @@ class _WavesPainter extends CustomPainter {
       // Subtle hue shift across lines, with glow-like opacity
       // Smooth cycle: blues → purples → reds → oranges → back to blues
       final double cycle =
-          (row * 7) % 720.0 / 720.0; // 0.0 to 1.0 over longer period
+          (row * 9) % 720.0 / 720.0; // 0.0 to 1.0 over longer period
       final double hue = cycle < 0.5
           ? 210 + (cycle * 2 * 150) // 210° to 360° (first half)
           : 360 - ((cycle - 0.5) * 2 * 150); // 360° back to 210° (second half)

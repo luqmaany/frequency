@@ -262,16 +262,16 @@ class _PlayerInputState extends ConsumerState<PlayerInput> {
   Widget _buildSuggestedNames(GameConfig gameConfig) {
     // If at maximum players, replace suggestions row with message
     if (gameConfig.playerNames.length >= 12) {
-      return SizedBox(
+      return const SizedBox(
         height: 50,
-        child: const Center(
+        child: Center(
           child: Text(
             'Maximum 12 players reached.',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color.fromARGB(255, 255, 0, 0),
+              color: Colors.orange,
             ),
           ),
         ),

@@ -350,6 +350,16 @@ class _CategorySelectionScreenState
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
+                            'Choose Category',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
                             widget.displayString,
                             style: Theme.of(context).textTheme.headlineMedium,
                             textAlign: TextAlign.center,
@@ -399,9 +409,9 @@ class _CategorySelectionScreenState
                                           _currentCategory.isEmpty
                                               ? (_isCurrentTeamActive
                                                   ? (_hasSpun
-                                                      ? 'SPINNING...'
-                                                      : 'TAP TO SPIN\nFOR CATEGORY!')
-                                                  : 'WAITING...')
+                                                      ? 'Spinning...'
+                                                      : 'Tap To Spin\nFor Category!')
+                                                  : 'Waiting...')
                                               : _currentCategory,
                                           key: ValueKey<String>(
                                               _currentCategory),
