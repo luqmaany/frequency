@@ -68,7 +68,7 @@ class _WavesPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, bg);
 
     // Contour lines: mimic parallel pulse background strategy
-    final double spacing = 12.0 * scale;
+    final double spacing = 15.0 * scale;
     final int numRows = math.max(1, (size.height / spacing).ceil() + 3);
 
     for (int row = 0; row < numRows; row++) {
