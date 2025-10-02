@@ -63,26 +63,8 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
           .map((c) => c.id)
           .toList();
 
-      // Initialize selection with first 4 owned decks by default
-      // Use a predictable order: person, action, world, random (the core free categories)
-      final preferredOrder = ['person', 'action', 'world', 'random'];
-      final selectedIds = <String>[];
-
-      // First, try to select from preferred order
-      for (final id in preferredOrder) {
-        if (_ownedDecks.contains(id) && selectedIds.length < 4) {
-          selectedIds.add(id);
-        }
-      }
-
-      // If we still need more, add any remaining owned decks
-      for (final id in _ownedDecks) {
-        if (!selectedIds.contains(id) && selectedIds.length < 4) {
-          selectedIds.add(id);
-        }
-      }
-
-      _selectedDecks = Set.from(selectedIds);
+      // Initialize selection with owned decks by default
+      _selectedDecks = Set.from(_ownedDecks);
 
       // Override with initial selection if provided
       if (widget.initialSelectedDecks != null) {
@@ -163,7 +145,7 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
 
   void _scrollToPremiumSection() {
     _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent, // Scroll to the very bottom
+      300, // Scroll to premium section
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
     );
@@ -211,6 +193,13 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
     super.dispose();
   }
 
+  void _previewDeck(Category category) {
+    showDialog(
+      context: context,
+      builder: (context) => _PreviewDialog(category: category),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -242,15 +231,25 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                       color: Colors.white,
                     ),
                   ),
-                  if (_selectedDecks.length < 4) ...[
-                    const SizedBox(height: 8),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${_selectedDecks.length} deck${_selectedDecks.length == 1 ? '' : 's'} selected',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: _selectedDecks.length >= 4
+                              ? Colors.green
+                              : Colors.orange,
+                          fontWeight: _selectedDecks.length >= 4
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                  ),
+                  if (_selectedDecks.length < 4)
                     Text(
                       'Select at least 4 decks to start',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.orange,
                           ),
                     ),
-                  ],
                   const SizedBox(height: 16),
                   // Quick selection buttons
                   Row(
@@ -306,6 +305,7 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                                     isSelected:
                                         _selectedDecks.contains(category.id),
                                     onTap: () => _toggleDeck(category.id),
+                                    onPreview: () => _previewDeck(category),
                                   )),
                           const SizedBox(height: 24),
                         ],
@@ -335,7 +335,7 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: Colors.purple.withOpacity(0.5),
-                                width: 2,
+                                width: 1,
                               ),
                             ),
                             child: Column(
@@ -351,6 +351,16 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                                       ),
                                 ),
                                 const SizedBox(height: 8),
+                                Text(
+                                  'Add ${lockedCategories.length} more decks to your game for endless variety!',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: Colors.white70,
+                                      ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ],
                             ),
                           ),
@@ -363,6 +373,7 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                                     isOwned: false,
                                     isSelected: false,
                                     onTap: () => _purchaseDeck(category),
+                                    onPreview: () => _previewDeck(category),
                                     showPurchaseButton: true,
                                   )),
                           const SizedBox(height: 12),
@@ -384,22 +395,25 @@ class _DeckSelectionScreenState extends ConsumerState<DeckSelectionScreen>
                             child: GestureDetector(
                               onTap: _scrollToPremiumSection,
                               child: Container(
-                                width: 64,
-                                height: 64,
+                                width: 56,
+                                height: 56,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: LinearGradient(
                                     colors: [
-                                      Colors.purple.shade800,
-                                      Colors.blue.shade800,
+                                      Colors.orange.withOpacity(0.9),
+                                      Colors.purple.withOpacity(0.9),
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                                  border: Border.all(
-                                    color: Colors.purple.shade800,
-                                    width: 2,
-                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.orange.withOpacity(0.3),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
                                 ),
                                 child: const Icon(
                                   Icons.keyboard_arrow_down,
@@ -484,7 +498,7 @@ class _SectionHeader extends StatelessWidget {
     final base = Theme.of(context).textTheme;
     final style = base.titleLarge?.copyWith(
       fontWeight: FontWeight.w800,
-      color: Colors.white,
+      color: isPrimary ? Colors.white : Colors.white70,
       letterSpacing: 0.6,
     );
 
@@ -524,6 +538,7 @@ class _SelectableDeckCard extends StatelessWidget {
   final bool isOwned;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback onPreview;
   final bool showPurchaseButton;
 
   const _SelectableDeckCard({
@@ -531,17 +546,9 @@ class _SelectableDeckCard extends StatelessWidget {
     required this.isOwned,
     required this.isSelected,
     required this.onTap,
+    required this.onPreview,
     this.showPurchaseButton = false,
   });
-
-  String _formatWordCount(int wordCount) {
-    if (wordCount < 50) {
-      return '$wordCount words';
-    } else {
-      final roundedDown = (wordCount ~/ 50) * 50;
-      return '${roundedDown}+ words';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -631,7 +638,7 @@ class _SelectableDeckCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      _formatWordCount(category.wordCount),
+                      '${category.wordCount} words',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.white70,
                           ),
@@ -641,24 +648,143 @@ class _SelectableDeckCard extends StatelessWidget {
               ),
 
               // Action buttons
-              if (showPurchaseButton && !isOwned)
-                ElevatedButton(
-                  onPressed: onTap,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange,
-                    foregroundColor: Colors.white,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Preview button
+                  IconButton(
+                    onPressed: onPreview,
+                    icon: const Icon(Icons.visibility_outlined,
+                        color: Colors.white70),
+                    tooltip: 'Preview words',
                   ),
-                  child: const Text('Get'),
-                ),
+
+                  // Purchase button (for locked decks)
+                  if (showPurchaseButton && !isOwned)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      child: ElevatedButton(
+                        onPressed: onTap,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orange,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        child: const Text('Get'),
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PreviewDialog extends StatelessWidget {
+  final Category category;
+
+  const _PreviewDialog({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    // Show 3 random words from the category
+    final allWords = category.words.toList();
+    allWords.shuffle();
+    final sampleWords = allWords.take(3).toList();
+
+    return AlertDialog(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      title: Row(
+        children: [
+          Icon(category.icon, color: category.color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              category.displayName,
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              category.description,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Colors.white70,
+                  ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Sample words (${category.wordCount} total):',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                ...sampleWords.map((word) => Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: category.color.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: category.color.withOpacity(0.5),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        word.text,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.white,
+                            ),
+                      ),
+                    )),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.grey.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '+${category.wordCount - 3} more',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Colors.white70,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Close'),
+        ),
+      ],
     );
   }
 }

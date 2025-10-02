@@ -349,7 +349,7 @@ class _CategorySelectionScreenState
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Choose Category',
                             style: TextStyle(
                               fontSize: 36,
