@@ -11,8 +11,12 @@ import '../widgets/game_mode_dialog.dart';
 import '../services/sound_service.dart';
 import '../services/storage_service.dart';
 import '../services/developer_service.dart';
+import '../services/game_state_provider.dart';
+import '../models/game_state.dart';
+import '../models/game_config.dart';
 import 'background_lab_screen.dart';
 import 'how_to_play_screen.dart';
+import 'game_over_screen.dart';
 
 /// --- Animated gradient text (unchanged except default text now "FREQUENCY") ---
 class AnimatedGradientText extends StatefulWidget {
@@ -380,6 +384,187 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
+  void _navigateToMockGameOver(BuildContext context) {
+    // Create mock game config and initialize
+    final mockConfig = _createMockGameConfig();
+    ref.read(gameStateProvider.notifier).initializeGame(mockConfig);
+
+    // Add all the turn history
+    final turnHistory = _createMockTurnHistory();
+    for (final turn in turnHistory) {
+      ref.read(gameStateProvider.notifier).recordTurn(turn);
+    }
+
+    // Navigate to game over screen
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const GameOverScreen(),
+      ),
+    );
+  }
+
+  GameConfig _createMockGameConfig() {
+    // Create mock teams
+    final teams = [
+      ['Alice', 'Bob'],
+      ['Charlie', 'Diana'],
+      ['Eve', 'Frank'],
+      ['Grace', 'Henry'],
+    ];
+
+    // Create mock game config
+    return GameConfig(
+      playerNames: teams.expand((team) => team).toList(),
+      teams: teams,
+      teamColorIndices: [0, 1, 2, 3],
+      roundTimeSeconds: 60,
+      targetScore: 30,
+      allowedSkips: 2,
+      useWeightedWordSelection: true,
+    );
+  }
+
+  List<TurnRecord> _createMockTurnHistory() {
+    // Create mock teams
+    final teams = [
+      ['Alice', 'Bob'],
+      ['Charlie', 'Diana'],
+      ['Eve', 'Frank'],
+      ['Grace', 'Henry'],
+    ];
+
+    // Create mock turn history with lots of data
+    final turnHistory = <TurnRecord>[];
+    final categories = [
+      'People',
+      'Actions',
+      'Places',
+      'Things',
+      'Movies',
+      'Food'
+    ];
+    final words = [
+      'Albert Einstein',
+      'Marilyn Monroe',
+      'Leonardo da Vinci',
+      'Oprah Winfrey',
+      'Running',
+      'Swimming',
+      'Cooking',
+      'Dancing',
+      'Singing',
+      'Painting',
+      'Paris',
+      'Tokyo',
+      'New York',
+      'London',
+      'Sydney',
+      'Rome',
+      'Smartphone',
+      'Laptop',
+      'Car',
+      'Book',
+      'Guitar',
+      'Camera',
+      'Inception',
+      'Titanic',
+      'Avatar',
+      'Star Wars',
+      'The Matrix',
+      'Frozen',
+      'Pizza',
+      'Sushi',
+      'Burger',
+      'Pasta',
+      'Tacos',
+      'Ice Cream'
+    ];
+
+    // Generate 25+ turns with varied performance
+    for (int i = 0; i < 28; i++) {
+      final teamIndex = i % teams.length;
+      final roundNumber = (i ~/ teams.length) + 1;
+      final turnNumber = (i % teams.length) + 1;
+      final category = categories[i % categories.length];
+      final conveyor = teams[teamIndex][0];
+      final guesser = teams[teamIndex][1];
+
+      // Vary performance to create interesting insights
+      int score;
+      int skipsUsed;
+      List<String> wordsGuessed = [];
+      List<String> wordsSkipped = [];
+      Map<String, double> wordTimings = {};
+
+      if (i < 5) {
+        // Early turns - mixed performance
+        score = [3, 5, 2, 4, 6][i];
+        skipsUsed = [1, 0, 2, 1, 0][i];
+      } else if (i < 15) {
+        // Middle turns - some teams excel
+        if (teamIndex == 0) {
+          score = 7 + (i % 3); // Alice & Bob excel
+          skipsUsed = 0;
+        } else if (teamIndex == 2) {
+          score = 2 + (i % 2); // Eve & Frank struggle
+          skipsUsed = 2;
+        } else {
+          score = 4 + (i % 3);
+          skipsUsed = 1;
+        }
+      } else {
+        // Late turns - comeback stories
+        if (teamIndex == 2) {
+          score = 8 + (i % 2); // Eve & Frank comeback
+          skipsUsed = 0;
+        } else if (teamIndex == 1) {
+          score = 3 + (i % 2); // Charlie & Diana decline
+          skipsUsed = 2;
+        } else {
+          score = 5 + (i % 3);
+          skipsUsed = 1;
+        }
+      }
+
+      // Generate words for this turn
+      final availableWords = List<String>.from(words);
+      availableWords.shuffle();
+
+      int wordsToGuess = score;
+      int wordsToSkip = skipsUsed;
+
+      for (int j = 0; j < wordsToGuess && j < availableWords.length; j++) {
+        wordsGuessed.add(availableWords[j]);
+        // Create realistic timing data (0.5s to 8s)
+        wordTimings[availableWords[j]] = 0.5 + (j * 0.8) + (i % 3) * 0.5;
+      }
+
+      for (int j = wordsToGuess;
+          j < wordsToGuess + wordsToSkip && j < availableWords.length;
+          j++) {
+        wordsSkipped.add(availableWords[j]);
+        // Longer hesitation for skipped words (3s to 12s)
+        wordTimings[availableWords[j]] = 3.0 + (j * 1.2) + (i % 4) * 0.8;
+      }
+
+      turnHistory.add(TurnRecord(
+        teamIndex: teamIndex,
+        roundNumber: roundNumber,
+        turnNumber: turnNumber,
+        conveyor: conveyor,
+        guesser: guesser,
+        category: category,
+        score: score,
+        skipsUsed: skipsUsed,
+        wordsGuessed: wordsGuessed,
+        wordsSkipped: wordsSkipped,
+        wordTimings: wordTimings,
+      ));
+    }
+
+    return turnHistory;
+  }
+
   void _showPlayDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -462,14 +647,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Palette aligned with the animated background hues
-    const List<Color> buttonColors = [
-      Color(0xFF5EB1FF), // blue
-      Color(0xFF7A5CFF), // purple
-      Color(0xFFFF6680), // pink/red
-      Color(0xFFFFA14A), // orange
-    ];
-
     return Scaffold(
       // Dark base so the waves pop
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -520,120 +697,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
                   // Middle section - Centered buttons
                   Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TeamColorButton(
-                          text: 'Play',
-                          color: uiColors[0], // Blue
-                          onPressed: () => _showPlayDialog(context),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 20, horizontal: 20),
-                          opacity: 0.3,
-                          borderWidth: 2.0,
-                        ),
-                        const SizedBox(height: 16),
-                        // Removed 'Stats & History' button
-                        TeamColorButton(
-                          text: 'Decks',
-                          color: teamColors[4], // Coral
-                          onPressed: () =>
-                              GameNavigationService.navigateToDecksStore(
-                                  context),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 20, horizontal: 20),
-                          opacity: 0.3,
-                          borderWidth: 2.0,
-                        ),
-                        const SizedBox(height: 16),
-                        TeamColorButton(
-                          text: 'How To Play',
-                          color: teamColors[1], // Indigo
-                          onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => const HowToPlayScreen(),
+                    child: _isDeveloperModeEnabled
+                        ? SingleChildScrollView(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const SizedBox(height: 20),
+                                _buildMainButtons(),
+                                const SizedBox(height: 20),
+                                _buildDeveloperButtons(),
+                                const SizedBox(height: 20),
+                              ],
                             ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildMainButtons(),
+                            ],
                           ),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 20, horizontal: 20),
-                          opacity: 0.3,
-                          borderWidth: 2.0,
-                        ),
-                        const SizedBox(height: 16),
-                        TeamColorButton(
-                          text: 'Settings',
-                          color: uiColors[2], // Red
-                          onPressed: () =>
-                              GameNavigationService.navigateToSettings(context),
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 20, horizontal: 20),
-                          opacity: 0.3,
-                          borderWidth: 2.0,
-                        ),
-                        // Developer mode buttons (hidden unless activated)
-                        if (_isDeveloperModeEnabled) ...[
-                          const SizedBox(height: 16),
-                          Container(
-                            width: double.infinity,
-                            height: 2,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.grey.shade600,
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'DEVELOPER MODE',
-                            textAlign: TextAlign.center,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleSmall
-                                ?.copyWith(
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1,
-                                ),
-                          ),
-                          const SizedBox(height: 12),
-                          MenuButton(
-                            text: 'Categories',
-                            onPressed: () => GameNavigationService
-                                .navigateToWordListsManager(context),
-                            color: buttonColors[5 % buttonColors.length],
-                          ),
-                          const SizedBox(height: 8),
-                          MenuButton(
-                            text: 'Test Purchase',
-                            onPressed: () => _showTestPurchaseDialog(context),
-                            color: Colors.green,
-                          ),
-                          const SizedBox(height: 8),
-                          MenuButton(
-                            text: 'Background Lab',
-                            onPressed: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const BackgroundLabScreen(),
-                              ),
-                            ),
-                            color: Colors.purple,
-                          ),
-                          const SizedBox(height: 8),
-                          MenuButton(
-                            text: 'Disable Dev Mode',
-                            onPressed: () => _disableDeveloperMode(context),
-                            color: Colors.orange,
-                          ),
-                        ],
-                      ],
-                    ),
                   ),
 
                   // Bottom spacing
@@ -644,6 +728,128 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMainButtons() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TeamColorButton(
+          text: 'Play',
+          color: uiColors[0], // Blue
+          onPressed: () => _showPlayDialog(context),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          opacity: 0.3,
+          borderWidth: 2.0,
+        ),
+        const SizedBox(height: 16),
+        TeamColorButton(
+          text: 'Decks',
+          color: teamColors[4], // Coral
+          onPressed: () => GameNavigationService.navigateToDecksStore(context),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          opacity: 0.3,
+          borderWidth: 2.0,
+        ),
+        const SizedBox(height: 16),
+        TeamColorButton(
+          text: 'How To Play',
+          color: teamColors[1], // Indigo
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const HowToPlayScreen(),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          opacity: 0.3,
+          borderWidth: 2.0,
+        ),
+        const SizedBox(height: 16),
+        TeamColorButton(
+          text: 'Settings',
+          color: uiColors[2], // Red
+          onPressed: () => GameNavigationService.navigateToSettings(context),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          opacity: 0.3,
+          borderWidth: 2.0,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDeveloperButtons() {
+    const List<Color> buttonColors = [
+      Color(0xFF5EB1FF), // blue
+      Color(0xFF7A5CFF), // purple
+      Color(0xFFFF6680), // pink/red
+      Color(0xFFFFA14A), // orange
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          height: 2,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.transparent,
+                Colors.grey.shade600,
+                Colors.transparent,
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'DEVELOPER MODE',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                color: Colors.orange,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
+        ),
+        const SizedBox(height: 12),
+        MenuButton(
+          text: 'Categories',
+          onPressed: () =>
+              GameNavigationService.navigateToWordListsManager(context),
+          color: buttonColors[5 % buttonColors.length],
+        ),
+        const SizedBox(height: 8),
+        MenuButton(
+          text: 'Test Purchase',
+          onPressed: () => _showTestPurchaseDialog(context),
+          color: Colors.green,
+        ),
+        const SizedBox(height: 8),
+        MenuButton(
+          text: 'Background Lab',
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const BackgroundLabScreen(),
+            ),
+          ),
+          color: Colors.purple,
+        ),
+        const SizedBox(height: 8),
+        MenuButton(
+          text: 'Test Insights',
+          onPressed: () => _navigateToMockGameOver(context),
+          color: Colors.cyan,
+        ),
+        const SizedBox(height: 8),
+        MenuButton(
+          text: 'Disable Dev Mode',
+          onPressed: () => _disableDeveloperMode(context),
+          color: Colors.orange,
+        ),
+      ],
     );
   }
 }

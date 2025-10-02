@@ -9,6 +9,7 @@ class ZenSummaryScreen extends StatelessWidget {
   final List<String> wordsGuessed;
   final List<String> wordsSkipped;
   final List<String> wordsLeftOnScreen;
+  final Map<String, double>? wordTimings;
 
   const ZenSummaryScreen({
     super.key,
@@ -18,6 +19,7 @@ class ZenSummaryScreen extends StatelessWidget {
     required this.wordsGuessed,
     required this.wordsSkipped,
     required this.wordsLeftOnScreen,
+    this.wordTimings,
   });
 
   @override

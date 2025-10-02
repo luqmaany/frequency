@@ -57,6 +57,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
             wordsGuessed: wordsGuessed,
             wordsSkipped: wordsSkipped,
             wordsLeftOnScreen: currentWords.map((w) => w.text).toList(),
+            wordTimings: wordTimings,
           ),
         ),
       );
@@ -74,6 +75,7 @@ class _GameScreenState extends ConsumerState<GameScreen>
         wordsSkipped,
         currentWords.map((w) => w.text).toList(),
         disputedWords,
+        wordTimings,
       );
     }
   }
@@ -112,6 +114,8 @@ class _GameScreenState extends ConsumerState<GameScreen>
     setState(() {
       _isCountdownActive = false;
     });
+    // Reset word timings so countdown time isn't counted
+    resetWordTimings();
     // Resume timer when countdown completes
     resumeTimer();
   }

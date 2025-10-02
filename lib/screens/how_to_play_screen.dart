@@ -53,7 +53,7 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
                       style: TextStyle(
                         fontSize: 36,
                         fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
+                        color: Colors.white,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -162,18 +162,15 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
 
   // Slide 2: Teams
   Widget _buildSlide2(BuildContext context) {
-    return _buildSlideContainer(
-      context,
-      icon: Icons.groups,
-      cardColor: const Color(0xFF00BFAE), // Turquoise
-      title: 'Teams of Two',
-      content: 'Each team has two roles:\n\n'
-          '📡 Transmitter\n'
-          'Describes the words without saying them!\n\n'
-          '📻 Receiver\n'
-          'Shouts out answers as fast as possible\n\n'
-          'Roles are chosen each round so you can choose strategically or just switch it up!',
-    );
+    return _buildSlideContainer(context,
+        icon: Icons.groups,
+        cardColor: const Color(0xFF00BFAE), // Turquoise
+        title: 'Teams of Two',
+        content: 'Each team chooses roles each round:\n\n'
+            '📡 Transmitter\n'
+            'Describes the words without saying them!\n\n'
+            '📻 Receiver\n'
+            'Shouts out answers as fast as possible');
   }
 
   // Slide 3: Transmitter Rules
@@ -184,11 +181,11 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
       cardColor: const Color(0xFFFF6680), // Pink/Red
       title: 'Transmitter Rules',
       content: '📡 When describing words, you CANNOT:\n\n'
-          '❌ Say the word... duh.\n'
+          '❌ Say the word... duh.    \n'
           '❌ Say any part of the word\n'
-          '❌ Rhyme with the word\n'
-          '❌ Spell it out\n'
-          '❌ Say "starts with..."\n\n'
+          '❌ Rhyme with the word     \n'
+          '❌ Spell it out            \n'
+          '❌ Say "starts with..."    \n\n'
           '💡 However, like we do with Uno, you can change the rules all you want!',
     );
   }
@@ -227,8 +224,7 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          const SizedBox(
-              height: 20), // Fixed top spacing for consistent icon position
+          // Fixed top spacing for consistent icon position
           const Icon(
             Icons.gamepad,
             size: 80,
@@ -303,8 +299,7 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          const SizedBox(
-              height: 20), // Fixed top spacing for consistent icon position
+          // Fixed top spacing for consistent icon position
           const Icon(
             Icons.celebration,
             size: 80,
@@ -333,7 +328,7 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
             child: Column(
               children: [
                 Text(
-                  'You\'re all set!\n\nGrab some friends and hit that Play button to start your first game.',
+                  'You\'re all set!\n\nGrab some friends and hit that Play button to start a game.',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white,
                         height: 1.6,
@@ -392,8 +387,7 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
       padding: const EdgeInsets.all(24.0),
       child: Column(
         children: [
-          const SizedBox(
-              height: 20), // Fixed top spacing for consistent icon position
+          // Fixed top spacing for consistent icon position
           Icon(
             icon,
             size: 80,

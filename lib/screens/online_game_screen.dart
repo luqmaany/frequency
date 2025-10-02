@@ -81,6 +81,7 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
       disputedWords,
       conveyor,
       guesser,
+      wordTimings: wordTimings,
     );
   }
 
@@ -240,6 +241,8 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
     setState(() {
       _isCountdownActive = false;
     });
+    // Reset word timings so countdown time isn't counted
+    resetWordTimings();
     // Resume timer when countdown completes
     resumeTimer();
   }

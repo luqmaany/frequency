@@ -349,6 +349,16 @@ class _CategorySelectionScreenState
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          const Text(
+                            'Choose Category',
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 20),
                           Text(
                             widget.displayString,
                             style: Theme.of(context).textTheme.headlineMedium,

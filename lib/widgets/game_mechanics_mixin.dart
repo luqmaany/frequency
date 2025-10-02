@@ -17,6 +17,9 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   List<String> _wordsGuessed = [];
   List<String> _wordsSkipped = [];
   Set<String> _disputedWords = {};
+  Map<String, DateTime> _wordLoadTimes = {}; // Track when each word was loaded
+  Map<String, double> _finalWordTimings =
+      {}; // Store finalized durations at action time
 
   // Getters for accessing the state
   int get timeLeft => _timeLeft;
@@ -26,6 +29,24 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   List<String> get wordsGuessed => _wordsGuessed;
   List<String> get wordsSkipped => _wordsSkipped;
   Set<String> get disputedWords => _disputedWords;
+
+  // Build final word timings map (word -> seconds visible before action)
+  Map<String, double> get wordTimings {
+    // Start with finalized timings captured at action moments
+    final timings = Map<String, double>.from(_finalWordTimings);
+    final now = DateTime.now();
+
+    // Add timings for words left on screen (compute at end)
+    for (final word in _currentWords) {
+      if (_wordLoadTimes.containsKey(word.text) &&
+          !timings.containsKey(word.text)) {
+        timings[word.text] =
+            now.difference(_wordLoadTimes[word.text]!).inMilliseconds / 1000.0;
+      }
+    }
+
+    return timings;
+  }
 
   // Abstract methods that must be implemented by the using class
   String get categoryId;
@@ -43,6 +64,16 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _wordsGuessed = [];
     _wordsSkipped = [];
     _disputedWords = {};
+    _wordLoadTimes = {};
+    _finalWordTimings = {};
+  }
+
+  // Reset word timings (called when countdown ends and gameplay actually starts)
+  void resetWordTimings() {
+    final now = DateTime.now();
+    for (final word in _currentWords) {
+      _wordLoadTimes[word.text] = now;
+    }
   }
 
   // Start the game timer
@@ -81,6 +112,13 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   // Handle word guessed
   void handleWordGuessed(String word) {
+    // Capture timing at the moment of guess
+    if (_wordLoadTimes.containsKey(word)) {
+      final seconds =
+          DateTime.now().difference(_wordLoadTimes[word]!).inMilliseconds /
+              1000.0;
+      _finalWordTimings[word] = seconds;
+    }
     setState(() {
       _correctCount++;
       _wordsGuessed.add(word);
@@ -91,6 +129,13 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   // Handle word skipped
   void handleWordSkipped(String word) {
     if (_skipsLeft > 0) {
+      // Capture timing at the moment of skip
+      if (_wordLoadTimes.containsKey(word)) {
+        final seconds =
+            DateTime.now().difference(_wordLoadTimes[word]!).inMilliseconds /
+                1000.0;
+        _finalWordTimings[word] = seconds;
+      }
       setState(() {
         _skipsLeft--;
         _wordsSkipped.add(word);
@@ -217,6 +262,9 @@ mixin GameMechanicsMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         _currentWords[index] = newWord;
         _usedWords.add(newWord.text);
       });
+
+      // Track when this word was loaded
+      _wordLoadTimes[newWord.text] = DateTime.now();
 
       // Add to category-specific used words
       ref

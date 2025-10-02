@@ -47,7 +47,7 @@ class DecksStoreScreen extends ConsumerWidget {
                             style: TextStyle(
                               fontSize: 36,
                               fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
+                              color: Colors.white,
                             ),
                             textAlign: TextAlign.center,
                           ),

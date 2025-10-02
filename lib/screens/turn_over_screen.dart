@@ -24,6 +24,7 @@ class TurnOverScreen extends ConsumerStatefulWidget {
   final List<String> wordsSkipped;
   final List<String> wordsLeftOnScreen;
   final Set<String> disputedWords;
+  final Map<String, double>? wordTimings;
   final String? conveyor;
   final String? guesser;
 
@@ -43,6 +44,7 @@ class TurnOverScreen extends ConsumerStatefulWidget {
     required this.wordsSkipped,
     required this.wordsLeftOnScreen,
     required this.disputedWords,
+    this.wordTimings,
     this.conveyor,
     this.guesser,
     this.sessionId,
@@ -172,6 +174,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
             .where((word) => !_disputedWords.contains(word))
             .toList(),
         wordsSkipped: widget.wordsSkipped,
+        wordTimings: widget.wordTimings,
       );
 
       ref.read(gameStateProvider.notifier).recordTurn(turnRecord);
@@ -208,6 +211,16 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
         ? gameConfig.teamColorIndices[widget.teamIndex]
         : widget.teamIndex % teamColors.length;
     final teamColor = teamColors[colorIndex];
+
+    // Temporary debug log for word timings
+    if (widget.wordTimings != null && widget.wordTimings!.isNotEmpty) {
+      // Log once when the widget builds
+      // ignore: avoid_print
+      print('[TurnOver] wordTimings: ' +
+          widget.wordTimings!.entries
+              .map((e) => '${e.key}=${e.value.toStringAsFixed(2)}s')
+              .join(', '));
+    }
 
     return ConfirmOnBack(
       dialogBuilder: (ctx) => QuitDialog(color: teamColor),
@@ -274,6 +287,44 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
+                // DEBUG: Show per-word durations inline (temporary)
+                if ((widget.wordTimings?.isNotEmpty ?? false))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.15),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Debug: Word Timings (sec)',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          ...widget.wordTimings!.entries.map(
+                            (e) => Text(
+                              '${e.key}: ${e.value.toStringAsFixed(2)}s',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if ((widget.wordTimings?.isNotEmpty ?? false))
+                  const SizedBox(height: 12),
                 Text(
                   'Words Guessed:',
                   style: Theme.of(context).textTheme.titleLarge,
