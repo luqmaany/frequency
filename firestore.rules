@@ -1,19 +1,40 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Sessions collection
+    
+    // ============================================================================
+    // SESSION DOCUMENTS - Allow all access for now (no auth required)
+    // ============================================================================
+    
     match /sessions/{sessionId} {
-      // Allow read/write for authenticated users
-      allow read, write: if request.auth != null;
-      
-      // Optimize for batch operations
-      allow create: if request.auth != null 
-        && request.resource.data.keys().hasAll(['sessionId', 'hostId', 'settings', 'teams', 'gameState']);
-      
-      // Allow updates to specific fields
-      allow update: if request.auth != null 
-        && (request.resource.data.diff(resource.data).affectedKeys()
-            .hasAny(['teams', 'gameState', 'settings', 'hostId']));
+      // Allow read/write access to anyone (needed for multiplayer without auth)
+      allow read, write: if true;
+    }
+    
+    // ============================================================================
+    // SURVEY DATA - Allow all access for now
+    // ============================================================================
+    
+    match /insight_surveys/{surveyId} {
+      allow read, write: if true;
+    }
+    
+    // ============================================================================
+    // CATEGORIES (if you plan to use Firestore for categories)
+    // ============================================================================
+    
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if false; // No writes allowed for now
+    }
+    
+    // ============================================================================
+    // DENY ALL OTHER DOCUMENTS
+    // ============================================================================
+    
+    // Explicitly deny access to any other documents
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
-} 
+}

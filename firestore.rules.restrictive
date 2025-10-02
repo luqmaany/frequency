@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ============================================================================
+    // SESSION DOCUMENTS - More Restrictive
+    // ============================================================================
+    
+    match /sessions/{sessionId} {
+      // Allow read access to anyone (needed for joining sessions)
+      allow read: if true;
+      
+      // Allow write access only for authenticated users
+      // AND only allow specific fields to be written
+      allow create: if request.auth != null 
+        && isValidSessionData(request.resource.data);
+      
+      allow update: if request.auth != null 
+        && isValidSessionUpdate(request.resource.data, resource.data);
+      
+      allow delete: if false; // Never allow deletion
+    }
+    
+    // ============================================================================
+    // SURVEY DATA
+    // ============================================================================
+    
+    match /insight_surveys/{surveyId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null 
+        && isValidSurveyData(request.resource.data);
+      allow update, delete: if false;
+    }
+    
+    // ============================================================================
+    // HELPER FUNCTIONS
+    // ============================================================================
+    
+    function isValidSessionData(data) {
+      return data.keys().hasAll(['hostId', 'teams', 'settings', 'gameState'])
+        && data.hostId is string
+        && data.teams is list
+        && data.settings is map
+        && data.gameState is map;
+    }
+    
+    function isValidSessionUpdate(newData, oldData) {
+      // Allow updates but prevent certain critical fields from being changed
+      return newData.hostId == oldData.hostId; // Host can't be changed
+    }
+    
+    function isValidSurveyData(data) {
+      return data.keys().hasAll(['timestamp', 'responses'])
+        && data.timestamp is timestamp
+        && data.responses is map;
+    }
+    
+    // ============================================================================
+    // DENY ALL OTHER DOCUMENTS
+    // ============================================================================
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

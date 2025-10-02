@@ -69,6 +69,7 @@ class _AnimatedGradientTextState extends State<AnimatedGradientText>
                     Color(0xFF5EB1FF), // blue
                     Color(0xFF7A5CFF), // purple
                     Color(0xFFFF6680), // pink/red
+                    Color(0xFF4CD295), // Green
                     Color(0xFFFFA14A), // orange
                     Color(0xFF5EB1FF), // loop
                   ],
