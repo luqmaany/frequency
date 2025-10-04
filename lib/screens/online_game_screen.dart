@@ -55,17 +55,14 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   @override
   void onTurnEnd() {
     // Use navigation service to navigate to turn over screen
-    print('onTurnEnd');
     try {
       ref.read(soundServiceProvider).playTurnEnd();
     } catch (_) {}
 
     final conveyor = widget.sessionData!['gameState']['currentConveyor']
         as String; // First player is conveyor
-    print('conveyor: $conveyor');
     final guesser = widget.sessionData!['gameState']['currentGuesser']
         as String; // Second player is guesser
-    print('guesser: $guesser');
 
     FirestoreService.fromGameScreen(
       widget.sessionId!,
@@ -172,24 +169,6 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
     }
 
     return false;
-  }
-
-  // Get current player's name from device (for remote teams)
-  String? _getMyPlayerName() {
-    if (_currentDeviceId == null || widget.onlineTeam == null) return null;
-
-    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
-    if (teamMode != 'remote') return null;
-
-    final devices = widget.onlineTeam!['devices'] as List?;
-    if (devices != null) {
-      for (final device in devices) {
-        if (device['deviceId'] == _currentDeviceId) {
-          return device['playerName'] as String?;
-        }
-      }
-    }
-    return null;
   }
 
   // Get game configuration for both local and online games
@@ -379,6 +358,33 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
                   categoryId: categoryId,
                   onCountdownComplete: _onCountdownComplete,
                 ),
+
+              // Close button in top right (hidden during countdown)
+              if (!_isCountdownActive)
+                Positioned(
+                  top: 5,
+                  right: 2,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.grey.withOpacity(0.2),
+                      size: 32,
+                    ),
+                    onPressed: () async {
+                      final shouldQuit = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => QuitDialog(color: teamColor),
+                      );
+                      if (shouldQuit == true) {
+                        await OnlineGameNavigationService.leaveSessionAndGoHome(
+                          context: context,
+                          ref: ref,
+                          sessionId: widget.sessionId,
+                        );
+                      }
+                    },
+                  ),
+                ),
             ],
           ),
         ),
@@ -389,106 +395,146 @@ class _OnlineGameScreenState extends ConsumerState<OnlineGameScreen>
   Widget _buildSpectatorScreen() {
     // Determine if this is a guesser or non-active team spectator
     final isGuesser = _isCurrentTeamActive && !_canInteractWithCards;
-    final myPlayerName = _getMyPlayerName();
     final conveyorName =
         widget.sessionData?['gameState']?['currentConveyor'] as String?;
-    final guesserName =
-        widget.sessionData?['gameState']?['currentGuesser'] as String?;
 
     return Scaffold(
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: IntrinsicHeight(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Spacer(),
-                        // Role-specific icon
-                        Icon(
-                          isGuesser ? Icons.psychology : Icons.visibility,
-                          size: constraints.maxWidth * 0.2, // Responsive size
-                          color: isGuesser
-                              ? Colors.blue
-                              : Theme.of(context).colorScheme.secondary,
-                        ),
-                        const SizedBox(height: 24),
-                        // Role-specific title
-                        Text(
-                          isGuesser ? 'You are the RECEIVER' : 'Spectator Mode',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineLarge
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isGuesser ? Colors.blue : null,
-                              ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 16),
-                        // Category display
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: CategoryRegistry.getCategory(widget.category)
-                                .color
-                                .withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color:
-                                  CategoryRegistry.getCategory(widget.category)
-                                      .color,
-                              width: 2,
+        child: Stack(
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const Spacer(),
+                            // Role-specific icon
+                            Icon(
+                              isGuesser ? Icons.psychology : Icons.visibility,
+                              size:
+                                  constraints.maxWidth * 0.2, // Responsive size
+                              color: isGuesser
+                                  ? Colors.blue
+                                  : Theme.of(context).colorScheme.secondary,
                             ),
-                          ),
-                          child: Text(
-                            CategoryRegistry.getCategory(widget.category)
-                                .displayName,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
+                            const SizedBox(height: 24),
+                            // Role-specific title
+                            Text(
+                              isGuesser
+                                  ? 'You are the RECEIVER'
+                                  : 'Spectator Mode',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color: isGuesser ? Colors.blue : null,
+                                  ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            // Category display
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: CategoryRegistry.getCategory(
+                                        widget.category)
+                                    .color
+                                    .withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
                                   color: CategoryRegistry.getCategory(
                                           widget.category)
                                       .color,
-                                  fontWeight: FontWeight.w600,
+                                  width: 2,
                                 ),
-                            textAlign: TextAlign.center,
-                          ),
+                              ),
+                              child: Text(
+                                CategoryRegistry.getCategory(widget.category)
+                                    .displayName,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      color: CategoryRegistry.getCategory(
+                                              widget.category)
+                                          .color,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            // Team and role info
+                            if (isGuesser) ...[
+                              Text(
+                                'Your teammate $conveyorName is conveying the words',
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
+                                textAlign: TextAlign.center,
+                              ),
+                            ] else ...[
+                              Text(
+                                '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing',
+                                style:
+                                    Theme.of(context).textTheme.headlineSmall,
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            const Spacer(),
+                          ],
                         ),
-                        const SizedBox(height: 24),
-                        // Team and role info
-                        if (isGuesser) ...[
-                          Text(
-                            'Your teammate $conveyorName is conveying the words',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                            textAlign: TextAlign.center,
-                          ),
-                        ] else ...[
-                          Text(
-                            '${widget.onlineTeam!['teamName'] ?? 'Team ${widget.teamIndex + 1}'} is currently playing',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                        const SizedBox(height: 8),
-                        const Spacer(),
-                      ],
+                      ),
                     ),
                   ),
+                );
+              },
+            ),
+
+            // Close button in top right for spectator screen
+            Positioned(
+              top: 5,
+              right: 2,
+              child: IconButton(
+                icon: Icon(
+                  Icons.close,
+                  color: Colors.grey.withOpacity(0.2),
+                  size: 32,
                 ),
+                onPressed: () async {
+                  final shouldQuit = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => QuitDialog(
+                      color: TeamColor(
+                        'Red',
+                        const Color(0xFFFFCDD2),
+                        const Color(0xFFFF5252),
+                        Colors.white,
+                      ),
+                    ),
+                  );
+                  if (shouldQuit == true) {
+                    await OnlineGameNavigationService.leaveSessionAndGoHome(
+                      context: context,
+                      ref: ref,
+                      sessionId: widget.sessionId,
+                    );
+                  }
+                },
               ),
-            );
-          },
+            ),
+          ],
         ),
       ),
     );

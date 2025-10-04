@@ -54,6 +54,7 @@ class OnlineTurnOverScreen extends ConsumerStatefulWidget {
 
 class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
   Set<String> _disputedWords = {};
+  Set<String> _promotedWords = {};
   List<int> _confirmedTeams = [];
   bool _isCurrentTeamActive = false;
   String? _currentDeviceId;
@@ -120,8 +121,28 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
     }
   }
 
+  void _onWordPromoted(String word) {
+    if (!_isCurrentTeamActive) return; // Only current team can promote words
+
+    setState(() {
+      if (_promotedWords.contains(word)) {
+        _promotedWords.remove(word);
+      } else {
+        _promotedWords.add(word);
+      }
+    });
+
+    // Sync promoted words to Firestore
+    if (widget.sessionId != null) {
+      FirestoreService.updatePromotedWords(
+        widget.sessionId!,
+        _promotedWords.toList(),
+      );
+    }
+  }
+
   int get _disputedScore {
-    return widget.correctCount - _disputedWords.length;
+    return widget.correctCount - _disputedWords.length + _promotedWords.length;
   }
 
   bool get _allTeamsConfirmed {
@@ -141,10 +162,14 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
         widget.category,
         _disputedScore, // Use disputed score instead of original correctCount
         widget.skipsLeft,
-        widget.wordsGuessed
-            .where((word) => !_disputedWords.contains(word))
-            .toList(), // Filter out disputed words
-        widget.wordsSkipped,
+        [
+          ...widget.wordsGuessed
+              .where((word) => !_disputedWords.contains(word)),
+          ..._promotedWords,
+        ], // Filter out disputed words and add promoted words
+        widget.wordsSkipped
+            .where((word) => !_promotedWords.contains(word))
+            .toList(),
         _disputedWords,
         widget.conveyor ?? '',
         widget.guesser ?? '',
@@ -157,7 +182,6 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
 
   @override
   void dispose() {
-    print('🗑️ TURN OVER SCREEN: Disposing widget, cleaning up listeners...');
     super.dispose();
   }
 
@@ -189,6 +213,8 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
         if (turnOverState != null) {
           final disputedWords =
               List<String>.from(turnOverState['disputedWords'] as List? ?? []);
+          final promotedWords =
+              List<String>.from(turnOverState['promotedWords'] as List? ?? []);
           final confirmedTeams =
               List<int>.from(turnOverState['confirmedTeams'] as List? ?? []);
           // Derive the current active team's deviceId from live session data
@@ -205,12 +231,11 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
           if (mounted) {
             setState(() {
               _disputedWords = Set.from(disputedWords);
+              _promotedWords = Set.from(promotedWords);
               _confirmedTeams = confirmedTeams;
               _isCurrentTeamActive = _currentDeviceId != null &&
                   _currentDeviceId ==
                       (currentTeamDeviceId ?? widget.currentTeamDeviceId);
-              print(
-                  '🔍 DEVICE INFO: Current device: $_currentDeviceId, Team device: ${currentTeamDeviceId ?? widget.currentTeamDeviceId}, Is active: $_isCurrentTeamActive');
             });
           }
         }
@@ -301,8 +326,23 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Words Guessed:',
+                  'Words Guessed',
                   style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _disputedWords.isNotEmpty
+                      ? '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} disputed'
+                      : (_isCurrentTeamActive
+                          ? 'Double tap words to dispute them'
+                          : 'Only the current team can dispute words'),
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: _disputedWords.isNotEmpty
+                            ? Colors.red
+                            : CategoryRegistry.getCategory(widget.category)
+                                .color,
+                      ),
                 ),
                 const SizedBox(height: 10),
                 Expanded(
@@ -311,7 +351,8 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          if (widget.wordsGuessed.isNotEmpty) ...[
+                          if (widget.wordsGuessed.isNotEmpty ||
+                              _promotedWords.isNotEmpty) ...[
                             for (var i = 0;
                                 i < widget.wordsGuessed.length;
                                 i += 2)
@@ -321,7 +362,7 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                   children: [
                                     Expanded(
                                       child: GestureDetector(
-                                        onTap: () => _onWordDisputed(
+                                        onDoubleTap: () => _onWordDisputed(
                                             widget.wordsGuessed[i]),
                                         child: Container(
                                           padding: const EdgeInsets.symmetric(
@@ -410,8 +451,9 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                     Expanded(
                                       child: i + 1 < widget.wordsGuessed.length
                                           ? GestureDetector(
-                                              onTap: () => _onWordDisputed(
-                                                  widget.wordsGuessed[i + 1]),
+                                              onDoubleTap: () =>
+                                                  _onWordDisputed(widget
+                                                      .wordsGuessed[i + 1]),
                                               child: Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -510,82 +552,143 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                                 ),
                               ),
                             const SizedBox(height: 16),
+                            // Display promoted words with green styling
+                            if (_promotedWords.isNotEmpty) ...[
+                              for (var word in _promotedWords)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: GestureDetector(
+                                    onDoubleTap: () => _onWordPromoted(word),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8, horizontal: 12),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? Colors.green.withOpacity(0.2)
+                                            : Colors.green.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
+                                          color: Colors.green,
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              word,
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    color: Theme.of(context)
+                                                                .brightness ==
+                                                            Brightness.dark
+                                                        ? Colors.white
+                                                            .withOpacity(0.95)
+                                                        : Colors.black,
+                                                  ),
+                                              textAlign: TextAlign.center,
+                                            ),
+                                          ),
+                                          const Icon(
+                                            Icons.check,
+                                            color: Colors.green,
+                                            size: 20,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              const SizedBox(height: 16),
+                            ],
+                          ],
+                          if (widget.wordsSkipped.isNotEmpty) ...[
+                            const SizedBox(height: 16),
+                            Text(
+                              'Words Skipped',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            const SizedBox(height: 10),
                             Text(
                               _isCurrentTeamActive
-                                  ? 'Tap words to contest them'
-                                  : 'Only the current team can contest words',
+                                  ? 'Double tap words to rectify them'
+                                  : 'Only the current team can rectify words',
                               textAlign: TextAlign.center,
                               style: Theme.of(context)
                                   .textTheme
-                                  .titleLarge
+                                  .titleMedium
                                   ?.copyWith(
                                     color: CategoryRegistry.getCategory(
                                             widget.category)
                                         .color,
                                   ),
                             ),
-                            const SizedBox(height: 16),
-                          ],
-                          if (widget.wordsSkipped.isNotEmpty) ...[
-                            const SizedBox(height: 24),
-                            Text(
-                              'Words Skipped:',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
                             const SizedBox(height: 10),
                             for (var word in widget.wordsSkipped)
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 8, horizontal: 12),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).brightness ==
-                                            Brightness.dark
-                                        ? CategoryRegistry.getCategory(
-                                                widget.category)
-                                            .color
-                                            .withOpacity(0.1)
-                                        : CategoryRegistry.getCategory(
-                                                widget.category)
-                                            .color
-                                            .withOpacity(0.05),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? CategoryRegistry.getCategory(
-                                                  widget.category)
-                                              .color
-                                              .withOpacity(0.5)
-                                          : CategoryRegistry.getCategory(
-                                                  widget.category)
-                                              .color
-                                              .withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    word,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleMedium
-                                        ?.copyWith(
+                              if (!_promotedWords.contains(word))
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 8.0),
+                                  child: GestureDetector(
+                                    onDoubleTap: () => _onWordPromoted(word),
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 8, horizontal: 12),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? CategoryRegistry.getCategory(
+                                                    widget.category)
+                                                .color
+                                                .withOpacity(0.1)
+                                            : CategoryRegistry.getCategory(
+                                                    widget.category)
+                                                .color
+                                                .withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(
                                           color: Theme.of(context).brightness ==
                                                   Brightness.dark
-                                              ? Colors.white.withOpacity(0.95)
-                                              : Colors.black,
+                                              ? CategoryRegistry.getCategory(
+                                                      widget.category)
+                                                  .color
+                                                  .withOpacity(0.5)
+                                              : CategoryRegistry.getCategory(
+                                                      widget.category)
+                                                  .color
+                                                  .withOpacity(0.3),
+                                          width: 1,
                                         ),
-                                    textAlign: TextAlign.center,
+                                      ),
+                                      child: Text(
+                                        word,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                          .brightness ==
+                                                      Brightness.dark
+                                                  ? Colors.white
+                                                      .withOpacity(0.95)
+                                                  : Colors.black,
+                                            ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
                           ],
                           if (widget.wordsLeftOnScreen.isNotEmpty) ...[
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
                             Text(
-                              'Words Left On Screen:',
+                              'Words Left On Screen',
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 10),
@@ -648,25 +751,14 @@ class _OnlineTurnOverScreenState extends ConsumerState<OnlineTurnOverScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 24.0),
                   child: Column(
                     children: [
-                      // Show team confirmation circles and contested words count
+                      // Show team confirmation circles
                       if (widget.sessionId != null) ...[
                         const SizedBox(height: 1),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Contested words count on the left
-                            if (_disputedWords.isNotEmpty)
-                              Text(
-                                '${_disputedWords.length} word${_disputedWords.length == 1 ? '' : 's'} contested',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
-                                    ?.copyWith(
-                                      color: Colors.red,
-                                    ),
-                              )
-                            else
-                              const SizedBox.shrink(),
+                            // Empty space on the left
+                            const SizedBox.shrink(),
                             // Team confirmation circles on the right
                             Row(
                               children: List.generate(

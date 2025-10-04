@@ -115,7 +115,8 @@ final lightThemeProvider = Provider<ThemeData>((ref) {
 
 // Provider for dark theme
 final darkThemeProvider = Provider<ThemeData>((ref) {
-  const Color darkBg = Color(0xFF0B1020); // Match HomeScreen background
+  const Color darkBg =
+      Color.fromARGB(255, 11, 16, 32); // Match HomeScreen background
   return ThemeData(
     colorScheme: ColorScheme.fromSeed(
       seedColor: const Color.fromARGB(255, 255, 255, 255), // Purple

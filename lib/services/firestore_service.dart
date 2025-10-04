@@ -395,6 +395,22 @@ class FirestoreService {
     });
   }
 
+  /// Update promoted words in turn over state
+  static Future<void> updatePromotedWords(
+    String sessionId,
+    List<String> promotedWords,
+  ) async {
+    if (!_canWrite(sessionId)) {
+      throw Exception('Rate limit exceeded for writes');
+    }
+
+    print(
+        '🔥 FIRESTORE WRITE: updatePromotedWords($sessionId) - promotedWords: $promotedWords');
+    await sessions.doc(sessionId).update({
+      'gameState.turnOverState.promotedWords': promotedWords,
+    });
+  }
+
   /// Confirm score for a team in turn over state
   static Future<void> confirmScoreForTeam(
     String sessionId,

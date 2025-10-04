@@ -14,8 +14,8 @@ class GameSettings extends ConsumerStatefulWidget {
 
 class GameSettingsState extends ConsumerState<GameSettings> {
   // Predefined options
-  static const List<int> timeOptions = [2, 15, 30, 60, 90, 120];
-  static const List<int> scoreOptions = [2, 10, 20, 30, 50];
+  static const List<int> timeOptions = [5, 15, 30, 60, 90, 120];
+  static const List<int> scoreOptions = [5, 10, 20, 30, 50];
   static const List<int> skipOptions = [0, 1, 2, 3, 4, 5];
 
   void _updateFirestoreSetting(String key, int value) async {

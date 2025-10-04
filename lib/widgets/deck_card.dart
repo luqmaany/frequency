@@ -8,6 +8,8 @@ class DeckCard extends StatefulWidget {
   final bool isOwned;
   final VoidCallback? onTap;
   final double height;
+  final bool isFlipped;
+  final VoidCallback? onFlip;
 
   const DeckCard({
     super.key,
@@ -15,6 +17,8 @@ class DeckCard extends StatefulWidget {
     required this.isOwned,
     this.onTap,
     this.height = 80,
+    this.isFlipped = false,
+    this.onFlip,
   });
 
   @override
@@ -22,8 +26,6 @@ class DeckCard extends StatefulWidget {
 }
 
 class _DeckCardState extends State<DeckCard> {
-  bool _isFlipped = false;
-
   // Helper method to build image widget (supports both assets and network URLs)
   Widget _buildImage(String imagePath, {required Alignment alignment}) {
     // Check if it's a network URL
@@ -159,7 +161,9 @@ class _DeckCardState extends State<DeckCard> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '${widget.category.wordCount} words',
+                  widget.category.wordCount < 100
+                      ? '<100 words'
+                      : '${((widget.category.wordCount / 100).ceil() * 100)}+ words',
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: text,
                         fontWeight: FontWeight.w700,
@@ -179,7 +183,7 @@ class _DeckCardState extends State<DeckCard> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: _isFlipped ? 1 : 0),
+        tween: Tween(begin: 0, end: widget.isFlipped ? 1 : 0),
         duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
         builder: (context, value, child) {
@@ -193,7 +197,7 @@ class _DeckCardState extends State<DeckCard> {
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
               onTap: () {
-                setState(() => _isFlipped = !_isFlipped);
+                widget.onFlip?.call();
                 widget.onTap?.call();
               },
               child: Container(

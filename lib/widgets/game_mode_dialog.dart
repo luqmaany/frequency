@@ -14,6 +14,7 @@ class GameModeDialog extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
+      alignment: const Alignment(0, 0.2),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         constraints: const BoxConstraints(maxWidth: 560),
@@ -55,7 +56,7 @@ class GameModeDialog extends ConsumerWidget {
                 context,
                 ref,
                 'Local',
-                'Play with friends locally',
+                'Pass and play, 4+ players',
                 Icons.group,
                 () {
                   Navigator.of(context).pop();
@@ -68,7 +69,7 @@ class GameModeDialog extends ConsumerWidget {
                 context,
                 ref,
                 'Zen',
-                'Quick single turn',
+                'Quick single turn, 2+ players',
                 Icons.spa,
                 () {
                   Navigator.of(context).pop();
@@ -85,7 +86,7 @@ class GameModeDialog extends ConsumerWidget {
                 context,
                 ref,
                 'Online',
-                'Play from afar',
+                '1 or 2 devices per team, 4+ players',
                 Icons.public,
                 () {
                   Navigator.of(context).pop();

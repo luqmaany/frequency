@@ -231,6 +231,29 @@ class _GameScreenState extends ConsumerState<GameScreen>
                   categoryId: categoryId,
                   onCountdownComplete: _onCountdownComplete,
                 ),
+
+              // Close button in top right (hidden during countdown)
+              if (!_isCountdownActive)
+                Positioned(
+                  top: 5,
+                  right: 2,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: Colors.grey.withOpacity(0.2),
+                      size: 32,
+                    ),
+                    onPressed: () async {
+                      final shouldQuit = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => QuitDialog(color: teamColor),
+                      );
+                      if (shouldQuit == true) {
+                        await GameNavigationService.quitToHome(context, ref);
+                      }
+                    },
+                  ),
+                ),
             ],
           ),
         ),

@@ -1,6 +1,7 @@
 [x] - Fix max teams count when we add a player after 6 teams it makes another team
 [x] - make it so that whe we add a player it creates a chip not automatically add to team
 [] - add sounds to game
+[] - Consider adding back performance messages in turn over screens (currently commented out)
 [x] - add a game insights screen
 [x] - Add clear data functionality to allow users to reset all saved player names and teams
 [] - Add dynamic category management to CategoryRegistry (addCategory, removeCategory, updateCategory methods)

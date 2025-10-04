@@ -89,6 +89,8 @@ class _CategorySelectionScreenState
 
   bool _isSpinning = false;
   bool _hasSpun = false; // Track if spin has been used
+  bool _teamConfirmed =
+      false; // Track if team has confirmed their identity (local games only)
   String? _selectedCategory;
   String _currentCategory = '';
   Timer? _categoryTimer;
@@ -155,6 +157,33 @@ class _CategorySelectionScreenState
     return CategoryRegistry.getUnlockedCategories(_unlockedCategoryIds);
   }
 
+  // Get current team's player names for display
+  String _getCurrentTeamPlayers() {
+    if (widget.sessionId != null) {
+      // Online game: get players from online team data
+      if (widget.onlineTeam != null) {
+        final players = widget.onlineTeam!['players'] as List?;
+        if (players != null && players.length >= 2) {
+          return '${players[0]} & ${players[1]}';
+        }
+      }
+      return 'Team ${widget.teamIndex + 1}';
+    } else {
+      // Local game: get players from game state
+      final gameState = ref.read(gameStateProvider);
+      if (gameState != null &&
+          gameState.config.teams.length > widget.teamIndex) {
+        final teamPlayers = gameState.config.teams[widget.teamIndex]
+            .where((p) => p.isNotEmpty)
+            .toList();
+        if (teamPlayers.length >= 2) {
+          return '${teamPlayers[0]} & ${teamPlayers[1]}';
+        }
+      }
+      return 'Team ${widget.teamIndex + 1}';
+    }
+  }
+
   // Check if current device is part of the active team (supports both couch and remote modes)
   bool get _isCurrentTeamActive {
     // For local games (no sessionId), always allow interaction
@@ -189,6 +218,24 @@ class _CategorySelectionScreenState
     _categoryTimer?.cancel();
 
     super.dispose();
+  }
+
+  void _handleCircleTap() {
+    if (_isSpinning || _hasSpun) return; // Prevent interaction if already spun
+    if (!_isCurrentTeamActive) return;
+
+    // For local games, check if team needs to confirm first
+    if (widget.sessionId == null && !_teamConfirmed) {
+      _confirmTeam();
+    } else {
+      _spinCategories();
+    }
+  }
+
+  void _confirmTeam() {
+    setState(() {
+      _teamConfirmed = true;
+    });
   }
 
   void _spinCategories() async {
@@ -344,32 +391,40 @@ class _CategorySelectionScreenState
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Choose Category',
+                          style: TextStyle(
+                            fontSize: 36,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.displayString,
+                          style: Theme.of(context).textTheme.headlineMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                   Expanded(
                     child: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text(
-                            'Choose Category',
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            widget.displayString,
-                            style: Theme.of(context).textTheme.headlineMedium,
-                            textAlign: TextAlign.center,
-                          ),
                           const SizedBox(height: 40),
                           GestureDetector(
                             onTap: (_isCurrentTeamActive &&
                                     !_isSpinning &&
                                     !_hasSpun)
-                                ? _spinCategories
+                                ? _handleCircleTap
                                 : null,
                             child: AnimatedBuilder(
                               animation: _scaleController,
@@ -410,11 +465,17 @@ class _CategorySelectionScreenState
                                               ? (_isCurrentTeamActive
                                                   ? (_hasSpun
                                                       ? 'Spinning...'
-                                                      : 'Tap To Spin\nFor Category!')
+                                                      : (_isSpinning
+                                                          ? 'Spinning...'
+                                                          : (widget.sessionId ==
+                                                                      null &&
+                                                                  !_teamConfirmed
+                                                              ? 'Tap If You\'re\n${_getCurrentTeamPlayers()}'
+                                                              : 'Tap To Spin!')))
                                                   : 'Waiting...')
                                               : _currentCategory,
                                           key: ValueKey<String>(
-                                              _currentCategory),
+                                              '${_currentCategory}_${_teamConfirmed}_${_isSpinning}'),
                                           textAlign: TextAlign.center,
                                           style:
                                               Theme.of(context)

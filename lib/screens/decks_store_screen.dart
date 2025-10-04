@@ -8,11 +8,24 @@ import '../widgets/team_color_button.dart';
 import '../services/purchase_service.dart';
 import '../services/storage_service.dart';
 
-class DecksStoreScreen extends ConsumerWidget {
+class DecksStoreScreen extends ConsumerStatefulWidget {
   const DecksStoreScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DecksStoreScreen> createState() => _DecksStoreScreenState();
+}
+
+class _DecksStoreScreenState extends ConsumerState<DecksStoreScreen> {
+  String? _flippedDeckId;
+
+  void _onDeckTap(String deckId) {
+    setState(() {
+      _flippedDeckId = _flippedDeckId == deckId ? null : deckId;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final List<Category> all = CategoryRegistry.getAllCategories();
 
     // Merge built-in unlocked flag with locally purchased entitlements
@@ -73,6 +86,8 @@ class DecksStoreScreen extends ConsumerWidget {
                               isOwned: true,
                               onTap: () {},
                               height: 100,
+                              isFlipped: _flippedDeckId == cat.id,
+                              onFlip: () => _onDeckTap(cat.id),
                             ),
                           ),
                         const SizedBox(height: 20),
@@ -123,6 +138,8 @@ class DecksStoreScreen extends ConsumerWidget {
                                 );
                               },
                               height: 104,
+                              isFlipped: _flippedDeckId == cat.id,
+                              onFlip: () => _onDeckTap(cat.id),
                             ),
                           ),
                         const SizedBox(height: 12),

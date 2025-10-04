@@ -184,8 +184,7 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
           '❌ Say the word... duh.    \n'
           '❌ Say any part of the word\n'
           '❌ Rhyme with the word     \n'
-          '❌ Spell it out            \n'
-          '❌ Say "starts with..."    \n\n'
+          '❌ Spell it out            \n\n'
           '💡 However, like we do with Uno, you can change the rules all you want!',
     );
   }
@@ -196,10 +195,10 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
       context,
       icon: Icons.style,
       cardColor: const Color(0xFF7A5CFF), // Purple
-      title: 'Two Cards, One Goal',
+      title: 'Two Cards One Goal',
       content: 'Two word cards appear at once from your chosen category.\n\n'
           'The Transmitter can choose which one to describe at a time or both if that\'s possible\n\n'
-          'Work together to guess them as many as possible before the timer runs out!',
+          'Work together to transmit as many words as possible before the timer runs out! ⏱️',
     );
   }
 
@@ -214,7 +213,9 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
           'When a word is guessed correctly ✅\n\n'
           '👈 Swipe LEFT\n'
           'To skip a tough one ⏭️\n\n'
-          'You have limited skips so be careful!',
+          'You have limited skips so be careful!\n\n'
+          'Swiped the wrong way? 🫠\n'
+          'No worries, you can fix it after the turn!',
     );
   }
 
@@ -241,22 +242,25 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
           ),
           const SizedBox(height: 32),
           _buildModeCard(
+            context,
             'Local',
-            'Play with friends locally',
+            'Pass and play minimum 4 players',
             Icons.group,
             const Color(0xFF5EB1FF),
           ),
           const SizedBox(height: 12),
           _buildModeCard(
+            context,
             'Zen',
-            'Quick single turn',
+            'Quick single turn you only need 2 players',
             Icons.spa,
             const Color(0xFF7A5CFF),
           ),
           const SizedBox(height: 12),
           _buildModeCard(
+            context,
             'Online',
-            'Play from afar',
+            'Play with 1 or 2 devices per team',
             Icons.public,
             const Color(0xFF4CD295),
           ),
@@ -272,7 +276,7 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
       icon: Icons.collections_bookmark,
       cardColor: const Color(0xFFFF9800), // Orange
       title: 'Word Decks',
-      content: 'Unlock themed decks from the Decks Store:\n\n'
+      content: 'Unlock different categories from the Decks Store:\n\n'
           '🎬 Movies & TV Shows\n'
           '⚽ Sports & Athletes\n'
           '🍕 Food & Cooking\n'
@@ -289,12 +293,16 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
         cardColor: const Color(0xFF4CAF50), // Green
         title: 'Scoring & Titles',
         content: 'Each transmission = 1 point\n\n'
-            'But guessed words can be disputed ❌ so play by the rules!\n\n'
-            'First team to reach the target score wins and manifests parallel trajectoires of neurocognitive articulation!');
+            'But guessed words can be disputed at the end of the turn ❌ so play by the rules!\n\n'
+            'First team to reach the target score wins🏆');
   }
 
   // Slide 9: Ready to Play
   Widget _buildSlide9(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final boxWidth = screenSize.width * 0.85; // 85% of screen width
+    final boxHeight = screenSize.height * 0.4; // 40% of screen height
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -315,59 +323,66 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade900, // Dark background like dialog
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: const Color(0xFF5EB1FF),
-                width: 2,
-              ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  'You\'re all set!\n\nGrab some friends and hit that Play button to start a game.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white,
-                        height: 1.6,
-                      ),
-                  textAlign: TextAlign.center,
+          SizedBox(
+            width: boxWidth,
+            height: boxHeight,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900, // Dark background like dialog
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: const Color(0xFF5EB1FF),
+                  width: 2,
                 ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF7A5CFF).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFF7A5CFF),
-                      width: 1.5,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    'You\'re all set! 🎉\n\nGrab some friends and hit that Play button to start a game.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Colors.white,
+                          height: 1.6,
+                        ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7A5CFF).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF7A5CFF),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.lightbulb_outline,
+                          color: Color(0xFF7A5CFF),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'You can use your body when describing - act it out!',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.lightbulb_outline,
-                        color: Color(0xFF7A5CFF),
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Use all your body when describing - act it out!',
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white,
-                                  ),
-                          textAlign: TextAlign.left,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -383,6 +398,10 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
     required String title,
     required String content,
   }) {
+    final screenSize = MediaQuery.of(context).size;
+    final boxWidth = screenSize.width * 0.85; // 85% of screen width
+    final boxHeight = screenSize.height * 0.4; // 40% of screen height
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
       child: Column(
@@ -403,24 +422,30 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade900, // Dark background like dialog
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: cardColor,
-                width: 2,
+          SizedBox(
+            width: boxWidth,
+            height: boxHeight,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900, // Dark background like dialog
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: cardColor,
+                  width: 2,
+                ),
               ),
-            ),
-            child: Text(
-              content,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.white,
-                    height: 1.6,
-                    fontSize: 16,
-                  ),
-              textAlign: TextAlign.center,
+              child: Center(
+                child: Text(
+                  content,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white,
+                        height: 1.6,
+                        fontSize: 16,
+                      ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             ),
           ),
         ],
@@ -428,52 +453,62 @@ class _HowToPlayScreenState extends ConsumerState<HowToPlayScreen> {
     );
   }
 
-  // Helper: Build mode card for slide 5
+  // Helper: Build mode card for slide 6
   Widget _buildModeCard(
+    BuildContext context,
     String title,
     String description,
     IconData icon,
     Color color,
   ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade900, // Dark background like dialog
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color,
-          width: 2,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  description,
-                  style: TextStyle(
-                    color: Colors.grey.shade300,
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
+    final screenSize = MediaQuery.of(context).size;
+    final cardWidth = screenSize.width * 0.85; // 85% of screen width
+    final cardHeight =
+        screenSize.height * 0.12; // 12% of screen height for each card
+
+    return SizedBox(
+      width: cardWidth,
+      height: cardHeight,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade900, // Dark background like dialog
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: color,
+            width: 2,
           ),
-        ],
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      color: Colors.grey.shade300,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

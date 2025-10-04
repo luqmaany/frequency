@@ -61,9 +61,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   bool _isTransitioning = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
-  late AnimationController _fadeController; // controls fade-out of pre UI
-  late Animation<double> _preOpacity; // 1 -> 0 during fade
-  double _postOpacity = 0.0; // 0 -> 1 when post UI appears
   int _swipeStep = 0;
   bool _swipeRightDone = false;
   bool _swipeLeftDone = false;
@@ -98,13 +95,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
         parent: _animationController,
         curve: Curves.easeInOut,
       ),
-    );
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
-    _preOpacity = Tween<double>(begin: 1.0, end: 0.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
     );
     _selectedConveyor = widget.onlineTeam?['players']?[0];
     _selectedGuesser = widget.onlineTeam?['players']?[1];
@@ -167,41 +157,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
     return false;
   }
 
-  // Check if current user is the guesser (for navigation routing)
-  bool get _isCurrentUserGuesser {
-    // For local games, this doesn't apply (both players see game screen)
-    if (widget.sessionId == null) {
-      return false;
-    }
-
-    // For online games, check if current user is the guesser
-    if (!_isCurrentTeamActive ||
-        _selectedGuesser == null ||
-        _currentDeviceId == null) {
-      return false;
-    }
-
-    final teamMode = widget.onlineTeam!['teamMode'] as String? ?? 'couch';
-
-    if (teamMode == 'couch') {
-      // Couch mode: both players see game screen, so no guesser routing needed
-      return false;
-    } else if (teamMode == 'remote') {
-      // Remote mode: check if current device belongs to the guesser
-      final devices = widget.onlineTeam!['devices'] as List?;
-      if (devices != null) {
-        for (final device in devices) {
-          if (device['deviceId'] == _currentDeviceId &&
-              device['playerName'] == _selectedGuesser) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
   // Check if current device is part of the active team (supports both couch and remote modes)
   bool get _isCurrentTeamActive {
     // For local games (no sessionId), always allow interaction
@@ -233,7 +188,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   @override
   void dispose() {
     _animationController.dispose();
-    _fadeController.dispose();
     super.dispose();
   }
 
@@ -289,22 +243,12 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
   }
 
   void _showTransitionScreen() {
-    // Fade out pre UI, then flip to transitioning and fade in post UI
-    _fadeController.forward(from: 0).then((_) {
-      setState(() {
-        _isTransitioning = true;
-        _postOpacity = 0.0;
-      });
-      // small delay to ensure rebuild completes before animating in
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _postOpacity = 1.0;
-        });
-      });
-      if (widget.sessionId != null) {
-        _updateRoleAssignment(_selectedGuesser!, _selectedConveyor!, true);
-      }
+    setState(() {
+      _isTransitioning = true;
     });
+    if (widget.sessionId != null) {
+      _updateRoleAssignment(_selectedGuesser!, _selectedConveyor!, true);
+    }
   }
 
   void _switchRoles() {
@@ -369,10 +313,7 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
             _selectedConveyor = conveyor;
             // Once transitioning, keep it true to prevent flicker back to the role UI
             _isTransitioning = _isTransitioning || isTransitioning;
-            if (isTransitioning) {
-              // Ensure non-active devices reveal post UI as well
-              _postOpacity = 1.0;
-            }
+            // Transitioning state is handled by _isTransitioning
           });
         }
       });
@@ -417,8 +358,6 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
             _swipeStep = 0;
             _swipeRightDone = false;
             _swipeLeftDone = false;
-            _fadeController.reset();
-            _postOpacity = 0.0;
           });
           return false; // intercept: go back to pre-next UI without dialog
         }
@@ -576,204 +515,184 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
                                   if (!_isTransitioning) ...[
-                                    FadeTransition(
-                                      opacity: _preOpacity,
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.stretch,
-                                        children: [
-                                          // Swap Button
-                                          Center(
-                                            child: IconButton(
-                                              onPressed: _isCurrentTeamActive
-                                                  ? _switchRoles
-                                                  : null,
-                                              icon: Icon(
-                                                Icons.swap_vert,
-                                                size: 48,
-                                                color: _isCurrentTeamActive
-                                                    ? teamColor.border
-                                                        .withOpacity(0.95)
-                                                    : teamColor.border
-                                                        .withOpacity(0.4),
-                                              ),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        // Swap Button
+                                        Center(
+                                          child: IconButton(
+                                            onPressed: _isCurrentTeamActive
+                                                ? _switchRoles
+                                                : null,
+                                            icon: Icon(
+                                              Icons.swap_vert,
+                                              size: 48,
+                                              color: _isCurrentTeamActive
+                                                  ? teamColor.border
+                                                      .withOpacity(0.95)
+                                                  : teamColor.border
+                                                      .withOpacity(0.4),
                                             ),
                                           ),
-                                          const SizedBox(height: 24),
-                                          // Receiver card with title beneath
-                                          SizedBox(
-                                            height: 90,
-                                            child: AnimatedBuilder(
-                                              animation: _animation,
-                                              builder: (context, child) {
-                                                return Align(
-                                                  alignment: Alignment.center,
-                                                  child: ConstrainedBox(
-                                                    constraints:
-                                                        const BoxConstraints(
-                                                      maxWidth: 420,
-                                                      minWidth: 260,
-                                                    ),
-                                                    child: Transform.scale(
-                                                      scale: 1.0 +
-                                                          (_animation.value *
-                                                              0.03),
-                                                      child: Container(
-                                                        decoration:
-                                                            BoxDecoration(
+                                        ),
+                                        const SizedBox(height: 24),
+                                        // Receiver card with title beneath
+                                        SizedBox(
+                                          height: 90,
+                                          child: AnimatedBuilder(
+                                            animation: _animation,
+                                            builder: (context, child) {
+                                              return Align(
+                                                alignment: Alignment.center,
+                                                child: ConstrainedBox(
+                                                  constraints:
+                                                      const BoxConstraints(
+                                                    maxWidth: 420,
+                                                    minWidth: 260,
+                                                  ),
+                                                  child: Transform.scale(
+                                                    scale: 1.0 +
+                                                        (_animation.value *
+                                                            0.03),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Color.alphaBlend(
+                                                          teamColor.border
+                                                              .withOpacity(0.3),
+                                                          Theme.of(context)
+                                                              .scaffoldBackgroundColor,
+                                                        ),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        border: Border.all(
                                                           color:
                                                               Color.alphaBlend(
                                                             teamColor.border
-                                                                .withOpacity(
-                                                                    0.3),
+                                                                .withOpacity(1),
                                                             Theme.of(context)
                                                                 .scaffoldBackgroundColor,
                                                           ),
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(12),
-                                                          border: Border.all(
-                                                            color: Color
-                                                                .alphaBlend(
-                                                              teamColor.border
-                                                                  .withOpacity(
-                                                                      1),
-                                                              Theme.of(context)
-                                                                  .scaffoldBackgroundColor,
-                                                            ),
-                                                            width: 2,
-                                                          ),
+                                                          width: 2,
                                                         ),
-                                                        alignment:
-                                                            Alignment.center,
-                                                        child: Text(
-                                                          _selectedGuesser!,
-                                                          style:
-                                                              Theme.of(context)
-                                                                  .textTheme
-                                                                  .displayLarge,
-                                                        ),
+                                                      ),
+                                                      alignment:
+                                                          Alignment.center,
+                                                      child: Text(
+                                                        _selectedGuesser!,
+                                                        style: Theme.of(context)
+                                                            .textTheme
+                                                            .displayLarge,
                                                       ),
                                                     ),
                                                   ),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Receiver',
-                                            textAlign: TextAlign.center,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .headlineSmall
-                                                ?.copyWith(
-                                                  fontSize: 26,
-                                                  color: Colors.white
-                                                      .withOpacity(0.9),
                                                 ),
+                                              );
+                                            },
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Receiver',
+                                          textAlign: TextAlign.center,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .headlineSmall
+                                              ?.copyWith(
+                                                fontSize: 26,
+                                                color: Colors.white
+                                                    .withOpacity(0.9),
+                                              ),
+                                        ),
+                                      ],
                                     ),
                                   ] else ...[
-                                    AnimatedOpacity(
-                                      duration:
-                                          const Duration(milliseconds: 250),
-                                      opacity: _postOpacity,
-                                      child: Center(
-                                        child: (_shouldShowSwipeTutorial &&
-                                                !(_swipeRightDone &&
-                                                    _swipeLeftDone))
-                                            ? Dismissible(
-                                                key: ValueKey(_swipeStep),
-                                                direction:
-                                                    _swipeSteps[_swipeStep]
-                                                        .direction,
-                                                onDismissed: (direction) {
-                                                  setState(() {
-                                                    if (_swipeStep == 0 &&
-                                                        direction ==
-                                                            DismissDirection
-                                                                .startToEnd) {
-                                                      _swipeRightDone = true;
-                                                      _swipeStep = 1;
-                                                    } else if (_swipeStep ==
-                                                            1 &&
-                                                        direction ==
-                                                            DismissDirection
-                                                                .endToStart) {
-                                                      _swipeLeftDone = true;
-                                                    }
-                                                  });
-                                                },
-                                                child: Container(
-                                                  width: double.infinity,
-                                                  height: 120,
-                                                  margin: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 16,
-                                                      vertical: 0),
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal: 24,
-                                                      vertical: 20),
-                                                  decoration: BoxDecoration(
-                                                    color: cardBackground,
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                            16),
-                                                    border: Border.all(
-                                                      color: cardBorder,
-                                                      width: 2,
-                                                    ),
-                                                  ),
-                                                  child: Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment
-                                                            .center,
-                                                    children: [
-                                                      if (_swipeStep == 1)
-                                                        const Icon(
-                                                            Icons.arrow_back,
-                                                            color: Colors.red,
-                                                            size: 32),
-                                                      if (_swipeStep == 1)
-                                                        const SizedBox(
-                                                            width: 12),
-                                                      Flexible(
-                                                        child: Text(
-                                                          _swipeSteps[
-                                                                  _swipeStep]
-                                                              .text,
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          maxLines: 2,
-                                                          style: TextStyle(
-                                                            color: _swipeSteps[
-                                                                    _swipeStep]
-                                                                .color,
-                                                            fontSize: 18,
-                                                            height: 1.2,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      if (_swipeStep == 0)
-                                                        const SizedBox(
-                                                            width: 12),
-                                                      if (_swipeStep == 0)
-                                                        const Icon(
-                                                            Icons.arrow_forward,
-                                                            color: Colors.green,
-                                                            size: 32),
-                                                    ],
+                                    Center(
+                                      child: (_shouldShowSwipeTutorial &&
+                                              !(_swipeRightDone &&
+                                                  _swipeLeftDone))
+                                          ? Dismissible(
+                                              key: ValueKey(_swipeStep),
+                                              direction: _swipeSteps[_swipeStep]
+                                                  .direction,
+                                              onDismissed: (direction) {
+                                                setState(() {
+                                                  if (_swipeStep == 0 &&
+                                                      direction ==
+                                                          DismissDirection
+                                                              .startToEnd) {
+                                                    _swipeRightDone = true;
+                                                    _swipeStep = 1;
+                                                  } else if (_swipeStep == 1 &&
+                                                      direction ==
+                                                          DismissDirection
+                                                              .endToStart) {
+                                                    _swipeLeftDone = true;
+                                                  }
+                                                });
+                                              },
+                                              child: Container(
+                                                width: double.infinity,
+                                                height: 120,
+                                                margin:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 16,
+                                                        vertical: 0),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 24,
+                                                        vertical: 20),
+                                                decoration: BoxDecoration(
+                                                  color: cardBackground,
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color: cardBorder,
+                                                    width: 2,
                                                   ),
                                                 ),
-                                              )
-                                            : const SizedBox.shrink(),
-                                      ),
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    if (_swipeStep == 1)
+                                                      const Icon(
+                                                          Icons.arrow_back,
+                                                          color: Colors.red,
+                                                          size: 32),
+                                                    if (_swipeStep == 1)
+                                                      const SizedBox(width: 12),
+                                                    Flexible(
+                                                      child: Text(
+                                                        _swipeSteps[_swipeStep]
+                                                            .text,
+                                                        textAlign:
+                                                            TextAlign.center,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        maxLines: 2,
+                                                        style: TextStyle(
+                                                          color: _swipeSteps[
+                                                                  _swipeStep]
+                                                              .color,
+                                                          fontSize: 18,
+                                                          height: 1.2,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    if (_swipeStep == 0)
+                                                      const SizedBox(width: 12),
+                                                    if (_swipeStep == 0)
+                                                      const Icon(
+                                                          Icons.arrow_forward,
+                                                          color: Colors.green,
+                                                          size: 32),
+                                                  ],
+                                                ),
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
                                     ),
                                   ],
                                 ],
@@ -786,84 +705,75 @@ class _RoleAssignmentScreenState extends ConsumerState<RoleAssignmentScreen>
                     const SizedBox(height: 32),
                     if (!_isTransitioning) ...[
                       // Bottom actions row (pre-next)
-                      FadeTransition(
-                        opacity: _preOpacity,
-                        child: Row(
-                          children: [
-                            if (_isCurrentTeamActive) ...[
-                              IconOnlyColorButton(
-                                icon: Icons.shuffle,
-                                color: uiColors[0],
-                                onPressed: () {
-                                  _assignRandomRoles();
-                                },
-                                size: 56,
-                              ),
-                              const SizedBox(width: 12),
-                            ],
-                            Expanded(
-                              child: TeamColorButton(
-                                text: _isCurrentTeamActive &&
-                                        _shouldShowSwipeTutorial
-                                    ? 'Next'
-                                    : _isCurrentTeamActive
-                                        ? 'Waiting for conveyor...'
-                                        : 'Waiting...',
-                                icon: _isCurrentTeamActive
-                                    ? Icons.arrow_forward
-                                    : Icons.hourglass_empty,
-                                color: uiColors[1],
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 16, horizontal: 8),
-                                onPressed: _isCurrentTeamActive &&
-                                        _shouldShowSwipeTutorial
-                                    ? () {
-                                        _showTransitionScreen();
-                                      }
-                                    : null,
-                              ),
+                      Row(
+                        children: [
+                          if (_isCurrentTeamActive) ...[
+                            IconOnlyColorButton(
+                              icon: Icons.shuffle,
+                              color: uiColors[0],
+                              onPressed: () {
+                                _assignRandomRoles();
+                              },
+                              size: 56,
                             ),
+                            const SizedBox(width: 12),
                           ],
-                        ),
+                          Expanded(
+                            child: TeamColorButton(
+                              text: _isCurrentTeamActive &&
+                                      _shouldShowSwipeTutorial
+                                  ? 'Next'
+                                  : _isCurrentTeamActive
+                                      ? 'Waiting for conveyor...'
+                                      : 'Waiting...',
+                              icon: _isCurrentTeamActive
+                                  ? Icons.arrow_forward
+                                  : Icons.hourglass_empty,
+                              color: uiColors[1],
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 16, horizontal: 8),
+                              onPressed: _isCurrentTeamActive &&
+                                      _shouldShowSwipeTutorial
+                                  ? () {
+                                      _showTransitionScreen();
+                                    }
+                                  : null,
+                            ),
+                          ),
+                        ],
                       ),
                     ] else ...[
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 250),
-                        opacity: _postOpacity,
-                        child: SizedBox(
-                          width: double.infinity,
-                          child: TeamColorButton(
-                            text: _shouldShowSwipeTutorial
-                                ? 'Start'
-                                : 'Waiting...',
-                            icon: _shouldShowSwipeTutorial
-                                ? Icons.play_arrow
-                                : Icons.hourglass_empty,
-                            color: uiColors[1],
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 18, horizontal: 12),
-                            onPressed: _shouldShowSwipeTutorial &&
-                                    (_swipeRightDone && _swipeLeftDone)
-                                ? () async {
-                                    if (widget.sessionId != null) {
-                                      await FirestoreService.fromRoleAssignment(
-                                        widget.sessionId!,
-                                        guesser: _selectedGuesser!,
-                                        conveyor: _selectedConveyor!,
-                                      );
-                                    } else {
-                                      GameNavigationService
-                                          .navigateToGameScreen(
-                                        context,
-                                        widget.teamIndex,
-                                        widget.roundNumber,
-                                        widget.turnNumber,
-                                        widget.categoryId,
-                                      );
-                                    }
+                      SizedBox(
+                        width: double.infinity,
+                        child: TeamColorButton(
+                          text:
+                              _shouldShowSwipeTutorial ? 'Start' : 'Waiting...',
+                          icon: _shouldShowSwipeTutorial
+                              ? Icons.play_arrow
+                              : Icons.hourglass_empty,
+                          color: uiColors[1],
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 18, horizontal: 12),
+                          onPressed: _shouldShowSwipeTutorial &&
+                                  (_swipeRightDone && _swipeLeftDone)
+                              ? () async {
+                                  if (widget.sessionId != null) {
+                                    await FirestoreService.fromRoleAssignment(
+                                      widget.sessionId!,
+                                      guesser: _selectedGuesser!,
+                                      conveyor: _selectedConveyor!,
+                                    );
+                                  } else {
+                                    GameNavigationService.navigateToGameScreen(
+                                      context,
+                                      widget.teamIndex,
+                                      widget.roundNumber,
+                                      widget.turnNumber,
+                                      widget.categoryId,
+                                    );
                                   }
-                                : null,
-                          ),
+                                }
+                              : null,
                         ),
                       ),
                     ],
