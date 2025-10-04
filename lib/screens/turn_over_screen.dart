@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:math';
+//import 'dart:math';
 import '../services/game_setup_provider.dart';
 import '../services/game_state_provider.dart';
 import '../services/game_navigation_service.dart';
@@ -58,7 +58,7 @@ class TurnOverScreen extends ConsumerStatefulWidget {
 class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
   Set<String> _disputedWords = {};
   Set<String> _promotedWords = {};
-
+/*
   static const List<Map<String, String>> _highScoreMessages = [
     {'text': 'You\'re the dynamic duo of word games!', 'emoji': '🦸‍♂️'},
     {
@@ -110,6 +110,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
       'emoji': '🌍'
     },
   ];
+  */
 
   @override
   void initState() {
@@ -117,6 +118,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
     _disputedWords = Set.from(widget.disputedWords);
   }
 
+  /*
   String _getPerformanceMessage() {
     final gameConfig = ref.read(gameSetupProvider);
     final maxPossibleScore = gameConfig.roundTimeSeconds ~/
@@ -131,6 +133,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
       return _getRandomMessage(_lowScoreMessages);
     }
   }
+  
 
   String _getRandomMessage(List<Map<String, String>> messages) {
     // Use a proper random number generator instead of timestamps
@@ -140,7 +143,7 @@ class _TurnOverScreenState extends ConsumerState<TurnOverScreen> {
     final randomMessage = messages[randomIndex];
     return '${randomMessage['text']} ${randomMessage['emoji']}';
   }
-
+*/
   void _onWordDisputed(String word) {
     setState(() {
       if (_disputedWords.contains(word)) {
